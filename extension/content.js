@@ -76,12 +76,35 @@ class X10API {
     try {
       const data = await chrome.storage.local.get(['x10BackendUrl', 'x10UserCode']);
       if (data.x10BackendUrl) this.baseUrl = data.x10BackendUrl;
-      if (data.x10UserCode) this.userCode = data.x10UserCode;
+      if (data.x10UserCode) {
+        this.userCode = data.x10UserCode;
+      } else {
+        // Try to read from website cookie
+        await this.syncFromCookie();
+      }
       return true;
     } catch (error) {
       console.log('[X10Tube] Extension context invalidated:', error.message);
       return false;
     }
+  }
+
+  async syncFromCookie() {
+    try {
+      const urls = ['http://localhost:3000', 'https://x10tube.com'];
+      for (const url of urls) {
+        const cookie = await chrome.cookies.get({ url, name: 'x10_user_code' });
+        if (cookie && cookie.value) {
+          this.userCode = cookie.value;
+          await chrome.storage.local.set({ x10UserCode: cookie.value });
+          console.log('[X10Tube] User code synced from cookie');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.log('[X10Tube] Could not read cookie:', error.message);
+    }
+    return false;
   }
 
   async setUserCode(code) {
