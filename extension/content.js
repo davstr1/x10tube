@@ -27,8 +27,19 @@ function getVideoDuration() {
   return durationElement?.textContent || '';
 }
 
+// Check if extension context is still valid
+function isExtensionContextValid() {
+  try {
+    return !!chrome.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (!isExtensionContextValid()) return;
+
   if (request.action === 'getVideoInfo') {
     const videoId = getVideoId();
     if (!videoId) {
@@ -58,14 +69,29 @@ class X10API {
   }
 
   async init() {
-    const data = await chrome.storage.local.get(['x10BackendUrl', 'x10UserCode']);
-    if (data.x10BackendUrl) this.baseUrl = data.x10BackendUrl;
-    if (data.x10UserCode) this.userCode = data.x10UserCode;
+    if (!isExtensionContextValid()) {
+      console.log('[X10Tube] Extension context invalidated, please reload the page');
+      return false;
+    }
+    try {
+      const data = await chrome.storage.local.get(['x10BackendUrl', 'x10UserCode']);
+      if (data.x10BackendUrl) this.baseUrl = data.x10BackendUrl;
+      if (data.x10UserCode) this.userCode = data.x10UserCode;
+      return true;
+    } catch (error) {
+      console.log('[X10Tube] Extension context invalidated:', error.message);
+      return false;
+    }
   }
 
   async setUserCode(code) {
+    if (!isExtensionContextValid()) return;
     this.userCode = code;
-    await chrome.storage.local.set({ x10UserCode: code });
+    try {
+      await chrome.storage.local.set({ x10UserCode: code });
+    } catch (error) {
+      console.log('[X10Tube] Could not save user code:', error.message);
+    }
   }
 
   async getMyX10s() {
@@ -459,7 +485,12 @@ async function loadX10sForDropdown() {
 
   listEl.innerHTML = '<div class="x10-empty">Loading...</div>';
 
-  await api.init();
+  const initOk = await api.init();
+  if (!initOk) {
+    listEl.innerHTML = '<div class="x10-empty">Please reload the page</div>';
+    return;
+  }
+
   const result = await api.getMyX10s();
   currentX10s = result.x10s || [];
 
@@ -502,6 +533,11 @@ function renderX10List() {
 }
 
 async function handleCreate() {
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
   const videoUrl = window.location.href;
   const btn = document.getElementById('x10tube-create');
   if (btn) {
@@ -528,6 +564,11 @@ async function handleCreate() {
 }
 
 async function handleAddToX10(x10Id, x10Title) {
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
   const videoUrl = window.location.href;
   const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
   if (item) item.classList.add('adding');
