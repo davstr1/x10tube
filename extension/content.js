@@ -260,43 +260,40 @@ function injectStyles() {
 
     /* Mini button for thumbnails */
     .x10tube-mini-btn {
-      position: absolute;
-      bottom: 6px;
-      left: 6px;
-      width: 28px;
-      height: 28px;
-      background: rgba(220, 38, 38, 0.9);
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      opacity: 1;
-      transition: opacity 0.2s, background 0.2s, transform 0.2s;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      pointer-events: auto;
+      position: absolute !important;
+      bottom: 4px !important;
+      left: 4px !important;
+      width: 26px !important;
+      height: 26px !important;
+      background: #dc2626 !important;
+      border: 2px solid white !important;
+      border-radius: 6px !important;
+      color: white !important;
+      font-size: 16px !important;
+      font-weight: bold !important;
+      cursor: pointer !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      z-index: 2147483647 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      line-height: 1 !important;
+      pointer-events: auto !important;
+      isolation: isolate !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
     }
     .x10tube-mini-btn:hover {
-      background: #dc2626;
+      background: #b91c1c !important;
+      transform: scale(1.15) !important;
     }
     .x10tube-mini-btn.added {
-      background: #16a34a;
-      opacity: 1;
+      background: #16a34a !important;
+      border-color: white !important;
     }
     .x10tube-mini-btn.adding {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-
-    /* Hover effects */
-    .x10tube-mini-btn:hover {
-      transform: scale(1.1);
-      background: rgba(220, 38, 38, 1);
+      opacity: 0.6 !important;
+      pointer-events: none !important;
     }
 
     /* Dropdown */
@@ -786,55 +783,40 @@ function extractVideoIdFromUrl(url) {
 }
 
 function injectMiniButtons() {
-  console.log('[X10Tube] injectMiniButtons called');
-
-  // Debug: what's on the page?
-  console.log('[X10Tube] DEBUG - ytd-rich-item-renderer:', document.querySelectorAll('ytd-rich-item-renderer').length);
-  console.log('[X10Tube] DEBUG - ytd-video-renderer:', document.querySelectorAll('ytd-video-renderer').length);
-  console.log('[X10Tube] DEBUG - ytd-compact-video-renderer:', document.querySelectorAll('ytd-compact-video-renderer').length);
-  console.log('[X10Tube] DEBUG - a[href*=watch]:', document.querySelectorAll('a[href*="/watch?v="]').length);
-
-  // Find thumbnail containers
-  const allThumbnails = document.querySelectorAll('ytd-thumbnail');
-  console.log('[X10Tube] Total ytd-thumbnail elements:', allThumbnails.length);
-
-  const thumbnails = document.querySelectorAll('ytd-thumbnail:not([data-x10-checked])');
-  console.log('[X10Tube] Unchecked thumbnails:', thumbnails.length);
+  // Universal selector: target ALL video links
+  const videoLinks = document.querySelectorAll('a[href*="/watch?v="]:not([data-x10-processed]), a[href*="/shorts/"]:not([data-x10-processed])');
 
   let count = 0;
-  thumbnails.forEach((thumbnail, index) => {
-    thumbnail.setAttribute('data-x10-checked', 'true');
-
-    // Skip if it's part of the main player
-    if (thumbnail.closest('#movie_player')) {
-      console.log('[X10Tube] Skip: movie_player');
-      return;
-    }
-
-    // Skip mini player
-    if (thumbnail.closest('ytd-miniplayer')) {
-      console.log('[X10Tube] Skip: miniplayer');
-      return;
-    }
-
-    // Find the link inside the thumbnail
-    const link = thumbnail.querySelector('a[href*="/watch?v="], a[href*="/shorts/"]');
-    if (!link) {
-      console.log('[X10Tube] Skip: no link found in thumbnail', index);
-      return;
-    }
+  videoLinks.forEach(link => {
+    link.setAttribute('data-x10-processed', 'true');
 
     const videoId = extractVideoIdFromUrl(link.href);
-    if (!videoId) {
-      console.log('[X10Tube] Skip: no videoId from', link.href);
-      return;
-    }
+    if (!videoId) return;
 
-    // Check if button already exists
-    if (thumbnail.querySelector('.x10tube-mini-btn')) {
-      console.log('[X10Tube] Skip: button exists');
-      return;
-    }
+    // Find the best container for the button
+    // Priority order based on real YouTube DOM inspection:
+    // 1. NEW structure: .yt-lockup-view-model (div class, for watch sidebar & home)
+    // 2. OLD structure: ytd-thumbnail (for search page)
+    // 3. Fallback to video renderers
+    const container =
+      link.closest('.yt-lockup-view-model') ||  // NEW: Watch sidebar, Home (2024+)
+      link.closest('ytd-thumbnail') ||           // OLD: Search page
+      link.closest('ytd-video-renderer') ||
+      link.closest('ytd-compact-video-renderer') ||
+      link.closest('ytd-rich-item-renderer') ||
+      link.closest('ytd-grid-video-renderer');
+
+    if (!container) return;
+
+    // Skip if already has button
+    if (container.querySelector('.x10tube-mini-btn')) return;
+
+    // Skip player areas
+    if (container.closest('#movie_player') || container.closest('ytd-miniplayer') || container.closest('#player')) return;
+
+    // Skip small elements (avatars, channel icons) - only check if element is rendered
+    const rect = container.getBoundingClientRect();
+    if (rect.width > 0 && rect.width < 80) return;
 
     count++;
 
@@ -851,13 +833,14 @@ function injectMiniButtons() {
       await handleMiniButtonClick(btn, videoId);
     });
 
-    // Ensure thumbnail has relative positioning
-    thumbnail.style.position = 'relative';
-    thumbnail.appendChild(btn);
-    console.log('[X10Tube] Added button for:', videoId);
+    // Ensure container has relative positioning
+    container.style.position = 'relative';
+    container.appendChild(btn);
   });
 
-  console.log('[X10Tube] Mini buttons added this round:', count);
+  if (count > 0) {
+    console.log('[X10Tube] Mini buttons added:', count);
+  }
 }
 
 async function handleMiniButtonClick(btn, videoId) {
@@ -909,8 +892,8 @@ function stopMiniButtonInjection() {
   // Remove all mini buttons
   document.querySelectorAll('.x10tube-mini-btn').forEach(btn => btn.remove());
   // Reset injection markers
-  document.querySelectorAll('[data-x10-checked]').forEach(el => {
-    el.removeAttribute('data-x10-checked');
+  document.querySelectorAll('[data-x10-processed]').forEach(el => {
+    el.removeAttribute('data-x10-processed');
   });
 }
 

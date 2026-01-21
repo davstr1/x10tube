@@ -1,0 +1,223 @@
+{
+  "timestamp": "2026-01-21T19:17:07.885Z",
+  "pages": {
+    "home": {
+      "url": "https://www.youtube.com/",
+      "elements": {
+        "ytd-rich-item-renderer": 0,
+        "ytd-video-renderer": 0,
+        "ytd-thumbnail": 3,
+        "yt-lockup-view-model": 0,
+        "ytd-rich-grid-renderer": 1,
+        "ytd-compact-video-renderer": 0,
+        "a[href*=\"/watch?v=\"]": 0,
+        "a[href*=\"/shorts/\"]": 0,
+        "#contents": 2,
+        "ytd-rich-section-renderer": 1
+      }
+    },
+    "search": {
+      "url": "https://www.youtube.com/results?search_query=javascript+tutorial",
+      "elements": {
+        "ytd-video-renderer": 12,
+        "ytd-thumbnail": 15,
+        "yt-lockup-view-model": 12,
+        "ytd-search": 1,
+        "a[href*=\"/watch?v=\"]": 203,
+        "#contents": 4
+      },
+      "firstVideoLink": {
+        "ancestors": [
+          {
+            "tag": "a",
+            "id": "thumbnail",
+            "classes": [
+              "yt-simple-endpoint",
+              "inline-block",
+              "style-scope",
+              "ytd-thumbnail"
+            ]
+          },
+          {
+            "tag": "ytd-thumbnail",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-video-renderer"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "dismissible",
+            "classes": [
+              "style-scope",
+              "ytd-video-renderer"
+            ]
+          },
+          {
+            "tag": "ytd-video-renderer",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-item-section-renderer"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "contents",
+            "classes": [
+              "style-scope",
+              "ytd-item-section-renderer"
+            ]
+          },
+          {
+            "tag": "ytd-item-section-renderer",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-section-list-renderer"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "contents",
+            "classes": [
+              "style-scope",
+              "ytd-section-list-renderer"
+            ]
+          },
+          {
+            "tag": "ytd-section-list-renderer",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-two-column-search-results-renderer"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "primary",
+            "classes": [
+              "style-scope",
+              "ytd-two-column-search-results-renderer"
+            ]
+          },
+          {
+            "tag": "ytd-two-column-search-results-renderer",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-search"
+            ]
+          }
+        ]
+      },
+      "thumbnailStructure": {
+        "tag": "ytd-thumbnail",
+        "outerHTML": "<ytd-thumbnail use-hovered-property=\"\" class=\"style-scope ytd-video-renderer\" size=\"large\" loaded=\"\"><!--css-build:shady--><!--css_build_scope:ytd-thumbnail--><!--css_build_styles:video.youtube.src.web.polymer.shared.ui.styles.yt_base_styles.yt.base.styles.css.js--><a id=\"thumbnail\" class=\"yt-simple-endpoint inline-block style-scope ytd-thumbnail\" aria-hidden=\"true\" tabindex=\"-1\" rel=\"null\" href=\"/watch?v=W6NZfCO5SIk&amp;pp=ygUTamF2YXNjcmlwdCB0dXRvcmlhbA%3D%3D\">\n  <yt-image class=\"style-scope ytd-thumbnail\">\n  <img alt=\"true\" class=\"ytCoreImageHost ytCoreImageFillParentHeight ytCoreImageFillParentWidth ytCoreImageContentModeScaleAspectFill ytCoreImageLoaded\" style=\"background-color: transparent;\" src=\"https://i.ytimg.com/vi/W6NZfCO5SIk/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&amp;rs=AOn4CLBAlzpYlr0w53HlpbOkOxXqVe137g\"></yt-image>\n  \n  <div id=\"overlays\" class=\"style-scope ytd-thumbnail\"><ytd-thumbnail-overlay-time-status-renderer class=\"style-scope ytd-thumbnail\" hide-time-status=\"\" overlay-style=\"DEFAULT\"><!--css-build:shady--><!--css_build_scope:ytd-thumbnail-overlay-time-status-renderer--><!--css_build_styles:video.youtube.src.web.polymer.shared.ui.styles.yt_base_styles.yt.base.styles.css.js--><ytd-badge-supported-renderer is-thumbnail-badge=\"\" class=\"style-scope ytd-thumbnail-overlay-time-status-renderer\" system-icons=\"\" use-badge-shape=\"\"><!--css-build:shady--><!--css_build_scope:ytd-badge-supported-renderer--><!--css_build_styles:video."
+      }
+    },
+    "watch": {
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "elements": {
+        "ytd-compact-video-renderer": 0,
+        "ytd-thumbnail": 3,
+        "yt-lockup-view-model": 20,
+        "#related": 2,
+        "#secondary": 1,
+        "a[href*=\"/watch?v=\"]": 40,
+        "ytd-watch-flexy": 1,
+        "#movie_player": 1
+      },
+      "sidebarVideoLink": {
+        "ancestors": [
+          {
+            "tag": "a",
+            "id": null,
+            "classes": [
+              "yt-lockup-view-model__content-image"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": [
+              "yt-lockup-view-model",
+              "yt-lockup-view-model--vertical",
+              "content-id-kOnJOKM3ce0",
+              "yt-lockup-view-model--compact",
+              "yt-lockup-view-model--flex-none"
+            ]
+          },
+          {
+            "tag": "yt-lockup-view-model",
+            "id": null,
+            "classes": [
+              "ytd-watch-next-secondary-results-renderer",
+              "lockup",
+              "yt-lockup-view-model--wrapper"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "items",
+            "classes": [
+              "style-scope",
+              "ytd-watch-next-secondary-results-renderer"
+            ]
+          },
+          {
+            "tag": "ytd-watch-next-secondary-results-renderer",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-watch-flexy"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "related",
+            "classes": [
+              "style-scope",
+              "ytd-watch-flexy"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "secondary-inner",
+            "classes": [
+              "style-scope",
+              "ytd-watch-flexy"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "secondary",
+            "classes": [
+              "style-scope",
+              "ytd-watch-flexy"
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "columns",
+            "classes": [
+              "style-scope",
+              "ytd-watch-flexy"
+            ]
+          },
+          {
+            "tag": "ytd-watch-flexy",
+            "id": null,
+            "classes": [
+              "style-scope",
+              "ytd-page-manager",
+              "watch-root-element",
+              "hide-skeleton"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
