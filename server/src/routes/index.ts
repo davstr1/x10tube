@@ -60,6 +60,14 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
   }
 });
 
+// Disconnect - clear the cookie and generate a new anonymous ID
+indexRouter.get('/disconnect', (req: Request, res: Response) => {
+  // Clear the cookie by setting it to expire immediately
+  res.clearCookie('x10_anon');
+  // Redirect to home - the middleware will create a new anonymous ID
+  res.redirect('/');
+});
+
 // Sync page - paste user code from another device
 indexRouter.get('/sync', (req: Request, res: Response) => {
   res.render('sync', {

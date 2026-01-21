@@ -27,7 +27,9 @@ block content
           button#copy-code.text-xs.text-blue-600.hover_text-blue-800(
             type="button"
           ) Copy
-      a.text-sm.text-gray-500.hover_text-gray-700(href="/sync") Sync from another device
+      .flex.items-center.gap-4
+        a.text-sm.text-gray-500.hover_text-gray-700(href="/sync") Sync from another device
+        button#disconnect-btn.text-sm.text-gray-400.hover_text-red-600(type="button") Disconnect
 
   script.
     (function() {
@@ -51,6 +53,14 @@ block content
         navigator.clipboard.writeText(userCode);
         copyBtn.textContent = 'Copied!';
         setTimeout(function() { copyBtn.textContent = 'Copy'; }, 1500);
+      });
+
+      var disconnectBtn = document.getElementById('disconnect-btn');
+      disconnectBtn.addEventListener('click', function() {
+        var confirmed = confirm('Warning: Make sure you have saved your user code!\n\nThis is the only way to recover your x10s.\n\nAre you sure you want to disconnect?');
+        if (confirmed) {
+          window.location.href = '/disconnect';
+        }
       });
     })();
 
