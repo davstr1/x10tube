@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Captions</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>YouTube Captions</h1>
+
+    <div id="status" class="status"></div>
+
+    <div id="video-info" class="video-info hidden">
+      <p class="title" id="video-title"></p>
+      <p class="language" id="caption-language"></p>
+    </div>
+
+    <div id="track-selector" class="track-selector hidden">
+      <label for="tracks">Langue :</label>
+      <select id="tracks"></select>
+    </div>
+
+    <div id="captions-container" class="captions-container hidden">
+      <div class="options-row">
+        <label class="toggle-label">
+          <input type="checkbox" id="show-timecodes">
+          <span class="toggle-switch"></span>
+          <span>Afficher les timecodes</span>
+        </label>
+      </div>
+      <textarea id="captions" readonly></textarea>
+      <div class="buttons-row">
+        <button id="copy-btn" class="btn copy-btn">Copier</button>
+        <button id="send-claude-btn" class="btn claude-btn">Envoyer à Claude</button>
+      </div>
+      <div class="claude-settings">
+        <label for="claude-prompt">Prompt Claude :</label>
+        <textarea id="claude-prompt" rows="2">Résume-moi ça. On apprend quelque chose?</textarea>
+      </div>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+
+    <div id="not-youtube" class="not-youtube hidden">
+      <p>Ouvrez une vidéo YouTube pour extraire les sous-titres.</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
