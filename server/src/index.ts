@@ -39,5 +39,5 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`x10tube server running at http://localhost:${PORT}`);
+  console.log(`X10Tube server running at http://localhost:${PORT}`);
 });

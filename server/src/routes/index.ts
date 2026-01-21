@@ -6,7 +6,7 @@ export const indexRouter = Router();
 // Landing page
 indexRouter.get('/', (req: Request, res: Response) => {
   res.render('landing', {
-    title: 'x10tube - Summarize YouTube videos with AI'
+    title: 'X10Tube - Summarize YouTube videos with AI'
   });
 });
 
@@ -17,7 +17,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
 
     if (!urls || typeof urls !== 'string') {
       return res.status(400).render('landing', {
-        title: 'x10tube',
+        title: 'X10Tube',
         error: 'Please paste at least one YouTube URL'
       });
     }
@@ -31,7 +31,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
 
     if (urlList.length === 0) {
       return res.status(400).render('landing', {
-        title: 'x10tube',
+        title: 'X10Tube',
         error: 'Please paste at least one YouTube URL'
       });
     }
@@ -42,7 +42,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
 
     if (x10.videos.length === 0) {
       return res.status(400).render('landing', {
-        title: 'x10tube',
+        title: 'X10Tube',
         error: 'Could not extract transcripts from any of the provided URLs',
         failedUrls: failed
       });
@@ -54,7 +54,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error creating x10:', error);
     res.status(500).render('landing', {
-      title: 'x10tube',
+      title: 'X10Tube',
       error: 'An error occurred while creating your x10'
     });
   }
