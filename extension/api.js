@@ -44,6 +44,31 @@ class X10TubeAPI {
   async setUserCode(code) {
     this.userCode = code;
     await chrome.storage.local.set({ x10UserCode: code });
+
+    // Also set cookie on website so it's synced
+    await this.setCookieOnWebsite(code);
+  }
+
+  async setCookieOnWebsite(code) {
+    try {
+      const urls = [
+        { url: 'http://localhost:3000', domain: 'localhost' },
+        { url: 'https://x10tube.com', domain: 'x10tube.com' }
+      ];
+
+      for (const { url, domain } of urls) {
+        await chrome.cookies.set({
+          url,
+          name: 'x10_user_code',
+          value: code,
+          path: '/',
+          expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // 1 year
+        });
+      }
+      console.log('[X10Tube] User code cookie set on website');
+    } catch (error) {
+      console.log('[X10Tube] Could not set cookie:', error.message);
+    }
   }
 
   async setBaseUrl(url) {

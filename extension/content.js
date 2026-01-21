@@ -112,8 +112,30 @@ class X10API {
     this.userCode = code;
     try {
       await chrome.storage.local.set({ x10UserCode: code });
+      // Also set cookie on website so it's synced
+      await this.setCookieOnWebsite(code);
     } catch (error) {
       console.log('[X10Tube] Could not save user code:', error.message);
+    }
+  }
+
+  async setCookieOnWebsite(code) {
+    try {
+      const urls = [
+        { url: 'http://localhost:3000', domain: 'localhost' },
+        { url: 'https://x10tube.com', domain: 'x10tube.com' }
+      ];
+      for (const { url } of urls) {
+        await chrome.cookies.set({
+          url,
+          name: 'x10_user_code',
+          value: code,
+          path: '/',
+          expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
+        });
+      }
+    } catch (error) {
+      console.log('[X10Tube] Could not set cookie:', error.message);
     }
   }
 
