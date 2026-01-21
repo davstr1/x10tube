@@ -41,8 +41,7 @@ block content
                   type="button"
                   onclick=`navigator.clipboard.writeText(window.location.origin + '/s/${x10.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy link', 1500)`
                 ) Copy link
-                form.inline(action=`/api/x10/${x10.id}` method="POST" style="display:inline")
-                  input(type="hidden" name="_method" value="DELETE")
+                form.inline(action=`/x10/${x10.id}/delete` method="POST" style="display:inline")
                   button.text-gray-400.hover_text-red-600(type="submit" onclick="return confirm('Delete this x10?')") Delete
 
   else

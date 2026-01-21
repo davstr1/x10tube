@@ -28,7 +28,7 @@ block content
     - const claudePrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
     - const chatgptPrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
 
-    .flex.flex-wrap.gap-3
+    .flex.flex-wrap.gap-3.items-center
       a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
         href=`https://claude.ai/new?q=${claudePrompt}`
         target="_blank"
@@ -43,6 +43,13 @@ block content
         type="button"
         onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy .md link', 2000)`
       ) Copy .md link
+
+      if isOwner
+        form.inline(action=`/x10/${x10.id}/delete` method="POST")
+          button.text-sm.text-gray-400.hover_text-red-600.transition-colors(
+            type="submit"
+            onclick="return confirm('Delete this x10?')"
+          ) Delete
 
   //- Videos list
   section.mb-10

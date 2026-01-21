@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createX10, getX10sForAnonymous, getX10sForUser } from '../services/x10.js';
+import { createX10, getX10sForAnonymous, getX10sForUser, getX10ById, deleteX10 } from '../services/x10.js';
 
 export const indexRouter = Router();
 
@@ -78,4 +78,39 @@ indexRouter.get('/dashboard', (req: Request, res: Response) => {
     title: 'My x10s - x10tube',
     x10s
   });
+});
+
+// Delete x10 (POST because HTML forms don't support DELETE)
+indexRouter.post('/x10/:id/delete', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const anonymousId = req.anonymousId;
+
+  const x10 = getX10ById(id);
+  if (!x10) {
+    return res.status(404).render('error', {
+      title: 'Not found',
+      message: 'This x10 does not exist'
+    });
+  }
+
+  // Check ownership by anonymous_id (or user_id when auth is implemented)
+  const isOwner = x10.anonymous_id === anonymousId;
+  // TODO: Also check x10.user_id === currentUser.id when auth is implemented
+
+  if (!isOwner) {
+    return res.status(403).render('error', {
+      title: 'Not authorized',
+      message: 'You are not allowed to delete this x10'
+    });
+  }
+
+  const success = deleteX10(id);
+  if (success) {
+    res.redirect('/dashboard');
+  } else {
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Could not delete the x10'
+    });
+  }
 });
