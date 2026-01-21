@@ -258,42 +258,68 @@ function injectStyles() {
       color: #dc2626;
     }
 
-    /* Mini button for thumbnails */
+    /* Mini button - YouTube-style for overlay integration */
     .x10tube-mini-btn {
-      position: absolute !important;
-      bottom: 4px !important;
-      left: 4px !important;
-      width: 26px !important;
-      height: 26px !important;
-      background: #dc2626 !important;
-      border: 2px solid white !important;
-      border-radius: 6px !important;
+      width: 28px !important;
+      height: 28px !important;
+      background: rgba(0, 0, 0, 0.6) !important;
+      backdrop-filter: blur(4px) !important;
+      border: none !important;
+      border-radius: 2px !important;
       color: white !important;
-      font-size: 16px !important;
-      font-weight: bold !important;
+      font-size: 20px !important;
+      font-weight: 300 !important;
       cursor: pointer !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      z-index: 2147483647 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
       line-height: 1 !important;
       pointer-events: auto !important;
-      isolation: isolate !important;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
     .x10tube-mini-btn:hover {
-      background: #b91c1c !important;
-      transform: scale(1.15) !important;
+      background: rgba(0, 0, 0, 0.8) !important;
     }
     .x10tube-mini-btn.added {
-      background: #16a34a !important;
-      border-color: white !important;
+      background: rgba(22, 163, 74, 0.8) !important;
     }
     .x10tube-mini-btn.adding {
-      opacity: 0.6 !important;
+      opacity: 0.5 !important;
       pointer-events: none !important;
+    }
+
+    /* Button in YouTube's overlay container (new structure) */
+    .x10tube-btn-wrapper {
+      display: inline-block !important;
+    }
+    .x10tube-mini-btn-overlay {
+      /* Matches YouTube's button style */
+      width: 28px !important;
+      height: 28px !important;
+    }
+
+    /* Fallback: button directly in thumbnail (old structure) */
+    ytd-thumbnail .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
+    #hover-overlays .x10tube-mini-btn:not(.x10tube-mini-btn-overlay) {
+      position: absolute !important;
+      top: 4px !important;
+      right: 4px !important;
+      z-index: 2147483647 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      transition: opacity 0.15s ease !important;
+    }
+    ytd-thumbnail:hover .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
+    ytd-video-renderer:hover .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
+    #hover-overlays:hover .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
+    .x10tube-mini-btn:not(.x10tube-mini-btn-overlay):hover {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    .x10tube-mini-btn.added:not(.x10tube-mini-btn-overlay) {
+      opacity: 1 !important;
+      visibility: visible !important;
     }
 
     /* Dropdown */
@@ -782,6 +808,63 @@ function extractVideoIdFromUrl(url) {
   return match ? match[1] : null;
 }
 
+function createMiniButton(videoId) {
+  const btn = document.createElement('button');
+  btn.className = 'x10tube-mini-btn';
+  btn.textContent = '+';  // Use textContent instead of innerHTML (Trusted Types)
+  btn.title = 'Add to X10Tube';
+  btn.dataset.videoId = videoId;
+
+  btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await handleMiniButtonClick(btn, videoId);
+  });
+
+  return btn;
+}
+
+function injectButtonIntoHoverOverlay(overlayContainer, videoId) {
+  if (overlayContainer.querySelector('.x10tube-mini-btn')) return;
+
+  const btn = createMiniButton(videoId);
+  btn.classList.add('x10tube-mini-btn-overlay');
+
+  // Create wrapper matching YouTube's button structure
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ytThumbnailHoverOverlayToggleActionsViewModelButton x10tube-btn-wrapper';
+  wrapper.appendChild(btn);
+
+  overlayContainer.appendChild(wrapper);
+}
+
+function setupHoverObserver(thumbnailViewModel, videoId) {
+  // Check if already has observer
+  if (thumbnailViewModel.dataset.x10Observer) return;
+  thumbnailViewModel.dataset.x10Observer = 'true';
+
+  // Observer to detect when YouTube adds the hover overlay
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          // Check if this is the hover overlay container
+          if (node.tagName.toLowerCase() === 'yt-thumbnail-hover-overlay-toggle-actions-view-model') {
+            injectButtonIntoHoverOverlay(node, videoId);
+          }
+          // Also check children in case it's wrapped
+          const overlay = node.querySelector?.('yt-thumbnail-hover-overlay-toggle-actions-view-model');
+          if (overlay) {
+            injectButtonIntoHoverOverlay(overlay, videoId);
+          }
+        }
+      }
+    }
+  });
+
+  observer.observe(thumbnailViewModel, { childList: true, subtree: true });
+}
+
 function injectMiniButtons() {
   // Universal selector: target ALL video links
   const videoLinks = document.querySelectorAll('a[href*="/watch?v="]:not([data-x10-processed]), a[href*="/shorts/"]:not([data-x10-processed])');
@@ -793,53 +876,62 @@ function injectMiniButtons() {
     const videoId = extractVideoIdFromUrl(link.href);
     if (!videoId) return;
 
-    // Find the best container for the button
-    // Priority order based on real YouTube DOM inspection:
-    // 1. NEW structure: .yt-lockup-view-model (div class, for watch sidebar & home)
-    // 2. OLD structure: ytd-thumbnail (for search page)
-    // 3. Fallback to video renderers
-    const container =
-      link.closest('.yt-lockup-view-model') ||  // NEW: Watch sidebar, Home (2024+)
-      link.closest('ytd-thumbnail') ||           // OLD: Search page
-      link.closest('ytd-video-renderer') ||
-      link.closest('ytd-compact-video-renderer') ||
-      link.closest('ytd-rich-item-renderer') ||
-      link.closest('ytd-grid-video-renderer');
-
-    if (!container) return;
-
-    // Skip if already has button
-    if (container.querySelector('.x10tube-mini-btn')) return;
-
     // Skip player areas
-    if (container.closest('#movie_player') || container.closest('ytd-miniplayer') || container.closest('#player')) return;
+    if (link.closest('#movie_player') || link.closest('ytd-miniplayer') || link.closest('#player')) return;
 
-    // Skip small elements (avatars, channel icons) - only check if element is rendered
-    const rect = container.getBoundingClientRect();
-    if (rect.width > 0 && rect.width < 80) return;
+    // NEW structure: yt-thumbnail-view-model (sidebar, home)
+    const thumbnailViewModel = link.closest('yt-lockup-view-model')?.querySelector('yt-thumbnail-view-model')
+      || link.closest('yt-thumbnail-view-model');
 
-    count++;
+    if (thumbnailViewModel) {
+      // Set up observer to inject button when hover overlay appears
+      setupHoverObserver(thumbnailViewModel, videoId);
 
-    // Create mini button
-    const btn = document.createElement('button');
-    btn.className = 'x10tube-mini-btn';
-    btn.innerHTML = '+';
-    btn.title = 'Add to X10Tube';
-    btn.dataset.videoId = videoId;
+      // Also check if overlay already exists (e.g., from previous hover)
+      const existingOverlay = thumbnailViewModel.querySelector('yt-thumbnail-hover-overlay-toggle-actions-view-model');
+      if (existingOverlay) {
+        injectButtonIntoHoverOverlay(existingOverlay, videoId);
+      }
+      count++;
+      return;
+    }
 
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      await handleMiniButtonClick(btn, videoId);
-    });
+    // OLD structure (search page): ytd-thumbnail
+    const thumbnail = link.closest('ytd-thumbnail');
+    if (thumbnail) {
+      // For old structure, add button directly to thumbnail (shown on hover via CSS)
+      if (thumbnail.querySelector('.x10tube-mini-btn')) return;
 
-    // Ensure container has relative positioning
-    container.style.position = 'relative';
-    container.appendChild(btn);
+      const rect = thumbnail.getBoundingClientRect();
+      if (rect.width > 0 && rect.width < 80) return;
+
+      const btn = createMiniButton(videoId);
+      thumbnail.style.position = 'relative';
+      thumbnail.appendChild(btn);
+      count++;
+      return;
+    }
+
+    // Fallback: other containers
+    const container = link.closest('ytd-video-renderer') ||
+      link.closest('ytd-rich-item-renderer') ||
+      link.closest('.yt-lockup-view-model');
+
+    if (container) {
+      if (container.querySelector('.x10tube-mini-btn')) return;
+
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 0 && rect.width < 80) return;
+
+      const btn = createMiniButton(videoId);
+      container.style.position = 'relative';
+      container.appendChild(btn);
+      count++;
+    }
   });
 
   if (count > 0) {
-    console.log('[X10Tube] Mini buttons added:', count);
+    console.log('[X10Tube] Mini buttons setup:', count);
   }
 }
 
@@ -865,7 +957,7 @@ async function handleMiniButtonClick(btn, videoId) {
   if (result.success) {
     btn.classList.remove('adding');
     btn.classList.add('added');
-    btn.innerHTML = '✓';
+    btn.textContent = '✓';  // Use textContent (Trusted Types)
     showToast('Added to X10Tube!', 'success');
   } else {
     btn.classList.remove('adding');

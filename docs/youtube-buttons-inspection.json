@@ -1,0 +1,248 @@
+{
+  "search": {
+    "buttons": [
+      {
+        "ariaLabel": "JavaScript Visualized - Event Loop, Web APIs, (Micro)task Queue 12 minutes, 35 seconds",
+        "tag": "a",
+        "classes": "yt-simple-endpoint style-scope ytd-video-renderer",
+        "ancestors": [
+          {
+            "tag": "a",
+            "id": "video-title",
+            "classes": "yt-simple-endpoint style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "h3",
+            "id": null,
+            "classes": "title-and-badge style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": "title-wrapper",
+            "classes": "style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": "meta",
+            "classes": "style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "text-wrapper style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": "dismissible",
+            "classes": "style-scope ytd-video-renderer"
+          }
+        ]
+      },
+      {
+        "ariaLabel": "JavaScript Visualized - Event Loop, Web APIs, (Micro)task Queue 12 minutes, 35 seconds",
+        "tag": "yt-formatted-string",
+        "classes": "style-scope ytd-video-renderer",
+        "ancestors": [
+          {
+            "tag": "yt-formatted-string",
+            "id": null,
+            "classes": "style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "a",
+            "id": "video-title",
+            "classes": "yt-simple-endpoint style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "h3",
+            "id": null,
+            "classes": "title-and-badge style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": "title-wrapper",
+            "classes": "style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": "meta",
+            "classes": "style-scope ytd-video-renderer"
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "text-wrapper style-scope ytd-video-renderer"
+          }
+        ]
+      },
+      {
+        "ariaLabel": "Watch Later",
+        "tag": "button",
+        "classes": "ytp-watch-later-button ytp-button",
+        "ancestors": [
+          {
+            "tag": "button",
+            "id": null,
+            "classes": "ytp-watch-later-button ytp-button"
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "ytp-overflow-panel-action-buttons"
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "ytp-overflow-panel-content"
+          },
+          {
+            "tag": "div",
+            "id": "ytp-id-16",
+            "classes": "ytp-overflow-panel"
+          },
+          {
+            "tag": "div",
+            "id": "movie_player",
+            "classes": "html5-video-player ytp-transparent ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-exp-ppp-update"
+          },
+          {
+            "tag": "div",
+            "id": "container",
+            "classes": "style-scope ytd-player"
+          }
+        ]
+      },
+      {
+        "ariaLabel": "Watch Later",
+        "tag": "button",
+        "classes": "ytp-watch-later-button ytp-button",
+        "ancestors": [
+          {
+            "tag": "button",
+            "id": null,
+            "classes": "ytp-watch-later-button ytp-button"
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "ytp-overflow-panel-action-buttons"
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "ytp-overflow-panel-content"
+          },
+          {
+            "tag": "div",
+            "id": "ytp-id-32",
+            "classes": "ytp-overflow-panel"
+          },
+          {
+            "tag": "div",
+            "id": "inline-preview-player",
+            "classes": "html5-video-player ytp-hide-controls ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-exp-ppp-update"
+          },
+          {
+            "tag": "div",
+            "id": "container",
+            "classes": "style-scope ytd-player"
+          }
+        ]
+      }
+    ],
+    "overlayContainers": [],
+    "hoverOverlaysHTML": "",
+    "hoverOverlaysChildren": [],
+    "overlaysChildren": [
+      {
+        "tag": "ytd-thumbnail-overlay-time-status-renderer",
+        "classes": "style-scope ytd-thumbnail"
+      },
+      {
+        "tag": "ytd-thumbnail-overlay-now-playing-renderer",
+        "classes": "style-scope ytd-thumbnail"
+      }
+    ]
+  },
+  "watchSidebar": {
+    "buttons": [
+      {
+        "ariaLabel": "Watch Later",
+        "tag": "button",
+        "classes": "yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--overlay-dark yt-spec-button-shape-next--size-s yt-spec-button-shape-next--icon-button yt-spec-button-shape-next--override-small-size-icon yt-spec-button-shape-next--enable-backdrop-filter-experiment",
+        "ancestors": [
+          {
+            "tag": "button",
+            "id": null,
+            "classes": "yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--overlay-dark yt-spec-button-shape-next--size-s yt-spec-button-shape-next--icon-button"
+          },
+          {
+            "tag": "button-view-model",
+            "id": null,
+            "classes": "ytSpecButtonViewModelHost"
+          },
+          {
+            "tag": "toggle-button-view-model",
+            "id": null,
+            "classes": ""
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "ytThumbnailHoverOverlayToggleActionsViewModelButton"
+          },
+          {
+            "tag": "yt-thumbnail-hover-overlay-toggle-actions-view-model",
+            "id": null,
+            "classes": "ytThumbnailHoverOverlayToggleActionsViewModelHost"
+          },
+          {
+            "tag": "yt-thumbnail-view-model",
+            "id": null,
+            "classes": "ytThumbnailViewModelHost ytThumbnailViewModelAspectRatio16By9 ytThumbnailViewModelMedium"
+          }
+        ]
+      },
+      {
+        "ariaLabel": "Add to queue",
+        "tag": "button",
+        "classes": "yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--overlay-dark yt-spec-button-shape-next--size-s yt-spec-button-shape-next--icon-button yt-spec-button-shape-next--override-small-size-icon yt-spec-button-shape-next--enable-backdrop-filter-experiment",
+        "ancestors": [
+          {
+            "tag": "button",
+            "id": null,
+            "classes": "yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--overlay-dark yt-spec-button-shape-next--size-s yt-spec-button-shape-next--icon-button"
+          },
+          {
+            "tag": "button-view-model",
+            "id": null,
+            "classes": "ytSpecButtonViewModelHost"
+          },
+          {
+            "tag": "toggle-button-view-model",
+            "id": null,
+            "classes": ""
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": "ytThumbnailHoverOverlayToggleActionsViewModelButton"
+          },
+          {
+            "tag": "yt-thumbnail-hover-overlay-toggle-actions-view-model",
+            "id": null,
+            "classes": "ytThumbnailHoverOverlayToggleActionsViewModelHost"
+          },
+          {
+            "tag": "yt-thumbnail-view-model",
+            "id": null,
+            "classes": "ytThumbnailViewModelHost ytThumbnailViewModelAspectRatio16By9 ytThumbnailViewModelMedium"
+          }
+        ]
+      }
+    ],
+    "structure": {
+      "innerHTML": "<yt-touch-feedback-shape aria-hidden=\"true\" class=\"yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--touch-response yt-spec-touch-feedback-shape--thumbnail-size-medium yt-spec-touch-feedback-shape--trigger-events yt-spec-touch-feedback-shape--hovered\"><div class=\"yt-spec-touch-feedback-shape__stroke\"></div><div class=\"yt-spec-touch-feedback-shape__fill\"></div></yt-touch-feedback-shape><a href=\"/watch?v=ZnH9WjE7x8c&amp;list=RDZnH9WjE7x8c&amp;start_radio=1&amp;pp=oAcB\" rel=\"nofollow\" class=\"yt-lockup-view-model__content-image\" aria-haspopup=\"false\" tabindex=\"-1\" aria-hidden=\"true\" style=\"width: 168px;\"><yt-thumbnail-view-model class=\"ytThumbnailViewModelHost ytThumbnailViewModelAspectRatio16By9 ytThumbnailViewModelMedium\"><div class=\"ytThumbnailViewModelImage\"><img alt=\"\" class=\"ytCoreImageHost ytCoreImageFillParentHeight ytCoreImageFillParentWidth ytCoreImageContentModeScaleAspectFill ytCoreImageLoaded\" src=\"https://i.ytimg.com/vi/ZnH9WjE7x8c/hqdefault.jpg?sqp=-oaymwEmCKgBEF5IWvKriqkDGQgBFQAAiEIYAdgBAeIBCggYEAIYBjgBQAE=&amp;rs=AOn4CLBr0YUZSmZFajhSkzJwbPI-cdd8yw\"></div><!----><yt-thumbnail-hover-overlay-toggle-actions-view-model class=\"ytThumbnailHoverOverlayToggleActionsViewModelHost\"><div class=\"ytThumbnailHoverOverlayToggleActionsViewModelButton\"><toggle-button-view-model><button-view-model class=\"ytSpecButtonViewModelHost\"><button class=\"yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--overlay-dark yt-spec-button-shape-next--size-s yt-spec-button-shape-next--icon-button yt-spec-button-shape-next--override-small-size-icon yt-spec-button-shape-next--enable-backdrop-filter-experiment\" title=\"\" aria-pressed=\"false\" aria-label=\"Watch Later\" aria-disabled=\"false\" style=\"\"><div aria-hidden=\"true\" class=\"yt-spec-button-shape-next__icon\"><span class=\"ytIconWrapperHost\" style=\"width: 24px; height: 24px;\"><span class=\"yt-icon-shape ytSpecIconShapeHost\"><div style=\"width: 100%; height: 100%; display: block; filter: drop-shadow(0px 1px 4px rgba(0, 0, 0, 0.3)); fill: currentcolor;\"><svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" focusable=\"false\" aria-hidden=\"true\" style=\"pointer-events: none; display: inherit; width: 100%; height: 100%;\"><path d=\"M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 2a9 9 0 110 18.001A9 9 0 0112 3Zm0 3a1 1 0 00-1 1v5.565l.485.292 3.33 2a1 1 0 001.03-1.714L13 11.435V7a1 1 0 00-1-1Z\"></path></svg></div></span></span></div><yt-touch-feedback-shape aria-hidden=\"true\" class=\"yt-spec-touch-feedback-shape yt-spec-touch-feedback-shape--overlay-touch-response-inverse\"><div class=\"yt-spec-touch-feedback-shape__stroke\"></div><div class=\"yt-spec-touch-feedback-shape__fill\"></div></yt-touch-feedback-shape></button></button-view-model></toggle-button-view-model></div><div class=\"ytThumbnailHoverOverlayToggleActionsViewModelButton\"><toggle-button-view-model><button-view-model class=\"ytSpecButtonViewModelHost\"><button class=\"yt-spec-button-"
+    }
+  }
+}
