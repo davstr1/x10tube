@@ -106,16 +106,20 @@ class X10API {
 
       if (data.userCode) {
         this.userCode = data.userCode;
-        // Cache locally
-        await chrome.storage.local.set({ x10UserCode: data.userCode });
+        // Cache locally (only if extension context is valid)
+        if (isExtensionContextValid()) {
+          await chrome.storage.local.set({ x10UserCode: data.userCode });
+        }
       }
     } catch (error) {
       console.log('[X10Tube] Could not reach server:', error.message);
-      // Fallback to cached value
-      const cached = await chrome.storage.local.get(['x10UserCode']);
-      if (cached.x10UserCode) {
-        console.log('[X10Tube] Using cached userCode:', cached.x10UserCode);
-        this.userCode = cached.x10UserCode;
+      // Fallback to cached value (only if extension context is valid)
+      if (isExtensionContextValid()) {
+        const cached = await chrome.storage.local.get(['x10UserCode']);
+        if (cached.x10UserCode) {
+          console.log('[X10Tube] Using cached userCode:', cached.x10UserCode);
+          this.userCode = cached.x10UserCode;
+        }
       }
     }
   }
@@ -143,7 +147,10 @@ class X10API {
       const data = await response.json();
       if (data.success && data.userCode) {
         this.userCode = data.userCode;
-        await chrome.storage.local.set({ x10UserCode: data.userCode });
+        // Only save to storage if extension context is still valid
+        if (isExtensionContextValid()) {
+          await chrome.storage.local.set({ x10UserCode: data.userCode });
+        }
       }
       return data;
     } catch (error) {
@@ -204,25 +211,42 @@ function injectStyles() {
   const styles = document.createElement('style');
   styles.id = 'x10tube-styles';
   styles.textContent = `
+    /* X10Tube Overlay Container */
+    #x10tube-overlay {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    #movie_player:hover #x10tube-overlay,
+    #x10tube-overlay:hover,
+    #x10tube-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
     /* X10Tube Button */
     #x10tube-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 0 12px;
-      height: 36px;
-      background: transparent;
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.75);
       border: none;
-      border-radius: 18px;
+      border-radius: 8px;
       font-family: 'Roboto', sans-serif;
       font-size: 14px;
       font-weight: 500;
       color: #f1f1f1;
       cursor: pointer;
       transition: background 0.2s;
+      backdrop-filter: blur(4px);
     }
     #x10tube-btn:hover {
-      background: rgba(255,255,255,0.1);
+      background: rgba(0, 0, 0, 0.9);
     }
     #x10tube-btn .x10-logo {
       font-weight: 700;
@@ -233,9 +257,46 @@ function injectStyles() {
     #x10tube-btn .x10-logo-tube {
       color: #dc2626;
     }
-    #x10tube-btn .x10-arrow {
-      font-size: 10px;
-      margin-left: 2px;
+
+    /* Mini button for thumbnails */
+    .x10tube-mini-btn {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      width: 28px;
+      height: 28px;
+      background: rgba(220, 38, 38, 0.9);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      opacity: 1;
+      transition: opacity 0.2s, background 0.2s, transform 0.2s;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      pointer-events: auto;
+    }
+    .x10tube-mini-btn:hover {
+      background: #dc2626;
+    }
+    .x10tube-mini-btn.added {
+      background: #16a34a;
+      opacity: 1;
+    }
+    .x10tube-mini-btn.adding {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* Hover effects */
+    .x10tube-mini-btn:hover {
+      transform: scale(1.1);
+      background: rgba(220, 38, 38, 1);
     }
 
     /* Dropdown */
@@ -437,9 +498,9 @@ function createButton() {
   const btn = document.createElement('button');
   btn.id = 'x10tube-btn';
   btn.innerHTML = `
-    <span class="x10-logo"><span class="x10-logo-x10">X10</span><span class="x10-logo-tube">Tube</span></span>
-    <span class="x10-arrow">▼</span>
+    <span class="x10-logo">+ <span class="x10-logo-x10">X10</span><span class="x10-logo-tube">Tube</span></span>
   `;
+  btn.title = 'Add to X10Tube';
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -488,11 +549,15 @@ function createToast() {
 async function toggleDropdown() {
   const dropdown = document.getElementById('x10tube-dropdown');
   const btn = document.getElementById('x10tube-btn');
+  const overlay = document.getElementById('x10tube-overlay');
   if (!dropdown || !btn) return;
 
   if (isDropdownOpen) {
     closeDropdown();
   } else {
+    // Keep overlay visible while dropdown is open
+    if (overlay) overlay.classList.add('show');
+
     // Position dropdown below button
     const rect = btn.getBoundingClientRect();
     dropdown.style.top = (rect.bottom + 8) + 'px';
@@ -507,9 +572,13 @@ async function toggleDropdown() {
 
 function closeDropdown() {
   const dropdown = document.getElementById('x10tube-dropdown');
+  const overlay = document.getElementById('x10tube-overlay');
   if (dropdown) {
     dropdown.classList.remove('open');
     dropdown.style.display = 'none';
+  }
+  if (overlay) {
+    overlay.classList.remove('show');
   }
   isDropdownOpen = false;
 }
@@ -645,12 +714,12 @@ function escapeHtml(text) {
 // Injection Logic
 // ============================================
 
-function findActionBar() {
+function findVideoPlayer() {
+  // Try to find the video player container
   const selectors = [
-    '#top-level-buttons-computed',
-    'ytd-menu-renderer #top-level-buttons-computed',
-    '#actions #top-level-buttons-computed',
-    'ytd-watch-metadata #actions-inner #menu #top-level-buttons-computed'
+    '#movie_player',
+    '.html5-video-player',
+    '#player-container-inner'
   ];
 
   for (const selector of selectors) {
@@ -662,42 +731,187 @@ function findActionBar() {
 
 function injectButton() {
   if (!getVideoId()) return;
-  if (document.getElementById('x10tube-btn')) return;
+  if (document.getElementById('x10tube-overlay')) return;
 
-  const actionBar = findActionBar();
-  if (!actionBar) {
+  const player = findVideoPlayer();
+  if (!player) {
     setTimeout(injectButton, 1000);
     return;
+  }
+
+  // Ensure player has position relative for absolute positioning
+  const playerStyle = window.getComputedStyle(player);
+  if (playerStyle.position === 'static') {
+    player.style.position = 'relative';
   }
 
   injectStyles();
   createToast();
 
-  const container = document.createElement('div');
-  container.id = 'x10tube-container';
-  container.style.cssText = 'display: inline-flex; align-items: center;';
+  // Create overlay container
+  const overlay = document.createElement('div');
+  overlay.id = 'x10tube-overlay';
+  overlay.appendChild(createButton());
 
-  container.appendChild(createButton());
-  actionBar.appendChild(container);
+  player.appendChild(overlay);
 
   // Append dropdown to body to avoid overflow clipping
   document.body.appendChild(createDropdown());
 
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
-    if (isDropdownOpen && !e.target.closest('#x10tube-container') && !e.target.closest('#x10tube-dropdown')) {
+    if (isDropdownOpen && !e.target.closest('#x10tube-overlay') && !e.target.closest('#x10tube-dropdown')) {
       closeDropdown();
     }
   });
 
-  console.log('[X10Tube] Button injected');
+  console.log('[X10Tube] Button injected on video player');
 }
 
 function removeButton() {
-  const container = document.getElementById('x10tube-container');
-  if (container) container.remove();
+  const overlay = document.getElementById('x10tube-overlay');
+  if (overlay) overlay.remove();
   const dropdown = document.getElementById('x10tube-dropdown');
   if (dropdown) dropdown.remove();
+}
+
+// ============================================
+// Mini buttons on thumbnails
+// ============================================
+
+function extractVideoIdFromUrl(url) {
+  if (!url) return null;
+  const match = url.match(/[?&]v=([^&]+)/) || url.match(/\/shorts\/([^?&]+)/);
+  return match ? match[1] : null;
+}
+
+function injectMiniButtons() {
+  console.log('[X10Tube] injectMiniButtons called');
+
+  // Debug: what's on the page?
+  console.log('[X10Tube] DEBUG - ytd-rich-item-renderer:', document.querySelectorAll('ytd-rich-item-renderer').length);
+  console.log('[X10Tube] DEBUG - ytd-video-renderer:', document.querySelectorAll('ytd-video-renderer').length);
+  console.log('[X10Tube] DEBUG - ytd-compact-video-renderer:', document.querySelectorAll('ytd-compact-video-renderer').length);
+  console.log('[X10Tube] DEBUG - a[href*=watch]:', document.querySelectorAll('a[href*="/watch?v="]').length);
+
+  // Find thumbnail containers
+  const allThumbnails = document.querySelectorAll('ytd-thumbnail');
+  console.log('[X10Tube] Total ytd-thumbnail elements:', allThumbnails.length);
+
+  const thumbnails = document.querySelectorAll('ytd-thumbnail:not([data-x10-checked])');
+  console.log('[X10Tube] Unchecked thumbnails:', thumbnails.length);
+
+  let count = 0;
+  thumbnails.forEach((thumbnail, index) => {
+    thumbnail.setAttribute('data-x10-checked', 'true');
+
+    // Skip if it's part of the main player
+    if (thumbnail.closest('#movie_player')) {
+      console.log('[X10Tube] Skip: movie_player');
+      return;
+    }
+
+    // Skip mini player
+    if (thumbnail.closest('ytd-miniplayer')) {
+      console.log('[X10Tube] Skip: miniplayer');
+      return;
+    }
+
+    // Find the link inside the thumbnail
+    const link = thumbnail.querySelector('a[href*="/watch?v="], a[href*="/shorts/"]');
+    if (!link) {
+      console.log('[X10Tube] Skip: no link found in thumbnail', index);
+      return;
+    }
+
+    const videoId = extractVideoIdFromUrl(link.href);
+    if (!videoId) {
+      console.log('[X10Tube] Skip: no videoId from', link.href);
+      return;
+    }
+
+    // Check if button already exists
+    if (thumbnail.querySelector('.x10tube-mini-btn')) {
+      console.log('[X10Tube] Skip: button exists');
+      return;
+    }
+
+    count++;
+
+    // Create mini button
+    const btn = document.createElement('button');
+    btn.className = 'x10tube-mini-btn';
+    btn.innerHTML = '+';
+    btn.title = 'Add to X10Tube';
+    btn.dataset.videoId = videoId;
+
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await handleMiniButtonClick(btn, videoId);
+    });
+
+    // Ensure thumbnail has relative positioning
+    thumbnail.style.position = 'relative';
+    thumbnail.appendChild(btn);
+    console.log('[X10Tube] Added button for:', videoId);
+  });
+
+  console.log('[X10Tube] Mini buttons added this round:', count);
+}
+
+async function handleMiniButtonClick(btn, videoId) {
+  if (btn.classList.contains('adding') || btn.classList.contains('added')) return;
+
+  // Check if extension context is still valid
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
+  btn.classList.add('adding');
+
+  // Initialize API if needed
+  await api.init();
+
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  // Try to add to most recent x10, or create new one
+  const result = await api.createX10(videoUrl);
+
+  if (result.success) {
+    btn.classList.remove('adding');
+    btn.classList.add('added');
+    btn.innerHTML = '✓';
+    showToast('Added to X10Tube!', 'success');
+  } else {
+    btn.classList.remove('adding');
+    showToast(`Error: ${result.error}`, 'error');
+  }
+}
+
+// Periodically check for new thumbnails (YouTube loads dynamically)
+let miniButtonInterval = null;
+
+function startMiniButtonInjection() {
+  injectMiniButtons();
+  if (!miniButtonInterval) {
+    // Check every 5 seconds for new thumbnails (YouTube loads dynamically)
+    miniButtonInterval = setInterval(injectMiniButtons, 5000);
+  }
+}
+
+function stopMiniButtonInjection() {
+  if (miniButtonInterval) {
+    clearInterval(miniButtonInterval);
+    miniButtonInterval = null;
+  }
+  // Remove all mini buttons
+  document.querySelectorAll('.x10tube-mini-btn').forEach(btn => btn.remove());
+  // Reset injection markers
+  document.querySelectorAll('[data-x10-checked]').forEach(el => {
+    el.removeAttribute('data-x10-checked');
+  });
 }
 
 // ============================================
@@ -718,10 +932,15 @@ function onUrlChange() {
   closeDropdown();
   videoInX10s = [];
 
+  // Main button only on watch pages
   if (getVideoId()) {
     clearTimeout(injectionTimeout);
     injectionTimeout = setTimeout(injectButton, 1000);
   }
+
+  // Mini buttons on all pages - restart to clear old state
+  stopMiniButtonInjection();
+  setTimeout(startMiniButtonInjection, 1000);
 }
 
 const observer = new MutationObserver(() => {
@@ -731,6 +950,14 @@ const observer = new MutationObserver(() => {
 observer.observe(document.body, { subtree: true, childList: true });
 window.addEventListener('popstate', onUrlChange);
 
+// Initial injection
+injectStyles();
+createToast();
+
+// Main button on watch pages
 if (getVideoId()) {
   setTimeout(injectButton, 1500);
 }
+
+// Mini buttons on all pages
+setTimeout(startMiniButtonInjection, 2000);
