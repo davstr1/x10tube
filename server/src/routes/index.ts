@@ -102,9 +102,9 @@ indexRouter.post('/sync', (req: Request, res: Response) => {
   // Set the new cookie
   res.cookie('x10_anon', trimmedCode, {
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'none',
     maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
-    secure: process.env.NODE_ENV === 'production'
+    secure: true
   });
 
   // Redirect to dashboard with the new code

@@ -3,7 +3,7 @@
   "name": "X10Tube",
   "version": "2.0",
   "description": "Add YouTube videos to X10Tube for AI analysis",
-  "permissions": ["activeTab", "scripting", "storage", "tabs", "cookies"],
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
     "*://*.youtube.com/*",
     "*://www.youtube.com/*",
@@ -25,11 +25,6 @@
     {
       "matches": ["*://*.youtube.com/*"],
       "js": ["content.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["http://localhost:3000/*", "https://*.x10tube.com/*"],
-      "js": ["content-sync.js"],
       "run_at": "document_idle"
     }
   ],

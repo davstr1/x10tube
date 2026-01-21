@@ -23,12 +23,13 @@ export function anonymousMiddleware(req: Request, res: Response, next: NextFunct
     // Generate new anonymous ID
     anonymousId = nanoid(16);
 
-    // Set cookie - httpOnly, sameSite strict, 1 year expiry
+    // Set cookie - httpOnly, 1 year expiry
+    // sameSite: 'none' required for cross-origin requests from extension
     res.cookie(COOKIE_NAME, anonymousId, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: COOKIE_MAX_AGE,
-      secure: process.env.NODE_ENV === 'production'
+      secure: true // Required for sameSite: 'none' (Chrome allows this for localhost)
     });
   }
 

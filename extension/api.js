@@ -1,4 +1,5 @@
 // X10Tube API Client
+// Single source of truth: the server (via /api/whoami)
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 
@@ -9,65 +10,45 @@ class X10TubeAPI {
   }
 
   async init() {
-    const data = await chrome.storage.local.get(['x10BackendUrl', 'x10UserCode']);
+    // Get base URL from storage
+    const data = await chrome.storage.local.get(['x10BackendUrl']);
     if (data.x10BackendUrl) {
       this.baseUrl = data.x10BackendUrl;
     }
-    if (data.x10UserCode) {
-      this.userCode = data.x10UserCode;
-    } else {
-      // Try to read from website cookie
-      await this.syncFromCookie();
-    }
+
+    // Ask the SERVER who we are - server's cookie is the source of truth
+    await this.syncFromServer();
+
+    console.log('[X10Tube] Initialized with userCode:', this.userCode);
   }
 
-  async syncFromCookie() {
+  async syncFromServer() {
     try {
-      // Try localhost first (dev), then production domain
-      const urls = ['http://localhost:3000', 'https://x10tube.com'];
+      console.log('[X10Tube] Asking server /api/whoami...');
+      const response = await fetch(`${this.baseUrl}/api/whoami`, {
+        credentials: 'include' // This sends the httpOnly cookie!
+      });
 
-      for (const url of urls) {
-        const cookie = await chrome.cookies.get({ url, name: 'x10_user_code' });
-        if (cookie && cookie.value) {
-          this.userCode = cookie.value;
-          await chrome.storage.local.set({ x10UserCode: cookie.value });
-          console.log('[X10Tube] User code synced from cookie');
-          return true;
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('[X10Tube] Server says userCode:', data.userCode);
+
+      if (data.userCode) {
+        this.userCode = data.userCode;
+        // Cache locally (but server is always the source of truth)
+        await chrome.storage.local.set({ x10UserCode: data.userCode });
       }
     } catch (error) {
-      console.log('[X10Tube] Could not read cookie:', error.message);
-    }
-    return false;
-  }
-
-  async setUserCode(code) {
-    this.userCode = code;
-    await chrome.storage.local.set({ x10UserCode: code });
-
-    // Also set cookie on website so it's synced
-    await this.setCookieOnWebsite(code);
-  }
-
-  async setCookieOnWebsite(code) {
-    try {
-      const urls = [
-        { url: 'http://localhost:3000', domain: 'localhost' },
-        { url: 'https://x10tube.com', domain: 'x10tube.com' }
-      ];
-
-      for (const { url, domain } of urls) {
-        await chrome.cookies.set({
-          url,
-          name: 'x10_user_code',
-          value: code,
-          path: '/',
-          expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // 1 year
-        });
+      console.log('[X10Tube] Could not reach server:', error.message);
+      // Fallback to cached value if server unreachable
+      const cached = await chrome.storage.local.get(['x10UserCode']);
+      if (cached.x10UserCode) {
+        console.log('[X10Tube] Using cached userCode:', cached.x10UserCode);
+        this.userCode = cached.x10UserCode;
       }
-      console.log('[X10Tube] User code cookie set on website');
-    } catch (error) {
-      console.log('[X10Tube] Could not set cookie:', error.message);
     }
   }
 
@@ -100,9 +81,8 @@ class X10TubeAPI {
     try {
       const response = await fetch(`${this.baseUrl}/api/x10/add`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           url: videoUrl,
           userCode: this.userCode || undefined
@@ -112,9 +92,10 @@ class X10TubeAPI {
       const data = await response.json();
 
       if (data.success) {
-        // Save the user code if we got one back
-        if (data.userCode && !this.userCode) {
-          await this.setUserCode(data.userCode);
+        // Server may return a new userCode if we didn't have one
+        if (data.userCode) {
+          this.userCode = data.userCode;
+          await chrome.storage.local.set({ x10UserCode: data.userCode });
         }
         return { success: true, x10: data };
       } else {
@@ -131,9 +112,8 @@ class X10TubeAPI {
     try {
       const response = await fetch(`${this.baseUrl}/api/x10/${x10Id}/add`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           url: videoUrl,
           userCode: this.userCode
@@ -187,5 +167,7 @@ class X10TubeAPI {
   }
 }
 
-// Export singleton instance
-const api = new X10TubeAPI();
+// Export for popup
+if (typeof window !== 'undefined') {
+  window.X10TubeAPI = X10TubeAPI;
+}

@@ -6,7 +6,22 @@ export const apiRouter = Router();
 
 // CORS middleware for API routes
 apiRouter.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // For credentials to work, we need specific origin (not *)
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://www.youtube.com',
+    'https://youtube.com',
+    'http://localhost:3000',
+    'https://x10tube.com'
+  ];
+
+  if (origin && allowedOrigins.some(o => origin.startsWith(o) || origin.includes('youtube.com'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -15,6 +30,11 @@ apiRouter.use((req, res, next) => {
   }
 
   next();
+});
+
+// Get current user's identity (for extension sync)
+apiRouter.get('/whoami', (req: Request, res: Response) => {
+  res.json({ userCode: req.anonymousId });
 });
 
 // Get user's x10s

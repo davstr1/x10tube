@@ -1,5 +1,5 @@
 // X10Tube Content Script for YouTube
-// Injects button into YouTube interface and provides video info to popup
+// Injects button into YouTube interface
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 
@@ -59,7 +59,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ============================================
-// API Client (simplified for content script)
+// API Client (simplified - server is source of truth)
 // ============================================
 
 class X10API {
@@ -70,72 +70,53 @@ class X10API {
 
   async init() {
     if (!isExtensionContextValid()) {
-      console.log('[X10Tube] Extension context invalidated, please reload the page');
+      console.log('[X10Tube] Extension context invalidated');
       return false;
     }
+
     try {
-      const data = await chrome.storage.local.get(['x10BackendUrl', 'x10UserCode']);
+      // Get base URL from storage
+      const data = await chrome.storage.local.get(['x10BackendUrl']);
       if (data.x10BackendUrl) this.baseUrl = data.x10BackendUrl;
-      if (data.x10UserCode) {
-        this.userCode = data.x10UserCode;
-      } else {
-        // Try to read from website cookie
-        await this.syncFromCookie();
-      }
+
+      // Ask the SERVER who we are - server's cookie is the source of truth
+      await this.syncFromServer();
+
+      console.log('[X10Tube] Initialized with userCode:', this.userCode);
       return true;
     } catch (error) {
-      console.log('[X10Tube] Extension context invalidated:', error.message);
+      console.log('[X10Tube] Init error:', error.message);
       return false;
     }
   }
 
-  async syncFromCookie() {
+  async syncFromServer() {
     try {
-      const urls = ['http://localhost:3000', 'https://x10tube.com'];
-      for (const url of urls) {
-        const cookie = await chrome.cookies.get({ url, name: 'x10_user_code' });
-        if (cookie && cookie.value) {
-          this.userCode = cookie.value;
-          await chrome.storage.local.set({ x10UserCode: cookie.value });
-          console.log('[X10Tube] User code synced from cookie');
-          return true;
-        }
+      console.log('[X10Tube] Asking server /api/whoami...');
+      const response = await fetch(`${this.baseUrl}/api/whoami`, {
+        credentials: 'include' // This sends the httpOnly cookie!
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('[X10Tube] Server says userCode:', data.userCode);
+
+      if (data.userCode) {
+        this.userCode = data.userCode;
+        // Cache locally
+        await chrome.storage.local.set({ x10UserCode: data.userCode });
       }
     } catch (error) {
-      console.log('[X10Tube] Could not read cookie:', error.message);
-    }
-    return false;
-  }
-
-  async setUserCode(code) {
-    if (!isExtensionContextValid()) return;
-    this.userCode = code;
-    try {
-      await chrome.storage.local.set({ x10UserCode: code });
-      // Also set cookie on website so it's synced
-      await this.setCookieOnWebsite(code);
-    } catch (error) {
-      console.log('[X10Tube] Could not save user code:', error.message);
-    }
-  }
-
-  async setCookieOnWebsite(code) {
-    try {
-      const urls = [
-        { url: 'http://localhost:3000', domain: 'localhost' },
-        { url: 'https://x10tube.com', domain: 'x10tube.com' }
-      ];
-      for (const { url } of urls) {
-        await chrome.cookies.set({
-          url,
-          name: 'x10_user_code',
-          value: code,
-          path: '/',
-          expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
-        });
+      console.log('[X10Tube] Could not reach server:', error.message);
+      // Fallback to cached value
+      const cached = await chrome.storage.local.get(['x10UserCode']);
+      if (cached.x10UserCode) {
+        console.log('[X10Tube] Using cached userCode:', cached.x10UserCode);
+        this.userCode = cached.x10UserCode;
       }
-    } catch (error) {
-      console.log('[X10Tube] Could not set cookie:', error.message);
     }
   }
 
@@ -156,11 +137,13 @@ class X10API {
       const response = await fetch(`${this.baseUrl}/api/x10/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ url: videoUrl, userCode: this.userCode || undefined })
       });
       const data = await response.json();
-      if (data.success && data.userCode && !this.userCode) {
-        await this.setUserCode(data.userCode);
+      if (data.success && data.userCode) {
+        this.userCode = data.userCode;
+        await chrome.storage.local.set({ x10UserCode: data.userCode });
       }
       return data;
     } catch (error) {
@@ -174,6 +157,7 @@ class X10API {
       const response = await fetch(`${this.baseUrl}/api/x10/${x10Id}/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ url: videoUrl, userCode: this.userCode })
       });
       return await response.json();
@@ -538,7 +522,7 @@ async function loadX10sForDropdown() {
 
   const initOk = await api.init();
   if (!initOk) {
-    listEl.innerHTML = '<div class="x10-empty">Please reload the page</div>';
+    listEl.innerHTML = '<div class="x10-empty">Could not connect</div>';
     return;
   }
 
@@ -662,7 +646,6 @@ function escapeHtml(text) {
 // ============================================
 
 function findActionBar() {
-  // Try different selectors for YouTube's action bar
   const selectors = [
     '#top-level-buttons-computed',
     'ytd-menu-renderer #top-level-buttons-computed',
@@ -683,7 +666,6 @@ function injectButton() {
 
   const actionBar = findActionBar();
   if (!actionBar) {
-    // Retry later
     setTimeout(injectButton, 1000);
     return;
   }
@@ -691,7 +673,6 @@ function injectButton() {
   injectStyles();
   createToast();
 
-  // Create container for button
   const container = document.createElement('div');
   container.id = 'x10tube-container';
   container.style.cssText = 'display: inline-flex; align-items: center;';
@@ -733,29 +714,23 @@ function onUrlChange() {
   lastUrl = newUrl;
   console.log('[X10Tube] URL changed:', newUrl);
 
-  // Remove old button
   removeButton();
   closeDropdown();
   videoInX10s = [];
 
-  // Inject new button if on video page
   if (getVideoId()) {
     clearTimeout(injectionTimeout);
     injectionTimeout = setTimeout(injectButton, 1000);
   }
 }
 
-// Watch for URL changes (YouTube is SPA)
 const observer = new MutationObserver(() => {
   onUrlChange();
 });
 
 observer.observe(document.body, { subtree: true, childList: true });
-
-// Also listen to popstate
 window.addEventListener('popstate', onUrlChange);
 
-// Initial injection
 if (getVideoId()) {
   setTimeout(injectButton, 1500);
 }
