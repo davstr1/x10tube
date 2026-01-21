@@ -13,35 +13,37 @@ block content
         - const firstVideo = x10.videos[0]
         - const thumbnailUrl = firstVideo ? `https://img.youtube.com/vi/${firstVideo.youtube_id}/mqdefault.jpg` : null
 
-        .bg-white.border.border-gray-200.rounded-md.overflow-hidden
-          .flex
+        .bg-white.border.border-gray-200.rounded-lg.overflow-hidden.hover_border-gray-300.transition-colors
+          .flex.gap-4.p-4
             //- Thumbnail (first video)
             if thumbnailUrl
-              a.flex-shrink-0(href=`/s/${x10.id}`)
-                img.w-32.h-20.object-cover(src=thumbnailUrl alt=x10.title || 'Untitled')
+              a.flex-shrink-0.block(href=`/s/${x10.id}`)
+                img.w-36.h-20.object-cover.rounded-md(src=thumbnailUrl alt=x10.title || 'Untitled')
 
-            .p-3.flex-1
-              .flex.justify-between.items-start.mb-2
-                div
-                  h3.font-semibold.text-gray-900= x10.title || 'Untitled'
-                  p.text-sm.text-gray-500 #{x10.videos.length} videos · #{tokenDisplay}
-                span.text-sm.text-gray-400= date
+            .flex-1.min-w-0
+              //- Header row
+              .flex.justify-between.items-start.gap-2.mb-2
+                div.min-w-0
+                  a.block(href=`/s/${x10.id}`)
+                    h3.font-semibold.text-gray-900.hover_text-red-600.transition-colors.truncate= x10.title || 'Untitled'
+                  p.text-sm.text-gray-500.mt-0.5
+                    | #{x10.videos.length} video#{x10.videos.length > 1 ? 's' : ''}
+                    span.mx-1 ·
+                    | #{tokenDisplay}
+                span.text-xs.text-gray-400.flex-shrink-0= date
 
-              .text-sm.space-x-2
-                a.text-blue-600.underline(href=`/s/${x10.id}`) Open
-                span.text-gray-300 ·
-                a.text-blue-600.underline(href=`https://claude.ai/new` target="_blank") Claude
-                span.text-gray-300 ·
-                a.text-blue-600.underline(href=`https://chat.openai.com` target="_blank") ChatGPT
-                span.text-gray-300 ·
-                button.text-blue-600.underline(
+              //- Actions row
+              .flex.items-center.gap-3.text-sm
+                a.text-blue-600.hover_text-blue-800(href=`/s/${x10.id}`) Open
+                a.text-blue-600.hover_text-blue-800(href=`https://claude.ai/new` target="_blank") Claude
+                a.text-blue-600.hover_text-blue-800(href=`https://chat.openai.com` target="_blank") ChatGPT
+                button.text-blue-600.hover_text-blue-800(
                   type="button"
-                  onclick=`navigator.clipboard.writeText(window.location.origin + '/s/${x10.id}'); alert('Copied!')`
+                  onclick=`navigator.clipboard.writeText(window.location.origin + '/s/${x10.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy link', 1500)`
                 ) Copy link
-                span.text-gray-300 ·
                 form.inline(action=`/api/x10/${x10.id}` method="POST" style="display:inline")
                   input(type="hidden" name="_method" value="DELETE")
-                  button.text-gray-600.hover_text-red-600.underline(type="submit" onclick="return confirm('Delete this x10?')") Delete
+                  button.text-gray-400.hover_text-red-600(type="submit" onclick="return confirm('Delete this x10?')") Delete
 
   else
     .text-center.py-16

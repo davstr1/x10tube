@@ -5,19 +5,22 @@ html(lang="en")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title= title
     link(href="/styles.css" rel="stylesheet")
-  body.bg-white.text-gray-800.min-h-screen.flex.flex-col
-    header.max-w-2xl.mx-auto.w-full.px-4.py-4.flex.justify-between.items-center
-      a.text-lg.font-semibold.no-underline(href="/")
-        span.text-gray-800 x10
-        span.text-red-600 tube
-      nav
-        if currentUser
-          a.text-sm.text-gray-600.hover_text-gray-900(href="/dashboard") dashboard
-        else
-          a.text-sm.text-gray-600.hover_text-gray-900(href="/login") log in
+  body.bg-gray-50.text-gray-800.min-h-screen.flex.flex-col.antialiased
+    header.bg-white.border-b.border-gray-100
+      .max-w-2xl.mx-auto.w-full.px-4.py-4.flex.justify-between.items-center
+        a.text-xl.font-bold.no-underline.tracking-tight(href="/")
+          span.text-gray-900 x10
+          span.text-red-600 tube
+        nav.flex.items-center.gap-4
+          a.text-sm.text-gray-600.hover_text-gray-900.transition-colors(href="/dashboard") My x10s
+          if currentUser
+            a.text-sm.text-gray-600.hover_text-gray-900.transition-colors(href="/logout") Log out
+          else
+            a.text-sm.text-gray-600.hover_text-gray-900.transition-colors(href="/login") Log in
 
-    main.max-w-2xl.mx-auto.w-full.px-4.py-8.flex-1
+    main.max-w-2xl.mx-auto.w-full.px-4.py-10.flex-1
       block content
 
-    footer.max-w-2xl.mx-auto.w-full.px-4.py-8.border-t.border-gray-200.text-sm.text-gray-500
-      span x10tube
+    footer.bg-white.border-t.border-gray-100
+      .max-w-2xl.mx-auto.w-full.px-4.py-6.text-sm.text-gray-400
+        span x10tube
