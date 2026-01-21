@@ -13,10 +13,6 @@ html(lang="en")
           span.text-red-600 tube
         nav.flex.items-center.gap-4
           a.text-sm.text-gray-600.hover_text-gray-900.transition-colors(href="/dashboard") My x10s
-          if currentUser
-            a.text-sm.text-gray-600.hover_text-gray-900.transition-colors(href="/logout") Log out
-          else
-            a.text-sm.text-gray-600.hover_text-gray-900.transition-colors(href="/login") Log in
 
     main.max-w-2xl.mx-auto.w-full.px-4.py-10.flex-1
       block content

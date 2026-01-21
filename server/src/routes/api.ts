@@ -189,3 +189,80 @@ apiRouter.delete('/x10/:id', (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to delete x10' });
   }
 });
+
+// Add video from Chrome extension (creates new x10 or adds to most recent)
+apiRouter.post('/x10/add', async (req: Request, res: Response) => {
+  const { url, userCode } = req.body;
+
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ success: false, error: 'URL required' });
+  }
+
+  const videoId = extractVideoId(url);
+  if (!videoId) {
+    return res.status(400).json({ success: false, error: 'Invalid YouTube URL' });
+  }
+
+  try {
+    // Use the provided user code or generate a new one
+    const { nanoid } = await import('nanoid');
+    const anonymousId = userCode && userCode.trim() ? userCode.trim() : nanoid(16);
+
+    // Import the function to get x10s for anonymous user
+    const { getX10sForAnonymous } = await import('../services/x10.js');
+
+    // Get user's x10s to find the most recent one
+    const existingX10s = getX10sForAnonymous(anonymousId);
+
+    let x10Id: string;
+    let x10Url: string;
+
+    if (existingX10s.length > 0 && existingX10s[0].videos.length < 10) {
+      // Add to the most recent x10
+      const recentX10 = existingX10s[0];
+
+      // Check if video is already in this x10
+      const alreadyExists = recentX10.videos.some(v => v.youtube_id === videoId);
+      if (alreadyExists) {
+        return res.json({
+          success: true,
+          x10Id: recentX10.id,
+          x10Url: `/s/${recentX10.id}`,
+          userCode: anonymousId,
+          message: 'Video already in your most recent x10'
+        });
+      }
+
+      const video = await addVideoToX10(recentX10.id, url);
+      x10Id = recentX10.id;
+      x10Url = `/s/${recentX10.id}`;
+    } else {
+      // Create a new x10
+      const { x10, failed } = await createX10([url], null, null, anonymousId);
+
+      if (x10.videos.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: failed[0]?.error || 'Could not extract transcript'
+        });
+      }
+
+      x10Id = x10.id;
+      x10Url = `/s/${x10.id}`;
+    }
+
+    res.json({
+      success: true,
+      x10Id,
+      x10Url,
+      userCode: anonymousId
+    });
+
+  } catch (error) {
+    console.error('Error adding video from extension:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to add video'
+    });
+  }
+});

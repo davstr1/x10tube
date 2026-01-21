@@ -60,11 +60,47 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
   }
 });
 
-// Login page (placeholder for now)
-indexRouter.get('/login', (req: Request, res: Response) => {
-  res.render('login', {
-    title: 'Log in - x10tube'
+// Sync page - paste user code from another device
+indexRouter.get('/sync', (req: Request, res: Response) => {
+  res.render('sync', {
+    title: 'Sync - x10tube',
+    userCode: req.anonymousId
   });
+});
+
+// Handle sync - set the cookie to the provided code
+indexRouter.post('/sync', (req: Request, res: Response) => {
+  const { code } = req.body;
+
+  if (!code || typeof code !== 'string' || code.trim().length === 0) {
+    return res.status(400).render('sync', {
+      title: 'Sync - x10tube',
+      userCode: req.anonymousId,
+      error: 'Please enter a valid user code'
+    });
+  }
+
+  const trimmedCode = code.trim();
+
+  // Validate code format (should be 16 chars alphanumeric from nanoid)
+  if (!/^[A-Za-z0-9_-]{10,32}$/.test(trimmedCode)) {
+    return res.status(400).render('sync', {
+      title: 'Sync - x10tube',
+      userCode: req.anonymousId,
+      error: 'Invalid code format'
+    });
+  }
+
+  // Set the new cookie
+  res.cookie('x10_anon', trimmedCode, {
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+    secure: process.env.NODE_ENV === 'production'
+  });
+
+  // Redirect to dashboard with the new code
+  res.redirect('/dashboard');
 });
 
 // Dashboard - shows x10s for logged-in user OR anonymous user
@@ -76,7 +112,8 @@ indexRouter.get('/dashboard', (req: Request, res: Response) => {
 
   res.render('dashboard', {
     title: 'My x10s - x10tube',
-    x10s
+    x10s,
+    userCode: anonymousId
   });
 });
 

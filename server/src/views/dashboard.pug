@@ -5,6 +5,55 @@ block content
     h1.text-2xl.font-semibold.text-gray-900 My x10s
     a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/") + New
 
+  //- User code section
+  .bg-white.border.border-gray-200.rounded-lg.p-4.mb-8
+    .flex.justify-between.items-center
+      div
+        p.text-sm.text-gray-500.mb-1 Your user code
+        .flex.items-center.gap-2
+          code#user-code-display.text-sm.font-mono.text-gray-900.bg-gray-100.px-2.py-1.rounded ••••••••••••••••
+          button#toggle-code.text-gray-400.hover_text-gray-600(
+            type="button"
+            title="Show code"
+            style="padding: 4px;"
+          )
+            //- Eye open (show when hidden)
+            svg#eye-open(fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;")
+              path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z")
+              path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z")
+            //- Eye closed/slashed (show when visible)
+            svg#eye-closed(fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px; display: none;")
+              path(stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21")
+          button#copy-code.text-xs.text-blue-600.hover_text-blue-800(
+            type="button"
+          ) Copy
+      a.text-sm.text-gray-500.hover_text-gray-700(href="/sync") Sync from another device
+
+  script.
+    (function() {
+      const userCode = '#{userCode}';
+      const display = document.getElementById('user-code-display');
+      const toggleBtn = document.getElementById('toggle-code');
+      const copyBtn = document.getElementById('copy-code');
+      const eyeOpen = document.getElementById('eye-open');
+      const eyeClosed = document.getElementById('eye-closed');
+      let visible = false;
+
+      toggleBtn.addEventListener('click', function() {
+        visible = !visible;
+        display.textContent = visible ? userCode : '••••••••••••••••';
+        toggleBtn.title = visible ? 'Hide code' : 'Show code';
+        eyeOpen.style.display = visible ? 'none' : 'block';
+        eyeClosed.style.display = visible ? 'block' : 'none';
+      });
+
+      copyBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(userCode);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(function() { copyBtn.textContent = 'Copy'; }, 1500);
+      });
+    })();
+
   if x10s && x10s.length > 0
     .space-y-4
       each x10 in x10s

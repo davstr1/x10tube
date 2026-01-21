@@ -1,7 +1,8 @@
-// Content script for YouTube Captions Grabber
-// Based on youtube-caption-extractor method
+// Content script for x10tube
+// Extracts captions and sends to x10tube backend
 
 const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+const DEFAULT_BACKEND_URL = 'http://localhost:3000';
 const INNERTUBE_CONTEXT = {
   client: {
     clientName: 'WEB',
@@ -617,6 +618,75 @@ function injectFloatingUI() {
       height: 50px;
       margin-bottom: 0;
     }
+    #ytc-panel .x10-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #333;
+    }
+    #ytc-panel .x10-section h4 {
+      font-size: 13px;
+      color: #ff4d4d;
+      margin: 0 0 12px 0;
+      font-weight: 600;
+    }
+    #ytc-panel .x10-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    #ytc-panel .x10-btn:hover {
+      background: #b91c1c;
+    }
+    #ytc-panel .x10-btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    #ytc-panel .x10-btn.success {
+      background: #16a34a;
+    }
+    #ytc-panel .x10-settings {
+      margin-top: 12px;
+    }
+    #ytc-panel .x10-settings label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    #ytc-panel .x10-settings input {
+      width: 100%;
+      padding: 8px 12px;
+      background: #0f0f1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #eaeaea;
+      font-size: 12px;
+      font-family: monospace;
+      margin-bottom: 8px;
+    }
+    #ytc-panel .x10-settings input:focus {
+      outline: none;
+      border-color: #ff4d4d;
+    }
+    #ytc-panel .x10-link {
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      text-decoration: none;
+      margin-top: 8px;
+    }
+    #ytc-panel .x10-link:hover {
+      color: #ff4d4d;
+    }
   `;
   document.head.appendChild(styles);
 
@@ -654,6 +724,17 @@ function injectFloatingUI() {
         <div class="claude-settings">
           <label>Prompt Claude :</label>
           <textarea id="ytc-prompt">Résume-moi ça. On apprend quelque chose?</textarea>
+        </div>
+        <div class="x10-section">
+          <h4>x10tube</h4>
+          <button class="x10-btn" id="ytc-add-x10">Add to x10tube</button>
+          <div class="x10-settings">
+            <label>User code (to sync across devices):</label>
+            <input type="text" id="ytc-user-code" placeholder="Leave empty for a new code">
+            <label>Backend URL:</label>
+            <input type="text" id="ytc-backend-url" value="http://localhost:3000">
+          </div>
+          <a class="x10-link" id="ytc-open-dashboard" href="#" target="_blank">Open my x10s →</a>
         </div>
       </div>
     </div>
@@ -765,6 +846,91 @@ function injectFloatingUI() {
   // Save prompt on change
   document.getElementById('ytc-prompt').addEventListener('change', (e) => {
     chrome.storage.local.set({ claudePrompt: e.target.value });
+  });
+
+  // x10tube integration
+  const userCodeInput = document.getElementById('ytc-user-code');
+  const backendUrlInput = document.getElementById('ytc-backend-url');
+  const addX10Btn = document.getElementById('ytc-add-x10');
+  const openDashboardLink = document.getElementById('ytc-open-dashboard');
+
+  // Load saved x10tube settings
+  chrome.storage.local.get(['x10UserCode', 'x10BackendUrl'], (data) => {
+    if (data.x10UserCode) {
+      userCodeInput.value = data.x10UserCode;
+    }
+    if (data.x10BackendUrl) {
+      backendUrlInput.value = data.x10BackendUrl;
+    }
+    updateDashboardLink();
+  });
+
+  // Save settings on change
+  userCodeInput.addEventListener('change', () => {
+    chrome.storage.local.set({ x10UserCode: userCodeInput.value });
+    updateDashboardLink();
+  });
+
+  backendUrlInput.addEventListener('change', () => {
+    chrome.storage.local.set({ x10BackendUrl: backendUrlInput.value });
+    updateDashboardLink();
+  });
+
+  function updateDashboardLink() {
+    const backendUrl = backendUrlInput.value || DEFAULT_BACKEND_URL;
+    openDashboardLink.href = `${backendUrl}/dashboard`;
+  }
+
+  // Add to x10tube
+  addX10Btn.addEventListener('click', async () => {
+    const videoUrl = window.location.href;
+    const backendUrl = backendUrlInput.value || DEFAULT_BACKEND_URL;
+    const userCode = userCodeInput.value.trim();
+
+    addX10Btn.disabled = true;
+    addX10Btn.textContent = 'Adding...';
+
+    try {
+      const response = await fetch(`${backendUrl}/api/x10/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: videoUrl,
+          userCode: userCode || undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Save the user code if we got one back
+        if (data.userCode && !userCode) {
+          userCodeInput.value = data.userCode;
+          chrome.storage.local.set({ x10UserCode: data.userCode });
+        }
+
+        addX10Btn.textContent = 'Added! ✓';
+        addX10Btn.classList.add('success');
+
+        setTimeout(() => {
+          addX10Btn.textContent = 'Add to x10tube';
+          addX10Btn.classList.remove('success');
+          addX10Btn.disabled = false;
+        }, 2000);
+      } else {
+        throw new Error(data.error || 'Failed to add video');
+      }
+    } catch (error) {
+      console.error('[x10tube] Error:', error);
+      addX10Btn.textContent = 'Error: ' + error.message;
+      addX10Btn.disabled = false;
+
+      setTimeout(() => {
+        addX10Btn.textContent = 'Add to x10tube';
+      }, 3000);
+    }
   });
 }
 
