@@ -41,18 +41,24 @@ block content
   //- Videos list
   section.mb-8
     each video, index in x10.videos
+      - const thumbnailUrl = `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`
       .border.border-gray-200.rounded-md.mb-3.overflow-hidden
-        .p-4.flex.justify-between.items-start
-          div
-            h3.font-medium.text-gray-900
-              | #{index + 1}. #{video.title}
-            p.text-sm.text-gray-500
-              | #{video.channel} · #{video.duration}
-            a.text-xs.text-blue-600.underline(href=video.url target="_blank") watch on YouTube
+        .flex
+          //- Thumbnail
+          a.flex-shrink-0(href=video.url target="_blank")
+            img.w-40.h-24.object-cover(src=thumbnailUrl alt=video.title)
 
-          if isOwner || isOrphan
-            form(action=`/s/${x10.id}/remove/${video.id}` method="POST" style="display:inline")
-              button.text-gray-400.hover_text-red-600.text-lg(type="submit" title="Remove video") ×
+          //- Video info
+          .p-3.flex-1.flex.justify-between.items-start
+            div
+              h3.font-medium.text-gray-900.text-sm.leading-tight
+                | #{index + 1}. #{video.title}
+              p.text-xs.text-gray-500.mt-1
+                | #{video.channel} · #{video.duration}
+
+            if isOwner
+              form(action=`/s/${x10.id}/remove/${video.id}` method="POST" style="display:inline")
+                button.text-gray-400.hover_text-red-600.text-lg.ml-2(type="submit" title="Remove video") ×
 
         //- Transcript accordion
         details.border-t.border-gray-100
