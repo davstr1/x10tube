@@ -835,7 +835,8 @@ function injectButtonIntoHoverOverlay(overlayContainer, videoId) {
   wrapper.className = 'ytThumbnailHoverOverlayToggleActionsViewModelButton x10tube-btn-wrapper';
   wrapper.appendChild(btn);
 
-  overlayContainer.appendChild(wrapper);
+  // Insert as FIRST child so it appears at top (before Watch Later, Add to Queue)
+  overlayContainer.insertBefore(wrapper, overlayContainer.firstChild);
 }
 
 function setupHoverObserver(thumbnailViewModel, videoId) {
