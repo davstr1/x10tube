@@ -211,20 +211,17 @@ function injectStyles() {
 
     /* Dropdown */
     #x10tube-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      margin-top: 8px;
+      position: fixed;
       width: 280px;
       background: #282828;
       border-radius: 12px;
       box-shadow: 0 4px 32px rgba(0,0,0,0.4);
-      z-index: 9999;
+      z-index: 2147483647;
       overflow: hidden;
       display: none;
     }
     #x10tube-dropdown.open {
-      display: block;
+      display: block !important;
     }
 
     /* Dropdown header */
@@ -415,6 +412,7 @@ function createButton() {
     <span class="x10-arrow">▼</span>
   `;
   btn.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     toggleDropdown();
   });
@@ -460,12 +458,19 @@ function createToast() {
 
 async function toggleDropdown() {
   const dropdown = document.getElementById('x10tube-dropdown');
-  if (!dropdown) return;
+  const btn = document.getElementById('x10tube-btn');
+  if (!dropdown || !btn) return;
 
   if (isDropdownOpen) {
     closeDropdown();
   } else {
+    // Position dropdown below button
+    const rect = btn.getBoundingClientRect();
+    dropdown.style.top = (rect.bottom + 8) + 'px';
+    dropdown.style.left = Math.max(10, rect.right - 280) + 'px';
+
     dropdown.classList.add('open');
+    dropdown.style.display = 'block';
     isDropdownOpen = true;
     await loadX10sForDropdown();
   }
@@ -475,6 +480,7 @@ function closeDropdown() {
   const dropdown = document.getElementById('x10tube-dropdown');
   if (dropdown) {
     dropdown.classList.remove('open');
+    dropdown.style.display = 'none';
   }
   isDropdownOpen = false;
 }
@@ -640,21 +646,20 @@ function injectButton() {
   injectStyles();
   createToast();
 
-  // Create container for button + dropdown
+  // Create container for button
   const container = document.createElement('div');
   container.id = 'x10tube-container';
-  container.style.position = 'relative';
-  container.style.display = 'inline-flex';
-  container.style.alignItems = 'center';
+  container.style.cssText = 'display: inline-flex; align-items: center;';
 
   container.appendChild(createButton());
-  container.appendChild(createDropdown());
-
   actionBar.appendChild(container);
+
+  // Append dropdown to body to avoid overflow clipping
+  document.body.appendChild(createDropdown());
 
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
-    if (isDropdownOpen && !e.target.closest('#x10tube-container')) {
+    if (isDropdownOpen && !e.target.closest('#x10tube-container') && !e.target.closest('#x10tube-dropdown')) {
       closeDropdown();
     }
   });
@@ -665,6 +670,8 @@ function injectButton() {
 function removeButton() {
   const container = document.getElementById('x10tube-container');
   if (container) container.remove();
+  const dropdown = document.getElementById('x10tube-dropdown');
+  if (dropdown) dropdown.remove();
 }
 
 // ============================================

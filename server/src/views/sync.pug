@@ -1,6 +1,9 @@
 extends layout
 
 block content
+  //- Hidden element for extension to read user code
+  div(data-x10-user-code=userCode style="display:none")
+
   .max-w-md.mx-auto
 
     h1.text-2xl.font-semibold.text-gray-900.mb-2 Sync your x10s

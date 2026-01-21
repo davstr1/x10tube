@@ -26,6 +26,11 @@
       "matches": ["*://*.youtube.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://localhost:3000/*", "https://*.x10tube.com/*"],
+      "js": ["content-sync.js"],
+      "run_at": "document_idle"
     }
   ],
   "icons": {
