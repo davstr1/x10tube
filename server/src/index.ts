@@ -1,0 +1,41 @@
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+
+import './db.js'; // Initialize database
+import { indexRouter } from './routes/index.js';
+import { x10Router } from './routes/x10.js';
+import { apiRouter } from './routes/api.js';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Static files
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// View engine
+app.set('view engine', 'pug');
+app.set('views', path.join(process.cwd(), 'src', 'views'));
+
+// Routes
+app.use('/', indexRouter);
+app.use('/s', x10Router);
+app.use('/api', apiRouter);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).render('error', {
+    title: 'Not found',
+    message: 'Page not found'
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`x10tube server running at http://localhost:${PORT}`);
+});

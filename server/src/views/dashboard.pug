@@ -1,0 +1,48 @@
+extends layout
+
+block content
+  .flex.justify-between.items-center.mb-8
+    h1.text-2xl.font-semibold.text-gray-900 My x10s
+    a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/") + New
+
+  if x10s && x10s.length > 0
+    .space-y-4
+      each x10 in x10s
+        - const tokenDisplay = x10.tokenCount > 1000 ? `${Math.round(x10.tokenCount / 1000)}K tokens` : `${x10.tokenCount} tokens`
+        - const date = new Date(x10.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+        .bg-white.border.border-gray-200.rounded-md.p-4
+          .flex.justify-between.items-start.mb-2
+            div
+              h3.font-semibold.text-gray-900= x10.title || 'Untitled'
+              p.text-sm.text-gray-500 #{x10.videos.length} videos · #{tokenDisplay}
+            span.text-sm.text-gray-400= date
+
+          .text-sm.space-x-2
+            a.text-blue-600.underline(href=`/s/${x10.id}`) Open
+            span.text-gray-300 ·
+            a.text-blue-600.underline(href=`https://claude.ai/new` target="_blank") Claude
+            span.text-gray-300 ·
+            a.text-blue-600.underline(href=`https://chat.openai.com` target="_blank") ChatGPT
+            span.text-gray-300 ·
+            button.text-blue-600.underline(
+              type="button"
+              onclick=`navigator.clipboard.writeText(window.location.origin + '/s/${x10.id}'); alert('Copied!')`
+            ) Copy link
+            span.text-gray-300 ·
+            form.inline(action=`/api/x10/${x10.id}` method="POST" style="display:inline")
+              input(type="hidden" name="_method" value="DELETE")
+              button.text-gray-600.hover_text-red-600.underline(type="submit" onclick="return confirm('Delete this x10?')") Delete
+
+  else
+    .text-center.py-16
+      p.text-gray-500.mb-6 You don't have any x10s yet
+      a.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-md.text-sm.font-medium.no-underline(href="/")
+        | Create my first x10
+
+      p.mt-8.text-gray-500 or
+
+      p.mt-4.text-sm.text-gray-600
+        | Install the Chrome extension
+        br
+        | Add videos in one click from YouTube

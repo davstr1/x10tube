@@ -1,3 +1,8 @@
 .DS_Store
 *.log
 node_modules/
+
+# Server
+server/dist/
+server/x10tube.db
+server/public/styles.css

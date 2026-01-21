@@ -1,0 +1,70 @@
+extends layout
+
+block content
+  section.mb-12
+    if error
+      .bg-red-50.border.border-red-200.rounded-md.p-4.mb-6.text-red-700.text-sm
+        p= error
+        if failedUrls && failedUrls.length > 0
+          ul.mt-2.list-disc.list-inside
+            each fail in failedUrls
+              li #{fail.url}: #{fail.error}
+
+    form(action="/create" method="POST")
+      textarea.w-full.px-3.py-2.border.border-gray-200.rounded-md.text-base.focus_outline-none.focus_border-gray-400.resize-none.font-mono.text-sm(
+        name="urls"
+        rows="5"
+        placeholder="https://youtube.com/watch?v=...\nhttps://youtube.com/watch?v=...\n(one URL per line, up to 10)"
+        required
+      )
+      button.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
+        | Create my x10
+
+    p.mt-4.text-sm.text-gray-500.text-center
+      | or install the
+      a.text-blue-600.underline(href="#extension") Chrome extension
+      |  to collect videos as you browse
+
+  section.py-8.border-t.border-gray-200
+    p.text-lg.text-gray-700.mb-2
+      | Summarize and discuss multiple YouTube videos
+      br
+      | in ChatGPT, Claude, or your favorite LLM.
+    p.text-gray-500
+      | 10 videos. 10 minutes. Instead of 10 hours.
+
+  section.py-8.border-t.border-gray-200
+    h2.text-xl.font-semibold.mb-4 Why x10tube?
+    ul.space-y-2.text-gray-600
+      li No built-in chat to pay for
+      li Your LLM already knows you
+      li Shareable page with others
+
+  section.py-8.border-t.border-gray-200
+    h2.text-xl.font-semibold.mb-4 How it works
+    ol.space-y-2.text-gray-600.list-decimal.list-inside
+      li Paste your YouTube URLs
+      li We extract the transcripts
+      li Open the result in your LLM
+      li Ask your questions
+
+  section.py-8.border-t.border-gray-200
+    h2.text-xl.font-semibold.mb-4 FAQ
+
+    .space-y-4
+      div
+        h3.font-medium Is it free?
+        p.text-gray-600 Yes.
+
+      div
+        h3.font-medium Does it work with Claude/ChatGPT?
+        p.text-gray-600 Yes, and with any LLM that can read a URL.
+
+      div
+        h3.font-medium How many videos max?
+        p.text-gray-600
+          | We suggest 10, but it's a soft limit. The real limit depends on your LLM's capacity. Claude can read ~100K tokens, roughly 10-15 average videos. We show an estimate on each x10.
+
+      div
+        h3.font-medium Is my data stored?
+        p.text-gray-600 x10s are public. Log in to edit or delete.

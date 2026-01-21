@@ -1,0 +1,23 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title= title
+    link(href="/styles.css" rel="stylesheet")
+  body.bg-white.text-gray-800.min-h-screen.flex.flex-col
+    header.max-w-2xl.mx-auto.w-full.px-4.py-4.flex.justify-between.items-center
+      a.text-lg.font-semibold.no-underline(href="/")
+        span.text-gray-800 x10
+        span.text-red-600 tube
+      nav
+        if currentUser
+          a.text-sm.text-gray-600.hover_text-gray-900(href="/dashboard") dashboard
+        else
+          a.text-sm.text-gray-600.hover_text-gray-900(href="/login") log in
+
+    main.max-w-2xl.mx-auto.w-full.px-4.py-8.flex-1
+      block content
+
+    footer.max-w-2xl.mx-auto.w-full.px-4.py-8.border-t.border-gray-200.text-sm.text-gray-500
+      span x10tube

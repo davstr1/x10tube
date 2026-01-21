@@ -1,0 +1,87 @@
+extends layout
+
+block content
+  section.mb-8
+    //- Title (editable if owner)
+    if isOwner
+      form.inline(action=`/s/${x10.id}/title` method="POST")
+        input.text-2xl.font-semibold.text-gray-900.bg-transparent.border-b.border-transparent.hover_border-gray-300.focus_border-gray-400.focus_outline-none.w-full(
+          type="text"
+          name="title"
+          value=x10.title || 'Untitled'
+          placeholder="Give your x10 a title..."
+        )
+    else
+      h1.text-2xl.font-semibold.text-gray-900= x10.title || 'Untitled'
+
+    p.text-sm.text-gray-500.mt-1
+      | #{x10.videos.length} videos · #{tokenDisplay} · #{createdDate}
+
+  //- Action buttons
+  section.mb-8.flex.flex-wrap.gap-2
+    - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
+    - const claudePrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
+    - const chatgptPrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
+
+    a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(
+      href=`https://claude.ai/new?q=${claudePrompt}`
+      target="_blank"
+    ) Open in Claude
+
+    a.bg-gray-800.hover_bg-gray-900.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(
+      href=`https://chat.openai.com/?q=${chatgptPrompt}`
+      target="_blank"
+    ) Open in ChatGPT
+
+    button.bg-white.hover_bg-gray-50.text-gray-800.px-4.py-2.rounded-md.text-sm.border.border-gray-200(
+      type="button"
+      onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy .md link', 2000)`
+    ) Copy .md link
+
+  //- Videos list
+  section.mb-8
+    each video, index in x10.videos
+      .border.border-gray-200.rounded-md.mb-3.overflow-hidden
+        .p-4.flex.justify-between.items-start
+          div
+            h3.font-medium.text-gray-900
+              | #{index + 1}. #{video.title}
+            p.text-sm.text-gray-500
+              | #{video.channel} · #{video.duration}
+            a.text-xs.text-blue-600.underline(href=video.url target="_blank") watch on YouTube
+
+          if isOwner || isOrphan
+            form(action=`/s/${x10.id}/remove/${video.id}` method="POST" style="display:inline")
+              button.text-gray-400.hover_text-red-600.text-lg(type="submit" title="Remove video") ×
+
+        //- Transcript accordion
+        details.border-t.border-gray-100
+          summary.px-4.py-2.text-sm.text-gray-600.cursor-pointer.hover_bg-gray-50
+            | Show transcript
+          .px-4.py-3.bg-gray-50.text-sm.text-gray-700.max-h-64.overflow-y-auto
+            p.whitespace-pre-wrap= video.transcript
+
+  //- Add video form
+  if isOwner || isOrphan
+    section.mb-8.border-t.border-gray-200.pt-8
+      h3.text-lg.font-semibold.mb-4 Add a video
+
+      if x10.videos.length >= 10
+        p.text-sm.text-gray-500 Maximum 10 videos reached
+      else
+        form(action=`/s/${x10.id}/add` method="POST")
+          input.w-full.px-3.py-2.border.border-gray-200.rounded-md.text-sm.focus_outline-none.focus_border-gray-400.font-mono(
+            type="text"
+            name="url"
+            placeholder="Paste a YouTube URL..."
+            required
+          )
+          button.mt-2.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm(type="submit")
+            | Add
+
+  //- Copy to account button (for non-owners who are logged in)
+  if currentUser && !isOwner
+    section.border-t.border-gray-200.pt-8
+      form(action=`/api/x10/${x10.id}/fork` method="POST")
+        button.bg-white.hover_bg-gray-50.text-gray-800.px-4.py-2.rounded-md.text-sm.border.border-gray-200(type="submit")
+          | Copy to my account
