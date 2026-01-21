@@ -1,224 +1,288 @@
+// X10Tube Extension Popup
+
+// Import API (will be injected via manifest)
+let api;
+
+// DOM Elements
+const elements = {
+  loading: null,
+  videoInfo: null,
+  videoThumbnail: null,
+  videoTitle: null,
+  videoMeta: null,
+  notYoutube: null,
+  x10sSection: null,
+  x10sList: null,
+  emptyState: null,
+  createBtn: null,
+  dashboardLink: null,
+  syncLink: null,
+  logoLink: null,
+  toast: null,
+  toastMessage: null
+};
+
+// Current video info
+let currentVideo = null;
+let videoInX10s = [];
+
+// Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  const statusEl = document.getElementById('status');
-  const videoInfoEl = document.getElementById('video-info');
-  const videoTitleEl = document.getElementById('video-title');
-  const captionLanguageEl = document.getElementById('caption-language');
-  const trackSelectorEl = document.getElementById('track-selector');
-  const tracksSelect = document.getElementById('tracks');
-  const captionsContainer = document.getElementById('captions-container');
-  const captionsEl = document.getElementById('captions');
-  const copyBtn = document.getElementById('copy-btn');
-  const errorEl = document.getElementById('error');
-  const notYoutubeEl = document.getElementById('not-youtube');
-  const showTimecodesCheckbox = document.getElementById('show-timecodes');
-  const sendClaudeBtn = document.getElementById('send-claude-btn');
-  const claudePromptEl = document.getElementById('claude-prompt');
+  // Get DOM elements
+  elements.loading = document.getElementById('loading');
+  elements.videoInfo = document.getElementById('video-info');
+  elements.videoThumbnail = document.getElementById('video-thumbnail');
+  elements.videoTitle = document.getElementById('video-title');
+  elements.videoMeta = document.getElementById('video-meta');
+  elements.notYoutube = document.getElementById('not-youtube');
+  elements.x10sSection = document.getElementById('x10s-section');
+  elements.x10sList = document.getElementById('x10s-list');
+  elements.emptyState = document.getElementById('empty-state');
+  elements.createBtn = document.getElementById('create-btn');
+  elements.dashboardLink = document.getElementById('dashboard-link');
+  elements.syncLink = document.getElementById('sync-link');
+  elements.logoLink = document.getElementById('logo-link');
+  elements.toast = document.getElementById('toast');
+  elements.toastMessage = document.getElementById('toast-message');
 
-  let availableTracks = [];
-  let currentCaptions = '';
-  let currentCaptionsWithTimecodes = '';
+  // Initialize API
+  api = new X10TubeAPI();
+  await api.init();
 
-  // Load saved Claude prompt
-  const savedPrompt = await chrome.storage.local.get(['claudePrompt']);
-  if (savedPrompt.claudePrompt) {
-    claudePromptEl.value = savedPrompt.claudePrompt;
-  }
-
-  // Save Claude prompt on change
-  claudePromptEl.addEventListener('change', () => {
-    chrome.storage.local.set({ claudePrompt: claudePromptEl.value });
+  // Set up links
+  elements.dashboardLink.href = api.getDashboardUrl();
+  elements.dashboardLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: api.getDashboardUrl() });
   });
 
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  elements.syncLink.href = api.getSyncUrl();
+  elements.syncLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: api.getSyncUrl() });
+  });
 
-  // Check if we're on YouTube
-  if (!tab.url || !tab.url.includes('youtube.com/watch')) {
-    statusEl.classList.add('hidden');
-    notYoutubeEl.classList.remove('hidden');
-    return;
-  }
+  elements.logoLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: api.baseUrl });
+  });
 
-  // Show loading status
-  statusEl.textContent = 'Chargement des sous-titres';
-  statusEl.classList.add('loading');
+  // Set up create button
+  elements.createBtn.addEventListener('click', handleCreateX10);
 
+  // Check current tab
+  await checkCurrentTab();
+});
+
+async function checkCurrentTab() {
   try {
-    // Request captions from content script
-    const response = await chrome.tabs.sendMessage(tab.id, { action: 'getCaptions' });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    statusEl.classList.add('hidden');
-
-    if (!response.success) {
-      let errorHtml = `<strong>${response.error}</strong>`;
-
-      // Add debug info if available
-      if (response.debug) {
-        const debugInfo = [];
-        if (response.debug.reason) debugInfo.push(`Raison: ${response.debug.reason}`);
-        if (response.debug.playabilityStatus) debugInfo.push(`Statut: ${response.debug.playabilityStatus}`);
-        if (response.debug.jsonStatus) debugInfo.push(`HTTP JSON: ${response.debug.jsonStatus}`);
-        if (response.debug.xmlStatus) debugInfo.push(`HTTP XML: ${response.debug.xmlStatus}`);
-        if (response.debug.jsonError) debugInfo.push(`Erreur JSON: ${response.debug.jsonError}`);
-        if (response.debug.xmlError) debugInfo.push(`Erreur XML: ${response.debug.xmlError}`);
-        if (response.debug.jsonLength !== undefined) debugInfo.push(`Taille JSON: ${response.debug.jsonLength} chars`);
-        if (response.debug.xmlLength !== undefined) debugInfo.push(`Taille XML: ${response.debug.xmlLength} chars`);
-        if (response.debug.source) debugInfo.push(`Source: ${response.debug.source}`);
-        if (response.debug.baseUrl) debugInfo.push(`URL: ${response.debug.baseUrl}`);
-
-        if (debugInfo.length > 0) {
-          errorHtml += `<div class="debug-info">${debugInfo.join('<br>')}</div>`;
-        }
-
-        // Add response preview if available
-        if (response.debug.jsonPreview || response.debug.xmlPreview) {
-          const preview = response.debug.xmlPreview || response.debug.jsonPreview;
-          const escapedPreview = preview
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-          errorHtml += `<div class="response-preview"><strong>Aperçu réponse:</strong><pre>${escapedPreview}</pre></div>`;
-        }
-      }
-
-      errorEl.innerHTML = errorHtml;
-      errorEl.classList.remove('hidden');
-      console.log('Debug info:', response.debug);
+    if (!tab.url || !tab.url.includes('youtube.com/watch')) {
+      showNotYoutube();
+      await loadX10sList();
       return;
     }
 
-    // Show video info
-    videoTitleEl.textContent = response.title;
+    // Extract video ID from URL
+    const url = new URL(tab.url);
+    const videoId = url.searchParams.get('v');
 
-    let languageText = response.language;
-    if (response.isAutoGenerated) {
-      languageText += ' <span class="auto">(auto-généré)</span>';
-    }
-    captionLanguageEl.innerHTML = languageText;
-
-    videoInfoEl.classList.remove('hidden');
-
-    // Populate track selector if multiple tracks available
-    if (response.availableTracks && response.availableTracks.length > 1) {
-      availableTracks = response.availableTracks;
-      tracksSelect.innerHTML = '';
-
-      availableTracks.forEach((track, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = track.name + (track.isAutoGenerated ? ' (auto)' : '');
-        tracksSelect.appendChild(option);
-      });
-
-      trackSelectorEl.classList.remove('hidden');
+    if (!videoId) {
+      showNotYoutube();
+      await loadX10sList();
+      return;
     }
 
-    // Store both versions of captions
-    currentCaptions = response.captions;
-    currentCaptionsWithTimecodes = response.captionsWithTimecodes || response.captions;
+    // Get video info from content script
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'getVideoInfo' });
 
-    // Show captions (default: without timecodes)
-    captionsEl.value = currentCaptions;
-    captionsContainer.classList.remove('hidden');
-
-    // Handle timecode toggle
-    showTimecodesCheckbox.addEventListener('change', () => {
-      if (showTimecodesCheckbox.checked) {
-        captionsEl.value = currentCaptionsWithTimecodes;
+      if (response && response.success) {
+        currentVideo = {
+          id: videoId,
+          url: tab.url,
+          title: response.title,
+          channel: response.channel,
+          duration: response.duration
+        };
       } else {
-        captionsEl.value = currentCaptions;
+        // Fallback: use tab title
+        currentVideo = {
+          id: videoId,
+          url: tab.url,
+          title: tab.title.replace(' - YouTube', ''),
+          channel: '',
+          duration: ''
+        };
       }
-    });
+    } catch (e) {
+      // Content script not loaded, use fallback
+      currentVideo = {
+        id: videoId,
+        url: tab.url,
+        title: tab.title.replace(' - YouTube', ''),
+        channel: '',
+        duration: ''
+      };
+    }
+
+    showVideoInfo();
+    await loadX10sList();
 
   } catch (error) {
-    statusEl.classList.add('hidden');
+    console.error('[X10Tube Popup] Error:', error);
+    showNotYoutube();
+    await loadX10sList();
+  }
+}
 
-    let errorMessage = 'Erreur de communication avec la page.';
-    let debugInfo = error.message || error.toString();
+function showNotYoutube() {
+  elements.loading.classList.add('hidden');
+  elements.videoInfo.classList.add('hidden');
+  elements.notYoutube.classList.remove('hidden');
+  elements.createBtn.disabled = true;
+  elements.createBtn.textContent = 'Open a YouTube video first';
+}
 
-    if (error.message?.includes('Receiving end does not exist')) {
-      errorMessage = 'Le script n\'est pas chargé sur cette page.';
-      debugInfo = 'Rechargez la page YouTube (Ctrl+R ou Cmd+R) puis réessayez.';
-    } else if (error.message?.includes('Could not establish connection')) {
-      errorMessage = 'Impossible de se connecter à la page.';
-      debugInfo = 'Rechargez la page YouTube puis réessayez.';
+function showVideoInfo() {
+  elements.loading.classList.add('hidden');
+  elements.notYoutube.classList.add('hidden');
+  elements.videoInfo.classList.remove('hidden');
+
+  // Set thumbnail
+  const thumbnailUrl = `https://img.youtube.com/vi/${currentVideo.id}/mqdefault.jpg`;
+  elements.videoThumbnail.style.backgroundImage = `url(${thumbnailUrl})`;
+
+  // Set title
+  elements.videoTitle.textContent = currentVideo.title;
+
+  // Set meta (channel + duration)
+  const metaParts = [];
+  if (currentVideo.channel) metaParts.push(currentVideo.channel);
+  if (currentVideo.duration) metaParts.push(currentVideo.duration);
+  elements.videoMeta.textContent = metaParts.join(' · ') || 'YouTube video';
+
+  elements.createBtn.disabled = false;
+  elements.createBtn.textContent = '+ Create a new x10';
+}
+
+async function loadX10sList() {
+  const result = await api.getMyX10s();
+
+  elements.loading.classList.add('hidden');
+
+  if (result.x10s.length === 0) {
+    elements.x10sSection.classList.add('hidden');
+    elements.emptyState.classList.remove('hidden');
+  } else {
+    elements.emptyState.classList.add('hidden');
+    elements.x10sSection.classList.remove('hidden');
+
+    // Check which x10s contain this video
+    if (currentVideo) {
+      const checkResult = await api.checkVideoInX10s(currentVideo.id);
+      videoInX10s = checkResult.inX10s || [];
     }
 
-    errorEl.innerHTML = `<strong>${errorMessage}</strong><div class="debug-info">${debugInfo}</div>`;
-    errorEl.classList.remove('hidden');
-    console.error('Error:', error);
+    renderX10sList(result.x10s);
+  }
+}
+
+function renderX10sList(x10s) {
+  elements.x10sList.innerHTML = '';
+
+  x10s.forEach(x10 => {
+    const isInX10 = videoInX10s.includes(x10.id);
+
+    const item = document.createElement('button');
+    item.className = 'x10-item';
+    item.dataset.x10Id = x10.id;
+
+    item.innerHTML = `
+      <span class="x10-check">${isInX10 ? '✓' : ''}</span>
+      <span class="x10-name">${escapeHtml(x10.title || 'Untitled')}</span>
+      <span class="x10-count">${x10.videoCount} video${x10.videoCount > 1 ? 's' : ''}</span>
+    `;
+
+    if (!isInX10 && currentVideo) {
+      item.addEventListener('click', () => handleAddToX10(x10.id, x10.title));
+    } else if (isInX10) {
+      item.style.cursor = 'default';
+      item.title = 'Video already in this x10';
+    } else {
+      item.disabled = true;
+    }
+
+    elements.x10sList.appendChild(item);
+  });
+}
+
+async function handleCreateX10() {
+  if (!currentVideo) return;
+
+  elements.createBtn.disabled = true;
+  elements.createBtn.textContent = 'Creating...';
+
+  const result = await api.createX10(currentVideo.url);
+
+  if (result.success) {
+    showToast(`Created new x10!`, 'success');
+
+    // Open the new x10 page
+    setTimeout(() => {
+      chrome.tabs.create({ url: api.getX10Url(result.x10.x10Id) });
+    }, 500);
+  } else {
+    showToast(`Error: ${result.error}`, 'error');
+    elements.createBtn.disabled = false;
+    elements.createBtn.textContent = '+ Create a new x10';
+  }
+}
+
+async function handleAddToX10(x10Id, x10Title) {
+  if (!currentVideo) return;
+
+  // Find and disable the item
+  const item = elements.x10sList.querySelector(`[data-x10-id="${x10Id}"]`);
+  if (item) {
+    item.classList.add('adding');
   }
 
-  // Handle track selection change
-  tracksSelect.addEventListener('change', async () => {
-    const selectedTrack = availableTracks[tracksSelect.value];
+  const result = await api.addVideoToX10(x10Id, currentVideo.url);
 
-    captionsEl.value = 'Chargement...';
+  if (result.success) {
+    showToast(`Added to ${x10Title || 'x10'}`, 'success');
 
-    try {
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: 'getCaptionsForTrack',
-        url: selectedTrack.url
-      });
-
-      if (response.success) {
-        captionsEl.value = response.captions;
-
-        let languageText = selectedTrack.name;
-        if (selectedTrack.isAutoGenerated) {
-          languageText += ' <span class="auto">(auto-généré)</span>';
-        }
-        captionLanguageEl.innerHTML = languageText;
-      } else {
-        captionsEl.value = 'Erreur: ' + response.error;
-      }
-    } catch (error) {
-      captionsEl.value = 'Erreur lors du chargement';
-      console.error('Error:', error);
-    }
-  });
-
-  // Handle copy button
-  copyBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(captionsEl.value);
-      copyBtn.textContent = 'Copié !';
-      copyBtn.classList.add('copied');
-
-      setTimeout(() => {
-        copyBtn.textContent = 'Copier';
-        copyBtn.classList.remove('copied');
-      }, 2000);
-    } catch (error) {
-      // Fallback for older browsers
-      captionsEl.select();
-      document.execCommand('copy');
-      copyBtn.textContent = 'Copié !';
-      copyBtn.classList.add('copied');
-
-      setTimeout(() => {
-        copyBtn.textContent = 'Copier';
-        copyBtn.classList.remove('copied');
-      }, 2000);
-    }
-  });
-
-  // Handle send to Claude button
-  sendClaudeBtn.addEventListener('click', async () => {
-    const prompt = claudePromptEl.value.trim();
-    const captions = captionsEl.value;
-
-    if (!captions) {
-      return;
+    // Update the check mark
+    if (item) {
+      const checkSpan = item.querySelector('.x10-check');
+      if (checkSpan) checkSpan.textContent = '✓';
+      item.classList.remove('adding');
+      item.style.cursor = 'default';
     }
 
-    // Build the message
-    const message = `${prompt}\n\n---\n\n${captions}`;
+    videoInX10s.push(x10Id);
+  } else {
+    showToast(`Error: ${result.error}`, 'error');
+    if (item) {
+      item.classList.remove('adding');
+    }
+  }
+}
 
-    // Save the message to storage for the Claude content script to pick up
-    await chrome.storage.local.set({ pendingClaudeMessage: message });
+function showToast(message, type = '') {
+  elements.toastMessage.textContent = message;
+  elements.toast.className = 'toast' + (type ? ` ${type}` : '');
+  elements.toast.classList.remove('hidden');
 
-    // Open Claude.ai in a new tab
-    chrome.tabs.create({ url: 'https://claude.ai/new' });
-  });
-});
+  setTimeout(() => {
+    elements.toast.classList.add('hidden');
+  }, 3000);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}

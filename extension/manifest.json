@@ -1,10 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "x10tube",
+  "name": "X10Tube",
   "version": "2.0",
-  "description": "Add YouTube videos to x10tube for AI analysis",
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["*://*.youtube.com/*", "*://www.youtube.com/*", "*://claude.ai/*", "http://localhost:3000/*", "https://*.x10tube.com/*"],
+  "description": "Add YouTube videos to X10Tube for AI analysis",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://www.youtube.com/*",
+    "http://localhost:3000/*",
+    "https://*.x10tube.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -20,11 +25,6 @@
     {
       "matches": ["*://*.youtube.com/*"],
       "js": ["content.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["*://claude.ai/*"],
-      "js": ["claude-inject.js"],
       "run_at": "document_idle"
     }
   ],

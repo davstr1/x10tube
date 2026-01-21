@@ -1,53 +1,73 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Captions</title>
+  <title>X10Tube</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
-    <h1>YouTube Captions</h1>
+    <!-- Header -->
+    <header class="header">
+      <a href="#" class="logo" id="logo-link">
+        <span class="logo-x10">X10</span><span class="logo-tube">Tube</span>
+      </a>
+    </header>
 
-    <div id="status" class="status"></div>
-
+    <!-- Video info (shown when on YouTube video) -->
     <div id="video-info" class="video-info hidden">
-      <p class="title" id="video-title"></p>
-      <p class="language" id="caption-language"></p>
-    </div>
-
-    <div id="track-selector" class="track-selector hidden">
-      <label for="tracks">Langue :</label>
-      <select id="tracks"></select>
-    </div>
-
-    <div id="captions-container" class="captions-container hidden">
-      <div class="options-row">
-        <label class="toggle-label">
-          <input type="checkbox" id="show-timecodes">
-          <span class="toggle-switch"></span>
-          <span>Afficher les timecodes</span>
-        </label>
-      </div>
-      <textarea id="captions" readonly></textarea>
-      <div class="buttons-row">
-        <button id="copy-btn" class="btn copy-btn">Copier</button>
-        <button id="send-claude-btn" class="btn claude-btn">Envoyer à Claude</button>
-      </div>
-      <div class="claude-settings">
-        <label for="claude-prompt">Prompt Claude :</label>
-        <textarea id="claude-prompt" rows="2">Résume-moi ça. On apprend quelque chose?</textarea>
+      <div class="video-thumbnail" id="video-thumbnail"></div>
+      <div class="video-details">
+        <p class="video-title" id="video-title"></p>
+        <p class="video-meta" id="video-meta"></p>
       </div>
     </div>
 
-    <div id="error" class="error hidden"></div>
-
+    <!-- Not on YouTube message -->
     <div id="not-youtube" class="not-youtube hidden">
-      <p>Ouvrez une vidéo YouTube pour extraire les sous-titres.</p>
+      <p>Open a YouTube video to add it to your x10s</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="loading">
+      <p>Loading...</p>
+    </div>
+
+    <!-- X10s list -->
+    <div id="x10s-section" class="x10s-section hidden">
+      <p class="section-label">Add to...</p>
+      <div id="x10s-list" class="x10s-list">
+        <!-- X10 items will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Empty state (no x10s) -->
+    <div id="empty-state" class="empty-state hidden">
+      <p class="empty-text">No x10s yet</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button id="create-btn" class="btn btn-primary">
+        + Create a new x10
+      </button>
+    </div>
+
+    <!-- Footer links -->
+    <div class="footer-links">
+      <a href="#" id="dashboard-link" class="footer-link">My dashboard</a>
+      <span class="separator">·</span>
+      <a href="#" id="sync-link" class="footer-link">Sync</a>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden">
+      <span id="toast-message"></span>
     </div>
   </div>
 
+  <script src="../api.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

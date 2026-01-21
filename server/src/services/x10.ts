@@ -199,12 +199,23 @@ export function deleteX10(id: string): boolean {
 }
 
 // Check if video URL is already in a user's x10s
-export function checkVideoInUserX10s(userId: string, youtubeId: string): { x10Id: string; x10Title: string | null }[] {
+export function checkVideoInUserX10s(userId: string, youtubeId: string): string[] {
   const results = db.prepare(`
-    SELECT x10s.id, x10s.title FROM x10s
+    SELECT x10s.id FROM x10s
     JOIN videos ON videos.x10_id = x10s.id
     WHERE x10s.user_id = ? AND videos.youtube_id = ?
-  `).all(userId, youtubeId) as { id: string; title: string | null }[];
+  `).all(userId, youtubeId) as { id: string }[];
 
-  return results.map(r => ({ x10Id: r.id, x10Title: r.title }));
+  return results.map(r => r.id);
+}
+
+// Check if video URL is already in an anonymous user's x10s
+export function checkVideoInAnonymousX10s(anonymousId: string, youtubeId: string): string[] {
+  const results = db.prepare(`
+    SELECT x10s.id FROM x10s
+    JOIN videos ON videos.x10_id = x10s.id
+    WHERE x10s.anonymous_id = ? AND videos.youtube_id = ?
+  `).all(anonymousId, youtubeId) as { id: string }[];
+
+  return results.map(r => r.id);
 }

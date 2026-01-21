@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createX10, getX10sForUser, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, forkX10, deleteX10 } from '../services/x10.js';
+import { createX10, getX10sForUser, getX10sForAnonymous, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, checkVideoInAnonymousX10s, forkX10, deleteX10 } from '../services/x10.js';
 import { extractVideoId } from '../services/transcript.js';
 
 export const apiRouter = Router();
@@ -27,6 +27,27 @@ apiRouter.get('/x10s', (req: Request, res: Response) => {
   }
 
   const x10s = getX10sForUser(userId);
+
+  res.json({
+    x10s: x10s.map(x => ({
+      id: x.id,
+      title: x.title,
+      videoCount: x.videos.length,
+      tokens: x.tokenCount,
+      updatedAt: x.updated_at
+    }))
+  });
+});
+
+// Get x10s by user code (for extension)
+apiRouter.get('/x10s/by-code/:userCode', (req: Request, res: Response) => {
+  const { userCode } = req.params;
+
+  if (!userCode) {
+    return res.json({ x10s: [] });
+  }
+
+  const x10s = getX10sForAnonymous(userCode);
 
   res.json({
     x10s: x10s.map(x => ({
@@ -71,7 +92,7 @@ apiRouter.post('/x10/create', async (req: Request, res: Response) => {
 // Add video to x10
 apiRouter.post('/x10/:id/add', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { url } = req.body;
+  const { url, userCode } = req.body;
   const userId = req.headers['x-user-id'] as string | undefined;
 
   if (!url) {
@@ -83,8 +104,12 @@ apiRouter.post('/x10/:id/add', async (req: Request, res: Response) => {
     return res.status(404).json({ error: 'X10 not found' });
   }
 
-  // Check ownership (or orphan status)
-  if (x10.user_id !== null && x10.user_id !== userId) {
+  // Check ownership by user_id or anonymous_id
+  const isOwnerByUserId = x10.user_id !== null && x10.user_id === userId;
+  const isOwnerByAnonymousId = x10.anonymous_id !== null && x10.anonymous_id === userCode;
+  const isOrphan = x10.user_id === null && x10.anonymous_id === null;
+
+  if (!isOwnerByUserId && !isOwnerByAnonymousId && !isOrphan) {
     return res.status(403).json({ error: 'Not authorized to edit this x10' });
   }
 
@@ -127,20 +152,29 @@ apiRouter.delete('/x10/:id/video/:videoId', (req: Request, res: Response) => {
 
 // Check if a video is in user's x10s
 apiRouter.get('/check-video', (req: Request, res: Response) => {
-  const { url } = req.query;
+  const { url, videoId: queryVideoId, userCode } = req.query;
   const userId = req.headers['x-user-id'] as string | undefined;
+
+  // Get video ID from url param or videoId param
+  let videoId: string | null = null;
+  if (url && typeof url === 'string') {
+    videoId = extractVideoId(url);
+  } else if (queryVideoId && typeof queryVideoId === 'string') {
+    videoId = queryVideoId;
+  }
+
+  if (!videoId) {
+    return res.status(400).json({ error: 'URL or videoId parameter required' });
+  }
+
+  // Check by userCode (for extension) or userId (for authenticated users)
+  if (userCode && typeof userCode === 'string') {
+    const inX10s = checkVideoInAnonymousX10s(userCode, videoId);
+    return res.json({ inX10s });
+  }
 
   if (!userId) {
     return res.json({ inX10s: [] });
-  }
-
-  if (!url || typeof url !== 'string') {
-    return res.status(400).json({ error: 'URL parameter required' });
-  }
-
-  const videoId = extractVideoId(url);
-  if (!videoId) {
-    return res.status(400).json({ error: 'Invalid YouTube URL' });
   }
 
   const inX10s = checkVideoInUserX10s(userId, videoId);
