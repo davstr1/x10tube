@@ -29,17 +29,17 @@ block content
     - const chatgptPrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
 
     .flex.flex-wrap.gap-3
-      a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-5.py-2.5.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
+      a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
         href=`https://claude.ai/new?q=${claudePrompt}`
         target="_blank"
       ) Open in Claude
 
-      a.inline-flex.items-center.gap-2.bg-gray-800.hover_bg-gray-900.text-white.px-5.py-2.5.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
+      a.inline-flex.items-center.gap-2.bg-gray-800.hover_bg-gray-900.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
         href=`https://chat.openai.com/?q=${chatgptPrompt}`
         target="_blank"
       ) Open in ChatGPT
 
-      button.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-2.5.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
+      button.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
         type="button"
         onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy .md link', 2000)`
       ) Copy .md link
@@ -91,18 +91,18 @@ block content
         p.text-sm.text-gray-500 Maximum 10 videos reached
       else
         form.flex.gap-3(action=`/s/${x10.id}/add` method="POST")
-          input.flex-1.px-4.py-2.5.border.border-gray-200.rounded-lg.text-sm.focus_outline-none.focus_ring-2.focus_ring-red-500.focus_border-transparent.font-mono.placeholder-gray-400(
+          input.flex-1.px-4.py-3.border.border-gray-200.rounded-lg.text-sm.focus_outline-none.focus_ring-2.focus_ring-red-500.focus_border-transparent.font-mono.placeholder-gray-400(
             type="text"
             name="url"
             placeholder="https://youtube.com/watch?v=..."
             required
           )
-          button.bg-red-600.hover_bg-red-700.text-white.px-6.py-2.5.rounded-lg.text-sm.font-medium.transition-colors.flex-shrink-0(type="submit")
+          button.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-lg.text-sm.font-medium.transition-colors.flex-shrink-0(type="submit")
             | Add
 
   //- Copy to account button (for non-owners who are logged in)
   if currentUser && !isOwner
     section.mt-10.pt-8.border-t.border-gray-200
       form(action=`/api/x10/${x10.id}/fork` method="POST")
-        button.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-2.5.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(type="submit")
+        button.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(type="submit")
           | Copy to my account
