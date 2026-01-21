@@ -258,17 +258,18 @@ function injectStyles() {
       color: #dc2626;
     }
 
-    /* Mini button - YouTube-style for overlay integration */
+    /* Mini button - X10Tube red circle style */
     .x10tube-mini-btn {
-      width: 28px !important;
-      height: 28px !important;
-      background: rgba(0, 0, 0, 0.6) !important;
-      backdrop-filter: blur(4px) !important;
-      border: none !important;
-      border-radius: 2px !important;
+      width: 32px !important;
+      height: 32px !important;
+      min-width: 32px !important;
+      min-height: 32px !important;
+      background: #dc2626 !important;
       color: white !important;
+      border: none !important;
+      border-radius: 50% !important;
       font-size: 20px !important;
-      font-weight: 300 !important;
+      font-weight: bold !important;
       cursor: pointer !important;
       display: flex !important;
       align-items: center !important;
@@ -277,49 +278,31 @@ function injectStyles() {
       pointer-events: auto !important;
       padding: 0 !important;
       margin: 0 !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
     }
     .x10tube-mini-btn:hover {
-      background: rgba(0, 0, 0, 0.8) !important;
+      background: #b91c1c !important;
+      transform: scale(1.1);
     }
     .x10tube-mini-btn.added {
-      background: rgba(22, 163, 74, 0.8) !important;
+      background: #16a34a !important;
     }
     .x10tube-mini-btn.adding {
       opacity: 0.5 !important;
       pointer-events: none !important;
     }
 
-    /* Button in YouTube's overlay container (new structure) */
+    /* Button wrapper in YouTube's overlay */
     .x10tube-btn-wrapper {
       display: inline-block !important;
     }
-    .x10tube-mini-btn-overlay {
-      /* Matches YouTube's button style */
-      width: 28px !important;
-      height: 28px !important;
-    }
 
-    /* Fallback: button directly in thumbnail (old structure) */
-    ytd-thumbnail .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
-    #hover-overlays .x10tube-mini-btn:not(.x10tube-mini-btn-overlay) {
+    /* Fallback: button in thumbnail (old structure - search page) */
+    ytd-thumbnail .x10tube-mini-btn:not(.x10tube-mini-btn-overlay) {
       position: absolute !important;
       top: 4px !important;
       right: 4px !important;
       z-index: 2147483647 !important;
-      opacity: 0 !important;
-      visibility: hidden !important;
-      transition: opacity 0.15s ease !important;
-    }
-    ytd-thumbnail:hover .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
-    ytd-video-renderer:hover .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
-    #hover-overlays:hover .x10tube-mini-btn:not(.x10tube-mini-btn-overlay),
-    .x10tube-mini-btn:not(.x10tube-mini-btn-overlay):hover {
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
-    .x10tube-mini-btn.added:not(.x10tube-mini-btn-overlay) {
-      opacity: 1 !important;
-      visibility: visible !important;
     }
 
     /* Dropdown */
