@@ -33,11 +33,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS x10s (
     id TEXT PRIMARY KEY,
     user_id TEXT,
+    anonymous_id TEXT,
     title TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
   );
+
+  CREATE INDEX IF NOT EXISTS idx_x10s_anonymous_id ON x10s(anonymous_id);
 
   CREATE TABLE IF NOT EXISTS videos (
     id TEXT PRIMARY KEY,
@@ -69,6 +72,7 @@ export interface User {
 export interface X10 {
   id: string;
   user_id: string | null;
+  anonymous_id: string | null;
   title: string | null;
   created_at: string;
   updated_at: string;

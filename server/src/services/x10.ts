@@ -17,16 +17,17 @@ function generateId(): string {
 export async function createX10(
   urls: string[],
   userId: string | null = null,
-  title: string | null = null
+  title: string | null = null,
+  anonymousId: string | null = null
 ): Promise<{ x10: X10WithVideos; failed: { url: string; error: string }[] }> {
   const x10Id = generateId();
   const now = new Date().toISOString();
 
   // Insert x10
   db.prepare(`
-    INSERT INTO x10s (id, user_id, title, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(x10Id, userId, title, now, now);
+    INSERT INTO x10s (id, user_id, anonymous_id, title, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(x10Id, userId, anonymousId, title, now, now);
 
   // Extract and insert videos
   const failed: { url: string; error: string }[] = [];
@@ -67,6 +68,7 @@ export async function createX10(
   const x10: X10WithVideos = {
     id: x10Id,
     user_id: userId,
+    anonymous_id: anonymousId,
     title,
     created_at: now,
     updated_at: now,
@@ -92,6 +94,17 @@ export function getX10ById(id: string): X10WithVideos | null {
 // Get all x10s for a user
 export function getX10sForUser(userId: string): X10WithVideos[] {
   const x10s = db.prepare('SELECT * FROM x10s WHERE user_id = ? ORDER BY updated_at DESC').all(userId) as X10[];
+
+  return x10s.map(x10 => {
+    const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at ASC').all(x10.id) as Video[];
+    const tokenCount = videos.reduce((sum, v) => sum + estimateTokens(v.transcript || ''), 0);
+    return { ...x10, videos, tokenCount };
+  });
+}
+
+// Get all x10s for an anonymous user (by cookie ID)
+export function getX10sForAnonymous(anonymousId: string): X10WithVideos[] {
+  const x10s = db.prepare('SELECT * FROM x10s WHERE anonymous_id = ? ORDER BY updated_at DESC').all(anonymousId) as X10[];
 
   return x10s.map(x10 => {
     const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at ASC').all(x10.id) as Video[];

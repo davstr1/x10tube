@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 
 import './db.js'; // Initialize database
+import { anonymousMiddleware } from './middleware/anonymous.js';
 import { indexRouter } from './routes/index.js';
 import { x10Router } from './routes/x10.js';
 import { apiRouter } from './routes/api.js';
@@ -14,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(anonymousMiddleware);
 
 // Static files
 app.use(express.static(path.join(process.cwd(), 'public')));

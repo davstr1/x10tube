@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createX10 } from '../services/x10.js';
+import { createX10, getX10sForAnonymous, getX10sForUser } from '../services/x10.js';
 
 export const indexRouter = Router();
 
@@ -36,8 +36,9 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
       });
     }
 
-    // Create x10 (no user for anonymous creation)
-    const { x10, failed } = await createX10(urlList, null, null);
+    // Create x10 with anonymous ID from cookie
+    const anonymousId = req.anonymousId;
+    const { x10, failed } = await createX10(urlList, null, null, anonymousId);
 
     if (x10.videos.length === 0) {
       return res.status(400).render('landing', {
@@ -66,11 +67,15 @@ indexRouter.get('/login', (req: Request, res: Response) => {
   });
 });
 
-// Dashboard (placeholder - will require auth)
+// Dashboard - shows x10s for logged-in user OR anonymous user
 indexRouter.get('/dashboard', (req: Request, res: Response) => {
-  // TODO: Check auth and get user's x10s
+  // TODO: Check if user is logged in and get their x10s
+  // For now, get x10s by anonymous ID
+  const anonymousId = req.anonymousId;
+  const x10s = getX10sForAnonymous(anonymousId);
+
   res.render('dashboard', {
-    title: 'Dashboard - x10tube',
-    x10s: []
+    title: 'My x10s - x10tube',
+    x10s
   });
 });

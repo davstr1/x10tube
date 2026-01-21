@@ -71,28 +71,44 @@ x10Router.get('/:id', (req: Request, res: Response) => {
     year: 'numeric'
   });
 
+  // Check if current user is owner (by user_id or anonymous_id)
+  const anonymousId = req.anonymousId;
+  // TODO: Also check user_id when auth is implemented
+  const isOwner = x10.anonymous_id === anonymousId;
+
   res.render('x10', {
     title: x10.title || 'Untitled x10',
     x10,
     tokenDisplay,
     createdDate,
-    // TODO: Get current user from session
     currentUser: null,
-    isOwner: false,
-    isOrphan: x10.user_id === null
+    isOwner,
+    isOrphan: x10.user_id === null && x10.anonymous_id === null
   });
 });
+
+// Helper to check if user can edit x10
+function canEdit(x10: ReturnType<typeof getX10ById>, anonymousId: string): boolean {
+  if (!x10) return false;
+  // Owner by anonymous_id
+  if (x10.anonymous_id === anonymousId) return true;
+  // TODO: Also check user_id when auth is implemented
+  return false;
+}
 
 // Add video to x10
 x10Router.post('/:id/add', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { url } = req.body;
 
-  // TODO: Check auth and ownership/claim logic
-
   const x10 = getX10ById(id);
   if (!x10) {
     return res.status(404).json({ error: 'X10 not found' });
+  }
+
+  // Check ownership
+  if (!canEdit(x10, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this x10' });
   }
 
   // Check video limit
@@ -120,7 +136,15 @@ x10Router.post('/:id/add', async (req: Request, res: Response) => {
 x10Router.post('/:id/remove/:videoId', (req: Request, res: Response) => {
   const { id, videoId } = req.params;
 
-  // TODO: Check auth and ownership
+  const x10 = getX10ById(id);
+  if (!x10) {
+    return res.status(404).json({ error: 'X10 not found' });
+  }
+
+  // Check ownership
+  if (!canEdit(x10, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  }
 
   const success = removeVideoFromX10(id, videoId);
   if (success) {
@@ -135,7 +159,15 @@ x10Router.post('/:id/title', (req: Request, res: Response) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  // TODO: Check auth and ownership
+  const x10 = getX10ById(id);
+  if (!x10) {
+    return res.status(404).json({ error: 'X10 not found' });
+  }
+
+  // Check ownership
+  if (!canEdit(x10, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  }
 
   const success = updateX10Title(id, title);
   if (success) {
