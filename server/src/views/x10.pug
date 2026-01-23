@@ -25,7 +25,7 @@ block content
   //- Action buttons
   section.mb-10
     - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
-    - const fullPrompt = (effectivePrePrompt || '') + '\n\nIf you cannot read the URL, ask me to paste the content.\n\nRead ' + mdUrl + ' which contains transcripts from multiple YouTube videos.'
+    - const fullPrompt = (effectivePrePrompt || '') + '\n\nRead ' + mdUrl + ' which contains transcripts from multiple YouTube videos.'
     - const claudePrompt = encodeURIComponent(fullPrompt)
     - const chatgptPrompt = encodeURIComponent(fullPrompt)
 
@@ -68,9 +68,17 @@ block content
               target="_blank"
             ) ChatGPT
             a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
-              href=`https://aistudio.google.com/prompts/new_chat?prompt=${claudePrompt}`
+              href=`https://www.google.com/search?udm=50&aep=11&q=${claudePrompt}`
               target="_blank"
-            ) Gemini (AI Studio)
+            ) Gemini
+            a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
+              href=`https://www.perplexity.ai/search/?q=${claudePrompt}`
+              target="_blank"
+            ) Perplexity
+            a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
+              href=`https://x.com/i/grok?text=${claudePrompt}`
+              target="_blank"
+            ) Grok
             a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
               href=`https://copilot.microsoft.com/`
               target="_blank"
