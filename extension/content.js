@@ -497,21 +497,25 @@ function injectStyles() {
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* X10Tube Menu Item (inside YouTube's ⋮ menu) */
+    /* X10Tube Menu Item (inside YouTube's ⋮ menu) - Native YouTube styling */
     .x10tube-menu-item {
       display: block;
       cursor: pointer;
     }
     .x10tube-menu-item tp-yt-paper-item {
       display: flex;
+      flex-direction: row;
       align-items: center;
-      padding: 0 36px 0 16px;
+      padding: 0 12px 0 16px;
       min-height: 36px;
+      height: 36px;
       font-family: "Roboto", "Arial", sans-serif;
       font-size: 14px;
       font-weight: 400;
+      line-height: 20px;
       color: var(--yt-spec-text-primary, #f1f1f1);
       cursor: pointer;
+      background-color: transparent;
     }
     .x10tube-menu-item tp-yt-paper-item:hover {
       background-color: var(--yt-spec-10-percent-layer, rgba(255,255,255,0.1));
@@ -519,13 +523,17 @@ function injectStyles() {
     .x10tube-menu-item .x10tube-menu-icon {
       width: 24px;
       height: 24px;
-      margin-right: 16px;
+      margin-right: 12px;
+      margin-left: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      font-weight: bold;
-      color: var(--yt-spec-text-primary, #f1f1f1);
+      color: #dc2626;
+      fill: currentcolor;
+    }
+    .x10tube-menu-item .x10tube-menu-icon svg {
+      width: 24px;
+      height: 24px;
     }
   `;
   document.head.appendChild(styles);
@@ -1180,7 +1188,7 @@ function injectX10MenuItemIntoNewPopup(dropdown, videoId) {
   console.log('[X10Tube] Menu item injected (new format) for video:', videoId);
 }
 
-// Create menu item matching the new yt-list-item-view-model format
+// Create menu item matching the new yt-list-item-view-model format (Native YouTube styling)
 function createX10MenuItemNewFormat(videoId) {
   const wrapper = document.createElement('div');
   wrapper.className = 'x10tube-menu-item x10tube-menu-item-new';
@@ -1188,14 +1196,36 @@ function createX10MenuItemNewFormat(videoId) {
   wrapper.setAttribute('role', 'menuitem');
   wrapper.setAttribute('tabindex', '0');
 
-  wrapper.innerHTML = `
-    <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; color: var(--yt-spec-text-primary, #f1f1f1);">
-      <div style="width: 24px; height: 24px; margin-right: 16px; display: flex; align-items: center; justify-content: center;">
-        <span style="font-size: 18px; font-weight: bold; color: #dc2626;">+</span>
-      </div>
-      <span style="font-size: 14px;">Add to X10Tube</span>
-    </div>
-  `;
+  // Create inner structure using DOM (Trusted Types compliant)
+  const innerDiv = document.createElement('div');
+  innerDiv.style.cssText = 'display: flex; flex-direction: row; align-items: center; padding: 0 12px 0 16px; min-height: 36px; height: 36px; cursor: pointer;';
+
+  // Icon container with SVG plus icon
+  const iconContainer = document.createElement('div');
+  iconContainer.style.cssText = 'width: 24px; height: 24px; margin-right: 12px; margin-left: 0; display: flex; align-items: center; justify-content: center; color: #dc2626;';
+
+  // SVG plus icon matching YouTube's icon style
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('xmlns', svgNS);
+  svg.setAttribute('height', '24');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '24');
+  svg.style.fill = 'currentcolor';
+
+  const path = document.createElementNS(svgNS, 'path');
+  path.setAttribute('d', 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z');
+  svg.appendChild(path);
+  iconContainer.appendChild(svg);
+
+  // Text span
+  const textSpan = document.createElement('span');
+  textSpan.style.cssText = 'font-size: 14px; font-family: "Roboto", "Arial", sans-serif; font-weight: 400; line-height: 20px; color: var(--yt-spec-text-primary, #f1f1f1);';
+  textSpan.textContent = 'Add to X10Tube';
+
+  innerDiv.appendChild(iconContainer);
+  innerDiv.appendChild(textSpan);
+  wrapper.appendChild(innerDiv);
 
   // Hover effect
   wrapper.addEventListener('mouseenter', () => {
@@ -1216,7 +1246,7 @@ function createX10MenuItemNewFormat(videoId) {
 }
 
 function createX10MenuItem(videoId) {
-  // Wrapper
+  // Wrapper (mimics ytd-menu-service-item-renderer structure)
   const wrapper = document.createElement('div');
   wrapper.className = 'x10tube-menu-item';
   wrapper.setAttribute('role', 'option');
@@ -1229,12 +1259,25 @@ function createX10MenuItem(videoId) {
   paperItem.setAttribute('role', 'option');
   paperItem.setAttribute('tabindex', '0');
 
-  // Icon container
+  // Icon container (mimics yt-icon structure)
   const iconContainer = document.createElement('div');
   iconContainer.className = 'x10tube-menu-icon';
-  iconContainer.textContent = '+';
 
-  // Text
+  // SVG plus icon matching YouTube's icon style
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('xmlns', svgNS);
+  svg.setAttribute('height', '24');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '24');
+  svg.style.fill = 'currentcolor';
+
+  const path = document.createElementNS(svgNS, 'path');
+  path.setAttribute('d', 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z');
+  svg.appendChild(path);
+  iconContainer.appendChild(svg);
+
+  // Text (mimics yt-formatted-string)
   const text = document.createElement('yt-formatted-string');
   text.className = 'style-scope ytd-menu-service-item-renderer';
   text.textContent = 'Add to X10Tube';
