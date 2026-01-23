@@ -1101,13 +1101,23 @@ function setupPopupObserver() {
   console.log('[X10Tube] Found popup container, setting up observer');
 
   const observer = new MutationObserver((mutations) => {
-    // Check if a menu popup is visible
-    const popup = popupContainer.querySelector('ytd-menu-popup-renderer');
-    if (popup) {
-      console.log('[X10Tube] Popup detected, pendingVideoId:', pendingMenuVideoId);
-      if (pendingMenuVideoId) {
-        // Small delay to ensure the menu is fully rendered
-        setTimeout(() => injectX10MenuItemIntoPopup(popup, pendingMenuVideoId), 50);
+    if (!pendingMenuVideoId) return;
+
+    // Check for classic popup (ytd-menu-popup-renderer)
+    const classicPopup = popupContainer.querySelector('ytd-menu-popup-renderer');
+    if (classicPopup) {
+      console.log('[X10Tube] Classic popup detected, pendingVideoId:', pendingMenuVideoId);
+      setTimeout(() => injectX10MenuItemIntoPopup(classicPopup, pendingMenuVideoId), 50);
+      return;
+    }
+
+    // Check for new format popup (tp-yt-iron-dropdown with yt-list-view-model)
+    const ironDropdown = popupContainer.querySelector('tp-yt-iron-dropdown:not([aria-hidden="true"])');
+    if (ironDropdown) {
+      const listView = ironDropdown.querySelector('yt-list-view-model');
+      if (listView) {
+        console.log('[X10Tube] New format popup detected, pendingVideoId:', pendingMenuVideoId);
+        setTimeout(() => injectX10MenuItemIntoNewPopup(ironDropdown, pendingMenuVideoId), 50);
       }
     }
   });
@@ -1144,6 +1154,65 @@ function injectX10MenuItemIntoPopup(popup, videoId) {
   // Insert as first item
   itemsList.insertBefore(x10Item, itemsList.firstChild);
   console.log('[X10Tube] Menu item injected for video:', videoId);
+}
+
+// Inject menu item into new format popup (yt-list-view-model)
+function injectX10MenuItemIntoNewPopup(dropdown, videoId) {
+  // Check if already injected
+  const existingItem = dropdown.querySelector('.x10tube-menu-item');
+  if (existingItem) {
+    if (existingItem.dataset.videoId === videoId) return;
+    existingItem.remove();
+  }
+
+  // Find the list view model
+  const listView = dropdown.querySelector('yt-list-view-model');
+  if (!listView) {
+    console.log('[X10Tube] Could not find yt-list-view-model');
+    return;
+  }
+
+  // Create X10Tube menu item for new format
+  const x10Item = createX10MenuItemNewFormat(videoId);
+
+  // Insert as first item
+  listView.insertBefore(x10Item, listView.firstChild);
+  console.log('[X10Tube] Menu item injected (new format) for video:', videoId);
+}
+
+// Create menu item matching the new yt-list-item-view-model format
+function createX10MenuItemNewFormat(videoId) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'x10tube-menu-item x10tube-menu-item-new';
+  wrapper.dataset.videoId = videoId;
+  wrapper.setAttribute('role', 'menuitem');
+  wrapper.setAttribute('tabindex', '0');
+
+  wrapper.innerHTML = `
+    <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; color: var(--yt-spec-text-primary, #f1f1f1);">
+      <div style="width: 24px; height: 24px; margin-right: 16px; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 18px; font-weight: bold; color: #dc2626;">+</span>
+      </div>
+      <span style="font-size: 14px;">Add to X10Tube</span>
+    </div>
+  `;
+
+  // Hover effect
+  wrapper.addEventListener('mouseenter', () => {
+    wrapper.style.backgroundColor = 'var(--yt-spec-10-percent-layer, rgba(255,255,255,0.1))';
+  });
+  wrapper.addEventListener('mouseleave', () => {
+    wrapper.style.backgroundColor = 'transparent';
+  });
+
+  // Click handler
+  wrapper.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleX10MenuItemClick(videoId, wrapper);
+  });
+
+  return wrapper;
 }
 
 function createX10MenuItem(videoId) {
