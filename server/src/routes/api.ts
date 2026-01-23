@@ -248,7 +248,7 @@ apiRouter.delete('/x10/:id', (req: Request, res: Response) => {
 
 // Add video from Chrome extension (creates new x10 or adds to most recent)
 apiRouter.post('/x10/add', async (req: Request, res: Response) => {
-  const { url, userCode } = req.body;
+  const { url, userCode, forceNew } = req.body;
 
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ success: false, error: 'URL required' });
@@ -273,7 +273,7 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
     let x10Id: string;
     let x10Url: string;
 
-    if (existingX10s.length > 0 && existingX10s[0].videos.length < 10) {
+    if (!forceNew && existingX10s.length > 0 && existingX10s[0].videos.length < 10) {
       // Add to the most recent x10
       const recentX10 = existingX10s[0];
 

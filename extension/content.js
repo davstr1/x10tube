@@ -136,13 +136,13 @@ class X10API {
     }
   }
 
-  async createX10(videoUrl) {
+  async createX10(videoUrl, forceNew = false) {
     try {
       const response = await fetch(`${this.baseUrl}/api/x10/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ url: videoUrl, userCode: this.userCode || undefined })
+        body: JSON.stringify({ url: videoUrl, userCode: this.userCode || undefined, forceNew })
       });
       const data = await response.json();
       if (data.success && data.userCode) {
@@ -652,7 +652,7 @@ async function handleCreate() {
     if (nameSpan) nameSpan.textContent = 'Creating...';
   }
 
-  const result = await api.createX10(videoUrl);
+  const result = await api.createX10(videoUrl, true);
 
   if (result.success) {
     showToast('Video added to new X10!', 'success');
@@ -1419,7 +1419,7 @@ async function handleCreateWithVideo(videoId) {
     if (nameSpan) nameSpan.textContent = 'Creating...';
   }
 
-  const result = await api.createX10(videoUrl);
+  const result = await api.createX10(videoUrl, true);
 
   if (result.success) {
     showToast('Video added to new X10!', 'success');
