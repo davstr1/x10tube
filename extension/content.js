@@ -399,7 +399,6 @@ function injectStyles() {
     }
     .x10-item-check {
       width: 16px;
-      color: #22c55e;
       font-size: 14px;
       flex-shrink: 0;
     }
@@ -424,31 +423,9 @@ function injectStyles() {
       font-size: 13px;
     }
 
-    /* Actions */
-    .x10-actions {
-      padding: 12px 16px;
-      border-top: 1px solid #3f3f3f;
-    }
-    .x10-btn-create {
-      display: block;
-      width: 100%;
-      padding: 10px 16px;
-      background: #dc2626;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s;
-      font-family: inherit;
-    }
-    .x10-btn-create:hover {
-      background: #b91c1c;
-    }
-    .x10-btn-create:disabled {
-      background: #666;
-      cursor: not-allowed;
+    /* Create item styling */
+    .x10-item-create {
+      border-bottom: 1px solid #3f3f3f;
     }
 
     /* Footer links */
@@ -540,16 +517,12 @@ function createDropdown() {
     </div>
     <div class="x10-section-label">Add to...</div>
     <div class="x10-list" id="x10tube-list"></div>
-    <div class="x10-actions">
-      <button class="x10-btn-create" id="x10tube-create">+ Create a new x10</button>
-    </div>
     <div class="x10-footer">
       <a href="#" id="x10tube-dashboard">My x10s</a>
     </div>
   `;
 
   dropdown.querySelector('.x10-dropdown-close').addEventListener('click', closeDropdown);
-  dropdown.querySelector('#x10tube-create').addEventListener('click', handleCreate);
   dropdown.querySelector('#x10tube-dashboard').addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
@@ -632,12 +605,20 @@ function renderX10List() {
   const listEl = document.getElementById('x10tube-list');
   if (!listEl) return;
 
-  if (currentX10s.length === 0) {
-    listEl.innerHTML = '<div class="x10-empty">No x10s yet</div>';
-    return;
-  }
-
   listEl.innerHTML = '';
+
+  // Add "Create new X10" item at the top
+  const createItem = document.createElement('button');
+  createItem.className = 'x10-item x10-item-create';
+  createItem.innerHTML = `
+    <span class="x10-item-check" style="font-weight: bold;">+</span>
+    <span class="x10-item-name">Create a new X10</span>
+    <span class="x10-item-count"></span>
+  `;
+  createItem.addEventListener('click', handleCreate);
+  listEl.appendChild(createItem);
+
+  // Then add existing x10s
   currentX10s.forEach(x10 => {
     const isIn = videoInX10s.includes(x10.id);
     const item = document.createElement('button');
@@ -664,27 +645,25 @@ async function handleCreate() {
   }
 
   const videoUrl = window.location.href;
-  const btn = document.getElementById('x10tube-create');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Creating...';
+  const createItem = document.querySelector('.x10-item-create');
+  if (createItem) {
+    createItem.classList.add('adding');
+    const nameSpan = createItem.querySelector('.x10-item-name');
+    if (nameSpan) nameSpan.textContent = 'Creating...';
   }
 
   const result = await api.createX10(videoUrl);
 
   if (result.success) {
-    showToast('Created new x10!', 'success');
+    showToast('Video added to new X10!', 'success');
     closeDropdown();
-    setTimeout(() => {
-      window.open(api.getX10Url(result.x10Id), '_blank');
-    }, 500);
   } else {
     showToast(`Error: ${result.error}`, 'error');
-  }
-
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = '+ Create a new x10';
+    if (createItem) {
+      createItem.classList.remove('adding');
+      const nameSpan = createItem.querySelector('.x10-item-name');
+      if (nameSpan) nameSpan.textContent = 'Create a new X10';
+    }
   }
 }
 
@@ -1340,14 +1319,30 @@ function renderX10ListForVideo(videoId) {
 
   listEl.textContent = '';
 
-  if (currentX10s.length === 0) {
-    const emptyDiv = document.createElement('div');
-    emptyDiv.className = 'x10-empty';
-    emptyDiv.textContent = 'No x10s yet';
-    listEl.appendChild(emptyDiv);
-    return;
-  }
+  // Add "Create new X10" item at the top
+  const createItem = document.createElement('button');
+  createItem.className = 'x10-item x10-item-create';
 
+  const createCheck = document.createElement('span');
+  createCheck.className = 'x10-item-check';
+  createCheck.style.fontWeight = 'bold';
+  createCheck.textContent = '+';
+
+  const createName = document.createElement('span');
+  createName.className = 'x10-item-name';
+  createName.textContent = 'Create a new X10';
+
+  const createCount = document.createElement('span');
+  createCount.className = 'x10-item-count';
+  createCount.textContent = '';
+
+  createItem.appendChild(createCheck);
+  createItem.appendChild(createName);
+  createItem.appendChild(createCount);
+  createItem.addEventListener('click', () => handleCreateWithVideo(videoId));
+  listEl.appendChild(createItem);
+
+  // Then add existing x10s
   currentX10s.forEach(x10 => {
     const isIn = videoInX10s.includes(x10.id);
     const item = document.createElement('button');
@@ -1377,12 +1372,6 @@ function renderX10ListForVideo(videoId) {
     }
     listEl.appendChild(item);
   });
-
-  // Update create button to use the current video
-  const createBtn = document.getElementById('x10tube-create');
-  if (createBtn) {
-    createBtn.onclick = () => handleCreateWithVideo(videoId);
-  }
 }
 
 async function handleAddVideoToX10(x10Id, x10Title, videoId) {
@@ -1423,27 +1412,25 @@ async function handleCreateWithVideo(videoId) {
   }
 
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const btn = document.getElementById('x10tube-create');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Creating...';
+  const createItem = document.querySelector('.x10-item-create');
+  if (createItem) {
+    createItem.classList.add('adding');
+    const nameSpan = createItem.querySelector('.x10-item-name');
+    if (nameSpan) nameSpan.textContent = 'Creating...';
   }
 
   const result = await api.createX10(videoUrl);
 
   if (result.success) {
-    showToast('Created new x10!', 'success');
+    showToast('Video added to new X10!', 'success');
     closeDropdown();
-    setTimeout(() => {
-      window.open(api.getX10Url(result.x10Id), '_blank');
-    }, 500);
   } else {
     showToast(`Error: ${result.error}`, 'error');
-  }
-
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = '+ Create a new x10';
+    if (createItem) {
+      createItem.classList.remove('adding');
+      const nameSpan = createItem.querySelector('.x10-item-name');
+      if (nameSpan) nameSpan.textContent = 'Create a new X10';
+    }
   }
 }
 
