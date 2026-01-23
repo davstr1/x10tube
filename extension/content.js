@@ -187,7 +187,7 @@ class X10API {
   }
 
   getDashboardUrl() {
-    return `${this.baseUrl}/dashboard`;
+    return `${this.baseUrl}/myx10s`;
   }
 
   getX10Url(x10Id) {
@@ -529,7 +529,7 @@ function createDropdown() {
       <button class="x10-btn-create" id="x10tube-create">+ Create a new x10</button>
     </div>
     <div class="x10-footer">
-      <a href="#" id="x10tube-dashboard">My dashboard</a>
+      <a href="#" id="x10tube-dashboard">My x10s</a>
     </div>
   `;
 

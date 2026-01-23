@@ -108,17 +108,17 @@ indexRouter.post('/sync', (req: Request, res: Response) => {
   });
 
   // Redirect to dashboard with the new code
-  res.redirect('/dashboard');
+  res.redirect('/myx10s');
 });
 
-// Dashboard - shows x10s for logged-in user OR anonymous user
-indexRouter.get('/dashboard', (req: Request, res: Response) => {
+// My X10s page - shows x10s for logged-in user OR anonymous user
+indexRouter.get('/myx10s', (req: Request, res: Response) => {
   // TODO: Check if user is logged in and get their x10s
   // For now, get x10s by anonymous ID
   const anonymousId = req.anonymousId;
   const x10s = getX10sForAnonymous(anonymousId);
 
-  res.render('dashboard', {
+  res.render('myx10s', {
     title: 'My x10s - x10tube',
     x10s,
     userCode: anonymousId
@@ -151,7 +151,7 @@ indexRouter.post('/x10/:id/delete', (req: Request, res: Response) => {
 
   const success = deleteX10(id);
   if (success) {
-    res.redirect('/dashboard');
+    res.redirect('/myx10s');
   } else {
     res.status(500).render('error', {
       title: 'Error',

@@ -5,7 +5,7 @@ const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 const INNERTUBE_CONTEXT = {
   client: {
     clientName: 'WEB',
-    clientVersion: '2.20250120.01.00',
+    clientVersion: '2.20260120.01.00',
     hl: 'en',
     gl: 'US',
   }
