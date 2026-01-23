@@ -39,12 +39,14 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
   md += `\n---\n\n`;
 
   // Transcripts
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   md += `## Transcripts\n\n`;
   x10.videos.forEach((video, index) => {
     md += `### ${index + 1}. ${video.title}\n\n`;
     md += `**Channel**: ${video.channel}  \n`;
     md += `**Duration**: ${video.duration}  \n`;
-    md += `**URL**: ${video.url}\n\n`;
+    md += `**URL**: ${video.url}  \n`;
+    md += `**MD**: ${baseUrl}/s/${id}/v/${video.youtube_id}.md\n\n`;
     md += `${video.transcript}\n\n`;
     md += `---\n\n`;
   });
@@ -61,22 +63,20 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
   res.send(md);
 });
 
-// Single video MD - /s/:id/v/:videoIndex.md (1-based index)
-x10Router.get('/:id/v/:videoIndex.md', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const videoIndex = parseInt(req.params.videoIndex, 10);
+// Single video MD - /s/:id/v/:youtubeId.md
+x10Router.get('/:id/v/:youtubeId.md', (req: Request, res: Response) => {
+  const { id, youtubeId } = req.params;
   const x10 = getX10ById(id);
 
   if (!x10) {
     return res.status(404).send('# Not found\n\nThis x10 does not exist.');
   }
 
-  // Validate video index (1-based)
-  if (isNaN(videoIndex) || videoIndex < 1 || videoIndex > x10.videos.length) {
-    return res.status(404).send(`# Not found\n\nVideo ${videoIndex} does not exist in this x10.`);
+  // Find video by YouTube ID
+  const video = x10.videos.find(v => v.youtube_id === youtubeId);
+  if (!video) {
+    return res.status(404).send(`# Not found\n\nVideo ${youtubeId} does not exist in this x10.`);
   }
-
-  const video = x10.videos[videoIndex - 1];
 
   // Get user settings for default pre-prompt
   const anonymousId = req.anonymousId;

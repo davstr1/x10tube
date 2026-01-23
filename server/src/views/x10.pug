@@ -132,7 +132,7 @@ block content
               img.w-44.h-24.object-cover.rounded-md(src=thumbnailUrl alt=video.title)
 
             //- Video info
-            - const videoMdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}/v/${index + 1}.md`
+            - const videoMdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}/v/${video.youtube_id}.md`
             - const videoPrompt = 'Fetch ' + videoMdUrl + '\n\n' + (effectivePrePrompt || '')
             - const videoPromptEncoded = encodeURIComponent(videoPrompt)
             .flex-1.min-w-0
@@ -175,7 +175,7 @@ block content
                           ) MD Link
                           button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.copy-video-md-btn(
                             type="button"
-                            data-video-index=index + 1
+                            data-youtube-id=video.youtube_id
                           ) MD Content
 
                 if isOwner
@@ -307,9 +307,9 @@ block content
       // Copy MD functionality (individual videos)
       document.querySelectorAll('.copy-video-md-btn').forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          const videoIndex = btn.dataset.videoIndex;
+          const youtubeId = btn.dataset.youtubeId;
           try {
-            const response = await fetch('/s/#{x10.id}/v/' + videoIndex + '.md');
+            const response = await fetch('/s/#{x10.id}/v/' + youtubeId + '.md');
             const md = await response.text();
             await navigator.clipboard.writeText(md);
             btn.textContent = 'Copied!';
