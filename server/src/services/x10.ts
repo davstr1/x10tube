@@ -92,7 +92,7 @@ export function getX10ById(id: string): X10WithVideos | null {
 
   if (!x10) return null;
 
-  const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at ASC').all(id) as Video[];
+  const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at DESC').all(id) as Video[];
   const tokenCount = videos.reduce((sum, v) => sum + estimateTokens(v.transcript || ''), 0);
 
   return { ...x10, videos, tokenCount };
@@ -103,7 +103,7 @@ export function getX10sForUser(userId: string): X10WithVideos[] {
   const x10s = db.prepare('SELECT * FROM x10s WHERE user_id = ? ORDER BY updated_at DESC').all(userId) as X10[];
 
   return x10s.map(x10 => {
-    const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at ASC').all(x10.id) as Video[];
+    const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at DESC').all(x10.id) as Video[];
     const tokenCount = videos.reduce((sum, v) => sum + estimateTokens(v.transcript || ''), 0);
     return { ...x10, videos, tokenCount };
   });
@@ -114,7 +114,7 @@ export function getX10sForAnonymous(anonymousId: string): X10WithVideos[] {
   const x10s = db.prepare('SELECT * FROM x10s WHERE anonymous_id = ? ORDER BY updated_at DESC').all(anonymousId) as X10[];
 
   return x10s.map(x10 => {
-    const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at ASC').all(x10.id) as Video[];
+    const videos = db.prepare('SELECT * FROM videos WHERE x10_id = ? ORDER BY added_at DESC').all(x10.id) as Video[];
     const tokenCount = videos.reduce((sum, v) => sum + estimateTokens(v.transcript || ''), 0);
     return { ...x10, videos, tokenCount };
   });
