@@ -47,6 +47,10 @@ block content
         box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         padding: 0.25rem 0;
       }
+      .dropdown-menu-inner button,
+      .dropdown-menu-inner a {
+        text-align: left !important;
+      }
       .dropdown:hover .dropdown-menu { display: block; }
 
     .flex.flex-wrap.gap-3.items-center
@@ -84,14 +88,27 @@ block content
               target="_blank"
             ) Copilot
 
-      button.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
-        type="button"
-        onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy .md link', 2000)`
-      ) Copy .md link
-
-      button#copy-md-btn.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
-        type="button"
-      ) Copy MD
+      //- Copy dropdown
+      - const x10Url = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}`
+      .inline-block.dropdown
+        button.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
+          type="button"
+        )
+          | Copy...
+          span.ml-1 ▾
+        .dropdown-menu
+          .dropdown-menu-inner
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50(
+              type="button"
+              onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
+            ) MD Link
+            button#copy-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50(
+              type="button"
+            ) MD Content
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50(
+              type="button"
+              onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='This X10 URL', 1500)`
+            ) This X10 URL
 
       if isOwner
         form.inline(action=`/x10/${x10.id}/delete` method="POST")
