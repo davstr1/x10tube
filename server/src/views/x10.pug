@@ -29,16 +29,52 @@ block content
     - const claudePrompt = encodeURIComponent(fullPrompt)
     - const chatgptPrompt = encodeURIComponent(fullPrompt)
 
-    .flex.flex-wrap.gap-3.items-center
-      a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
-        href=`https://claude.ai/new?q=${claudePrompt}`
-        target="_blank"
-      ) Open in Claude
+    style.
+      .dropdown { position: relative; }
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 50;
+        min-width: 12rem;
+        padding-top: 0.25rem;
+      }
+      .dropdown-menu-inner {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        padding: 0.25rem 0;
+      }
+      .dropdown:hover .dropdown-menu { display: block; }
 
-      a.inline-flex.items-center.gap-2.bg-gray-800.hover_bg-gray-900.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
-        href=`https://chat.openai.com/?q=${chatgptPrompt}`
-        target="_blank"
-      ) Open in ChatGPT
+    .flex.flex-wrap.gap-3.items-center
+      //- Open in... dropdown (hover to open)
+      .inline-block.dropdown
+        button.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.transition-colors(
+          type="button"
+        )
+          | Open in...
+          span.ml-1 ▾
+        .dropdown-menu
+          .dropdown-menu-inner
+            a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
+              href=`https://claude.ai/new?q=${claudePrompt}`
+              target="_blank"
+            ) Claude
+            a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
+              href=`https://chat.openai.com/?q=${chatgptPrompt}`
+              target="_blank"
+            ) ChatGPT
+            a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
+              href=`https://gemini.google.com/app`
+              target="_blank"
+            ) Gemini
+            a.block.px-4.py-2.text-sm.text-gray-700.hover_bg-gray-50.no-underline(
+              href=`https://copilot.microsoft.com/`
+              target="_blank"
+            ) Copilot
 
       button.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
         type="button"
