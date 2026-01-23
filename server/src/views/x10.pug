@@ -125,13 +125,16 @@ block content
     .space-y-4
       each video, index in x10.videos
         - const thumbnailUrl = `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`
-        .border.border-gray-200.rounded-lg.overflow-hidden.bg-white
+        .border.border-gray-200.rounded-lg.bg-white
           .flex.gap-4.p-4
             //- Thumbnail
             a.flex-shrink-0.block(href=video.url target="_blank" title="Watch on YouTube")
               img.w-44.h-24.object-cover.rounded-md(src=thumbnailUrl alt=video.title)
 
             //- Video info
+            - const videoMdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}/v/${index + 1}.md`
+            - const videoPrompt = 'Fetch ' + videoMdUrl + '\n\n' + (effectivePrePrompt || '')
+            - const videoPromptEncoded = encodeURIComponent(videoPrompt)
             .flex-1.min-w-0
               .flex.justify-between.items-start.gap-2
                 div.min-w-0
@@ -142,6 +145,38 @@ block content
                     = video.channel
                     span.mx-1 ·
                     = video.duration
+
+                  //- Video actions
+                  .flex.items-center.gap-3.mt-2
+                    //- Open in... dropdown
+                    .dropdown.text-xs
+                      button.text-gray-400.hover_text-gray-600(type="button")
+                        | Open in...
+                        span.ml-1 ▾
+                      .dropdown-menu
+                        .dropdown-menu-inner
+                          a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://claude.ai/new?q=${videoPromptEncoded}` target="_blank") Claude
+                          a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://chat.openai.com/?q=${videoPromptEncoded}` target="_blank") ChatGPT
+                          a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${videoPromptEncoded}` target="_blank") Gemini
+                          a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://www.perplexity.ai/search/?q=${videoPromptEncoded}` target="_blank") Perplexity
+                          a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://x.com/i/grok?text=${videoPromptEncoded}` target="_blank") Grok
+                          a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
+
+                    //- Copy... dropdown
+                    .dropdown.text-xs
+                      button.text-gray-400.hover_text-gray-600(type="button")
+                        | Copy...
+                        span.ml-1 ▾
+                      .dropdown-menu
+                        .dropdown-menu-inner
+                          button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50(
+                            type="button"
+                            onclick=`navigator.clipboard.writeText('${videoMdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
+                          ) MD Link
+                          button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.copy-video-md-btn(
+                            type="button"
+                            data-video-index=index + 1
+                          ) MD Content
 
                 if isOwner
                   form(action=`/s/${x10.id}/remove/${video.id}` method="POST")
@@ -226,7 +261,7 @@ block content
         });
       }
 
-      // Copy MD functionality
+      // Copy MD functionality (full x10)
       const copyMdBtn = document.getElementById('copy-md-btn');
       if (copyMdBtn) {
         copyMdBtn.addEventListener('click', async function() {
@@ -235,11 +270,28 @@ block content
             const md = await response.text();
             await navigator.clipboard.writeText(md);
             copyMdBtn.textContent = 'Copied!';
-            setTimeout(() => copyMdBtn.textContent = 'Copy MD', 2000);
+            setTimeout(() => copyMdBtn.textContent = 'MD Content', 1500);
           } catch (e) {
             copyMdBtn.textContent = 'Error';
-            setTimeout(() => copyMdBtn.textContent = 'Copy MD', 2000);
+            setTimeout(() => copyMdBtn.textContent = 'MD Content', 1500);
           }
         });
       }
+
+      // Copy MD functionality (individual videos)
+      document.querySelectorAll('.copy-video-md-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          const videoIndex = btn.dataset.videoIndex;
+          try {
+            const response = await fetch('/s/#{x10.id}/v/' + videoIndex + '.md');
+            const md = await response.text();
+            await navigator.clipboard.writeText(md);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'MD Content', 1500);
+          } catch (e) {
+            btn.textContent = 'Error';
+            setTimeout(() => btn.textContent = 'MD Content', 1500);
+          }
+        });
+      });
     })();
