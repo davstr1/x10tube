@@ -497,25 +497,21 @@ function injectStyles() {
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* X10Tube Menu Item (inside YouTube's ⋮ menu) - Native YouTube styling */
+    /* X10Tube Menu Item (inside YouTube's ⋮ menu) */
     .x10tube-menu-item {
       display: block;
       cursor: pointer;
     }
     .x10tube-menu-item tp-yt-paper-item {
       display: flex;
-      flex-direction: row;
       align-items: center;
-      padding: 0 12px 0 16px;
+      padding: 0 36px 0 16px;
       min-height: 36px;
-      height: 36px;
       font-family: "Roboto", "Arial", sans-serif;
       font-size: 14px;
       font-weight: 400;
-      line-height: 20px;
       color: var(--yt-spec-text-primary, #f1f1f1);
       cursor: pointer;
-      background-color: transparent;
     }
     .x10tube-menu-item tp-yt-paper-item:hover {
       background-color: var(--yt-spec-10-percent-layer, rgba(255,255,255,0.1));
@@ -523,13 +519,13 @@ function injectStyles() {
     .x10tube-menu-item .x10tube-menu-icon {
       width: 24px;
       height: 24px;
-      margin-right: 12px;
+      margin-right: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
-      color: #dc2626;
+      color: var(--yt-spec-text-primary, #f1f1f1);
     }
   `;
   document.head.appendChild(styles);
@@ -1193,11 +1189,11 @@ function createX10MenuItemNewFormat(videoId) {
   wrapper.setAttribute('tabindex', '0');
 
   wrapper.innerHTML = `
-    <div style="display: flex; flex-direction: row; align-items: center; padding: 0 12px 0 16px; min-height: 36px; height: 36px; cursor: pointer; color: var(--yt-spec-text-primary, #f1f1f1);">
-      <div style="width: 24px; height: 24px; margin-right: 12px; display: flex; align-items: center; justify-content: center;">
+    <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; color: var(--yt-spec-text-primary, #f1f1f1);">
+      <div style="width: 24px; height: 24px; margin-right: 16px; display: flex; align-items: center; justify-content: center;">
         <span style="font-size: 18px; font-weight: bold; color: #dc2626;">+</span>
       </div>
-      <span style="font-size: 14px; font-family: Roboto, Arial, sans-serif; font-weight: 400; line-height: 20px;">Add to X10Tube</span>
+      <span style="font-size: 14px;">Add to X10Tube</span>
     </div>
   `;
 
@@ -1238,8 +1234,8 @@ function createX10MenuItem(videoId) {
   iconContainer.className = 'x10tube-menu-icon';
   iconContainer.textContent = '+';
 
-  // Text
-  const text = document.createElement('yt-formatted-string');
+  // Text (span instead of yt-formatted-string to avoid YouTube's Web Component emptying it)
+  const text = document.createElement('span');
   text.className = 'style-scope ytd-menu-service-item-renderer';
   text.textContent = 'Add to X10Tube';
 
