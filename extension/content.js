@@ -1020,13 +1020,6 @@ function setupYouTubeMenuIntegration() {
 
       console.log('[X10Tube] Menu button clicked, format:', isLockupFormat ? 'lockup' : 'classic');
 
-      // Skip if this is the main video's menu on /watch page (we have overlay button for that)
-      // Only applies to classic format with ytd-menu-renderer
-      if (menuRenderer && menuRenderer.closest('ytd-watch-metadata')) {
-        console.log('[X10Tube] Skipping main video menu (use overlay button instead)');
-        return;
-      }
-
       // Find the parent video renderer
       // Search from menuButton upward for any video container
       const rendererSelectors = [
