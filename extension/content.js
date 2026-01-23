@@ -1405,10 +1405,13 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
   }
 
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  console.log('[X10Tube] Adding video to x10:', { x10Id, videoId, videoUrl });
+
   const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
   if (item) item.classList.add('adding');
 
   const result = await api.addVideoToX10(x10Id, videoUrl);
+  console.log('[X10Tube] Add result:', result);
 
   if (result.success) {
     showToast(`Added to ${x10Title || 'x10'}`, 'success');

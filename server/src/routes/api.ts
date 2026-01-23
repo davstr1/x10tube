@@ -142,6 +142,7 @@ apiRouter.post('/x10/:id/add', async (req: Request, res: Response) => {
     const video = await addVideoToX10(id, url);
     res.json({ success: true, video });
   } catch (error) {
+    console.error('[API] Error adding video to x10:', id, url, error);
     res.status(400).json({
       error: error instanceof Error ? error.message : 'Failed to add video'
     });

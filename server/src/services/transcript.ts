@@ -5,7 +5,7 @@ const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 const INNERTUBE_CONTEXT = {
   client: {
     clientName: 'WEB',
-    clientVersion: '2.20260120.01.00',
+    clientVersion: '2.20250120.01.00',
     hl: 'en',
     gl: 'US',
   }
@@ -64,26 +64,60 @@ function stripTags(text: string): string {
   return text.replace(/<[^>]*>/g, '');
 }
 
-// Fetch video metadata and caption tracks via /player endpoint
-async function fetchPlayerData(videoId: string): Promise<any> {
+// Sleep helper for retry delays
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Fetch video metadata and caption tracks via /player endpoint (with retry)
+async function fetchPlayerData(videoId: string, retries = 3): Promise<any> {
   const url = `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      context: INNERTUBE_CONTEXT,
-      videoId: videoId
-    })
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    throw new Error(`YouTube API returned ${response.status}`);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          context: INNERTUBE_CONTEXT,
+          videoId: videoId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`YouTube API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Check if video is available
+      const playability = data?.playabilityStatus?.status;
+      if (playability === 'OK') {
+        return data;
+      }
+
+      // If not OK, it might be a transient error - retry
+      const reason = data?.playabilityStatus?.reason || 'Unknown';
+      lastError = new Error(`Video not available: ${reason}`);
+
+      if (attempt < retries) {
+        console.log(`[Transcript] Attempt ${attempt} failed for ${videoId}: ${reason}. Retrying...`);
+        await sleep(500 * attempt); // Exponential backoff: 500ms, 1000ms, 1500ms
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      if (attempt < retries) {
+        console.log(`[Transcript] Attempt ${attempt} failed for ${videoId}: ${lastError.message}. Retrying...`);
+        await sleep(500 * attempt);
+      }
+    }
   }
 
-  return response.json();
+  throw lastError || new Error('Failed to fetch video data');
 }
 
 // Fetch and parse caption XML
@@ -120,14 +154,8 @@ export async function extractVideoInfo(youtubeUrl: string): Promise<VideoInfo> {
     throw new Error('Invalid YouTube URL');
   }
 
+  // fetchPlayerData now handles retries and playability check
   const playerData = await fetchPlayerData(videoId);
-
-  // Check playability
-  const playability = playerData?.playabilityStatus?.status;
-  if (playability !== 'OK') {
-    const reason = playerData?.playabilityStatus?.reason || 'Unknown error';
-    throw new Error(`Video not available: ${reason}`);
-  }
 
   // Extract video details
   const videoDetails = playerData?.videoDetails || {};
