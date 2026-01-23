@@ -498,34 +498,18 @@ function injectStyles() {
     }
 
     /* X10Tube Menu Item (inside YouTube's ⋮ menu) */
+    /* Minimal CSS - let YouTube's native styles handle tp-yt-paper-item */
     .x10tube-menu-item {
-      display: block;
       cursor: pointer;
-    }
-    .x10tube-menu-item tp-yt-paper-item {
-      display: flex;
-      align-items: center;
-      padding: 0 36px 0 16px;
-      min-height: 36px;
-      font-family: "Roboto", "Arial", sans-serif;
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--yt-spec-text-primary, #f1f1f1);
-      cursor: pointer;
-    }
-    .x10tube-menu-item tp-yt-paper-item:hover {
-      background-color: var(--yt-spec-10-percent-layer, rgba(255,255,255,0.1));
     }
     .x10tube-menu-item .x10tube-menu-icon {
       width: 24px;
       height: 24px;
-      margin-right: 16px;
+      margin-right: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      font-weight: bold;
-      color: var(--yt-spec-text-primary, #f1f1f1);
+      color: #dc2626;
     }
   `;
   document.head.appendChild(styles);
@@ -1190,7 +1174,7 @@ function createX10MenuItemNewFormat(videoId) {
 
   wrapper.innerHTML = `
     <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; color: var(--yt-spec-text-primary, #f1f1f1);">
-      <div style="width: 24px; height: 24px; margin-right: 16px; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 24px; height: 24px; margin-right: 12px; display: flex; align-items: center; justify-content: center;">
         <span style="font-size: 18px; font-weight: bold; color: #dc2626;">+</span>
       </div>
       <span style="font-size: 14px;">Add to X10Tube</span>
