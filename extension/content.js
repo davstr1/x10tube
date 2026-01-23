@@ -1472,12 +1472,6 @@ function onUrlChange() {
   closeDropdown();
   videoInX10s = [];
 
-  // Main button only on watch pages
-  if (getVideoId()) {
-    clearTimeout(injectionTimeout);
-    injectionTimeout = setTimeout(injectButton, 1000);
-  }
-
 }
 
 const observer = new MutationObserver(() => {
@@ -1490,11 +1484,6 @@ window.addEventListener('popstate', onUrlChange);
 // Initial injection
 injectStyles();
 createToast();
-
-// Main button on watch pages
-if (getVideoId()) {
-  setTimeout(injectButton, 1500);
-}
 
 // YouTube menu (⋮) integration - works on all pages with video thumbnails
 setTimeout(setupYouTubeMenuIntegration, 1000);
