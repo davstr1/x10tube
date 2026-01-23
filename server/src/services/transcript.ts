@@ -5,9 +5,12 @@ const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 const INNERTUBE_CONTEXT = {
   client: {
     clientName: 'WEB',
-    clientVersion: '2.20250120.01.00',
+    clientVersion: '2.20250122.01.00',
     hl: 'en',
     gl: 'US',
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    originalUrl: 'https://www.youtube.com',
+    platform: 'DESKTOP',
   }
 };
 
@@ -69,51 +72,80 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fetch video metadata and caption tracks via /player endpoint (with retry)
-async function fetchPlayerData(videoId: string, retries = 3): Promise<any> {
+// Android client context (more reliable for some videos)
+const ANDROID_CONTEXT = {
+  client: {
+    clientName: 'ANDROID',
+    clientVersion: '19.09.37',
+    androidSdkVersion: 30,
+    hl: 'en',
+    gl: 'US',
+  }
+};
+
+// Try to fetch with a specific client context
+async function tryFetchPlayerData(videoId: string, context: any, clientName: string): Promise<any | null> {
   const url = `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}`;
 
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Origin': 'https://www.youtube.com',
+        'Referer': 'https://www.youtube.com/',
+      },
+      body: JSON.stringify({
+        context: context,
+        videoId: videoId
+      })
+    });
+
+    if (!response.ok) {
+      console.log(`[Transcript] ${clientName} client returned ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const playability = data?.playabilityStatus?.status;
+
+    if (playability === 'OK') {
+      return data;
+    }
+
+    console.log(`[Transcript] ${clientName} client: ${data?.playabilityStatus?.reason || 'Unknown error'}`);
+    return null;
+  } catch (error) {
+    console.log(`[Transcript] ${clientName} client error:`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+// Fetch video metadata and caption tracks via /player endpoint (with retry and fallback)
+async function fetchPlayerData(videoId: string, retries = 3): Promise<any> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          context: INNERTUBE_CONTEXT,
-          videoId: videoId
-        })
-      });
+    // Try WEB client first
+    const webResult = await tryFetchPlayerData(videoId, INNERTUBE_CONTEXT, 'WEB');
+    if (webResult) {
+      return webResult;
+    }
 
-      if (!response.ok) {
-        throw new Error(`YouTube API returned ${response.status}`);
-      }
+    // Fallback to ANDROID client (often more reliable)
+    const androidResult = await tryFetchPlayerData(videoId, ANDROID_CONTEXT, 'ANDROID');
+    if (androidResult) {
+      return androidResult;
+    }
 
-      const data = await response.json();
+    lastError = new Error('Video not available');
 
-      // Check if video is available
-      const playability = data?.playabilityStatus?.status;
-      if (playability === 'OK') {
-        return data;
-      }
-
-      // If not OK, it might be a transient error - retry
-      const reason = data?.playabilityStatus?.reason || 'Unknown';
-      lastError = new Error(`Video not available: ${reason}`);
-
-      if (attempt < retries) {
-        console.log(`[Transcript] Attempt ${attempt} failed for ${videoId}: ${reason}. Retrying...`);
-        await sleep(500 * attempt); // Exponential backoff: 500ms, 1000ms, 1500ms
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error');
-      if (attempt < retries) {
-        console.log(`[Transcript] Attempt ${attempt} failed for ${videoId}: ${lastError.message}. Retrying...`);
-        await sleep(500 * attempt);
-      }
+    if (attempt < retries) {
+      console.log(`[Transcript] Attempt ${attempt} failed for ${videoId}. Retrying in ${500 * attempt}ms...`);
+      await sleep(500 * attempt);
     }
   }
 
