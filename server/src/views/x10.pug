@@ -5,8 +5,8 @@ block content
   section.mb-6
     //- Title (editable if owner)
     if isOwner
-      form(action=`/s/${x10.id}/title` method="POST")
-        input.text-2xl.font-semibold.text-gray-900.bg-transparent.border-b-2.border-transparent.hover_border-gray-200.focus_border-red-500.focus_outline-none.w-full.py-1.transition-colors(
+      form#title-form(action=`/s/${x10.id}/title` method="POST")
+        input#title-input.text-2xl.font-semibold.text-gray-900.bg-transparent.border-b-2.border-transparent.hover_border-gray-200.focus_border-red-500.focus_outline-none.w-full.py-1.transition-colors(
           type="text"
           name="title"
           value=x10.title || 'Untitled'
@@ -236,6 +236,32 @@ block content
 
   script.
     (function() {
+      // Title auto-save functionality
+      const titleForm = document.getElementById('title-form');
+      const titleInput = document.getElementById('title-input');
+      if (titleForm && titleInput) {
+        const originalTitle = titleInput.value;
+
+        // Submit on blur if changed
+        titleInput.addEventListener('blur', function() {
+          if (titleInput.value !== originalTitle && titleInput.value.trim() !== '') {
+            titleForm.submit();
+          }
+        });
+
+        // Submit on Enter key
+        titleInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (titleInput.value !== originalTitle && titleInput.value.trim() !== '') {
+              titleForm.submit();
+            } else {
+              titleInput.blur();
+            }
+          }
+        });
+      }
+
       // Pre-prompt save functionality
       const prepromptTextarea = document.getElementById('x10-preprompt');
       const saveBtn = document.getElementById('save-preprompt');

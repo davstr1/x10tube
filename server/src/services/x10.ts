@@ -65,11 +65,17 @@ export async function createX10(
   // Calculate token count
   const tokenCount = videos.reduce((sum, v) => sum + estimateTokens(v.transcript || ''), 0);
 
+  // Use first video's title as default if no title provided
+  const effectiveTitle = title || (videos.length > 0 ? videos[0].title : null);
+  if (effectiveTitle && effectiveTitle !== title) {
+    db.prepare('UPDATE x10s SET title = ? WHERE id = ?').run(effectiveTitle, x10Id);
+  }
+
   const x10: X10WithVideos = {
     id: x10Id,
     user_id: userId,
     anonymous_id: anonymousId,
-    title,
+    title: effectiveTitle,
     pre_prompt: null,
     created_at: now,
     updated_at: now,

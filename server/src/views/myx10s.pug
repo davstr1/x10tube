@@ -4,6 +4,30 @@ block content
   //- Hidden element for extension to read user code
   div(data-x10-user-code=userCode style="display:none")
 
+  style.
+    .dropdown { position: relative; }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 50;
+      min-width: 10rem;
+      padding-top: 0.25rem;
+    }
+    .dropdown-menu-inner {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      padding: 0.25rem 0;
+    }
+    .dropdown-menu-inner button,
+    .dropdown-menu-inner a {
+      text-align: left !important;
+    }
+    .dropdown:hover .dropdown-menu { display: block; }
+
   .flex.justify-between.items-center.mb-8
     h1.text-2xl.font-semibold.text-gray-900 My x10s
     a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/") + New
@@ -16,8 +40,13 @@ block content
         - const date = new Date(x10.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         - const firstVideo = x10.videos[0]
         - const thumbnailUrl = firstVideo ? `https://img.youtube.com/vi/${firstVideo.youtube_id}/mqdefault.jpg` : null
+        - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
+        - const x10Url = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}`
+        - const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || ''
+        - const fullPrompt = 'Fetch ' + mdUrl + '\n\n' + effectivePrePrompt
+        - const encodedPrompt = encodeURIComponent(fullPrompt)
 
-        .bg-white.border.border-gray-200.rounded-lg.overflow-hidden.hover_border-gray-300.transition-colors
+        .bg-white.border.border-gray-200.rounded-lg.hover_border-gray-300.transition-colors
           .flex.gap-4.p-4
             //- Thumbnail (first video)
             if thumbnailUrl
@@ -36,17 +65,46 @@ block content
                     | #{tokenDisplay}
                 span.text-xs.text-gray-400.flex-shrink-0= date
 
-              //- Actions row
-              .flex.items-center.gap-3.text-sm
-                a.text-blue-600.hover_text-blue-800(href=`/s/${x10.id}`) Open
-                a.text-blue-600.hover_text-blue-800(href=`https://claude.ai/new` target="_blank") Claude
-                a.text-blue-600.hover_text-blue-800(href=`https://chat.openai.com` target="_blank") ChatGPT
-                button.text-blue-600.hover_text-blue-800(
-                  type="button"
-                  onclick=`navigator.clipboard.writeText(window.location.origin + '/s/${x10.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy link', 1500)`
-                ) Copy link
+              //- Actions row (matching x10 video item style)
+              .flex.items-center.gap-3.text-xs
+                a.text-gray-400.hover_text-gray-600(href=`/s/${x10.id}`) Open
+
+                //- Open in... dropdown
+                .dropdown
+                  button.text-gray-400.hover_text-gray-600(type="button")
+                    | Open in...
+                    span.ml-1 ▾
+                  .dropdown-menu
+                    .dropdown-menu-inner
+                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://claude.ai/new?q=${encodedPrompt}` target="_blank") Claude
+                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://chat.openai.com/?q=${encodedPrompt}` target="_blank") ChatGPT
+                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${encodedPrompt}` target="_blank") Gemini
+                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://www.perplexity.ai/search/?q=${encodedPrompt}` target="_blank") Perplexity
+                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://x.com/i/grok?text=${encodedPrompt}` target="_blank") Grok
+                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
+
+                //- Copy... dropdown
+                .dropdown
+                  button.text-gray-400.hover_text-gray-600(type="button")
+                    | Copy...
+                    span.ml-1 ▾
+                  .dropdown-menu
+                    .dropdown-menu-inner
+                      button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50(
+                        type="button"
+                        onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
+                      ) MD Link
+                      button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50(
+                        type="button"
+                        onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='X10 URL', 1500)`
+                      ) X10 URL
+
+                //- Spacer to push delete to the right
+                .flex-1
+
+                //- Delete button (right-aligned)
                 form.inline(action=`/x10/${x10.id}/delete` method="POST" style="display:inline")
-                  button.text-gray-400.hover_text-red-600(type="submit" onclick="return confirm('Delete this x10?')") Delete
+                  button.w-6.h-6.flex.items-center.justify-center.text-gray-300.hover_text-red-500.hover_bg-red-50.rounded-full.transition-colors(type="submit" onclick="return confirm('Delete this x10?')") ×
 
   else
     .text-center.py-16.mb-12
