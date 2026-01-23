@@ -1,7 +1,7 @@
 // User settings service
 import db, { UserSettings } from '../db.js';
 
-const DEFAULT_PRE_PROMPT = 'Summarize the following content. What do we learn?';
+const DEFAULT_PRE_PROMPT = 'Summarize the content. What do we learn?';
 
 // Get user settings (create if not exists)
 export function getUserSettings(userCode: string): UserSettings {

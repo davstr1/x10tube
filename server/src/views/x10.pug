@@ -25,7 +25,7 @@ block content
   //- Action buttons
   section.mb-10
     - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
-    - const fullPrompt = (effectivePrePrompt || '') + '\n\nRead ' + mdUrl + ' which contains transcripts from multiple YouTube videos.'
+    - const fullPrompt = 'Fetch ' + mdUrl + '\n\n' + (effectivePrePrompt || '')
     - const claudePrompt = encodeURIComponent(fullPrompt)
     - const chatgptPrompt = encodeURIComponent(fullPrompt)
 
@@ -168,16 +168,16 @@ block content
     section.border-t.border-gray-200.pt-8
       h2.text-lg.font-semibold.text-gray-900.mb-6 Settings
 
-      //- Pre-prompt for this x10
+      //- Prompt for this x10
       .bg-white.border.border-gray-200.rounded-lg.p-4
         .flex.justify-between.items-center.mb-2
-          p.text-sm.text-gray-500 Pre-prompt for this x10
+          p.text-sm.text-gray-500 Prompt for this x10
           button#save-preprompt.text-xs.text-blue-600.hover_text-blue-800.hidden(type="button") Save
         textarea#x10-preprompt.w-full.px-3.py-2.border.border-gray-200.rounded-md.text-sm.focus_outline-none.focus_border-gray-400.resize-none(
           rows="2"
           placeholder=defaultPrePrompt
         )= x10.pre_prompt || effectivePrePrompt
-        p.text-xs.text-gray-400.mt-2 This prompt is sent to the LLM when opening in Claude or ChatGPT
+        p.text-xs.text-gray-400.mt-2 Instructions sent to the LLM after fetching the content
 
   script.
     (function() {
