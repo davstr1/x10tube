@@ -1205,11 +1205,11 @@ function createX10MenuItemNewFormat(videoId) {
     wrapper.style.backgroundColor = 'transparent';
   });
 
-  // Click handler
+  // Click handler - capture click position
   wrapper.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    handleX10MenuItemClick(videoId, wrapper);
+    handleX10MenuItemClick(videoId, { x: e.clientX, y: e.clientY });
   });
 
   return wrapper;
@@ -1244,17 +1244,17 @@ function createX10MenuItem(videoId) {
   paperItem.appendChild(text);
   wrapper.appendChild(paperItem);
 
-  // Click handler
+  // Click handler - capture click position
   wrapper.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    handleX10MenuItemClick(videoId, wrapper);
+    handleX10MenuItemClick(videoId, { x: e.clientX, y: e.clientY });
   });
 
   return wrapper;
 }
 
-function handleX10MenuItemClick(videoId, menuItem) {
+function handleX10MenuItemClick(videoId, clickPosition) {
   console.log('[X10Tube] Menu item clicked for video:', videoId);
 
   // Close YouTube's menu
@@ -1266,11 +1266,11 @@ function handleX10MenuItemClick(videoId, menuItem) {
   // Also try pressing Escape
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
-  // Show X10Tube dropdown
-  showX10DropdownForVideo(videoId, menuItem);
+  // Show X10Tube dropdown near click position
+  showX10DropdownForVideo(videoId, clickPosition);
 }
 
-async function showX10DropdownForVideo(videoId, anchorElement) {
+async function showX10DropdownForVideo(videoId, clickPosition) {
   injectStyles();
   createToast();
 
@@ -1284,13 +1284,23 @@ async function showX10DropdownForVideo(videoId, anchorElement) {
   // Store the videoId for actions
   dropdown.dataset.currentVideoId = videoId;
 
-  // Position near the menu item (or fallback to center)
-  let top = 100, left = 100;
-  if (anchorElement) {
-    const rect = anchorElement.getBoundingClientRect();
-    top = rect.top;
-    left = Math.max(10, rect.left - 280);
+  // Position near the click (with some offset so it doesn't cover the cursor)
+  const dropdownWidth = 280;
+  const dropdownHeight = 350; // approximate
+  let top = clickPosition.y - 20;
+  let left = clickPosition.x - dropdownWidth - 10;
+
+  // Keep within viewport bounds
+  if (left < 10) {
+    left = clickPosition.x + 10; // Show to the right instead
   }
+  if (top + dropdownHeight > window.innerHeight) {
+    top = window.innerHeight - dropdownHeight - 10;
+  }
+  if (top < 10) {
+    top = 10;
+  }
+
   dropdown.style.top = top + 'px';
   dropdown.style.left = left + 'px';
 
