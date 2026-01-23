@@ -110,12 +110,15 @@ block content
               onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='This X10 URL', 1500)`
             ) This X10 URL
 
+      //- Spacer to push delete to the right
+      .flex-1
       if isOwner
         form.inline(action=`/x10/${x10.id}/delete` method="POST")
-          button.text-sm.text-gray-400.hover_text-red-600.transition-colors(
+          button.w-8.h-8.flex.items-center.justify-center.text-gray-300.hover_text-red-500.hover_bg-red-50.rounded-full.transition-colors(
             type="submit"
+            title="Delete this x10"
             onclick="return confirm('Delete this x10?')"
-          ) Delete
+          ) ×
 
   //- Videos list
   section.mb-10
