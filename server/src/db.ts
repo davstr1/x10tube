@@ -35,12 +35,20 @@ db.exec(`
     user_id TEXT,
     anonymous_id TEXT,
     title TEXT,
+    pre_prompt TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_x10s_anonymous_id ON x10s(anonymous_id);
+
+  CREATE TABLE IF NOT EXISTS user_settings (
+    user_code TEXT PRIMARY KEY,
+    default_pre_prompt TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 
   CREATE TABLE IF NOT EXISTS videos (
     id TEXT PRIMARY KEY,
@@ -60,6 +68,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 `);
 
+// Migrations for existing databases
+try {
+  // Add pre_prompt column to x10s if it doesn't exist
+  db.exec(`ALTER TABLE x10s ADD COLUMN pre_prompt TEXT`);
+} catch (e) {
+  // Column already exists, ignore
+}
+
 export default db;
 
 // Helper types
@@ -74,6 +90,14 @@ export interface X10 {
   user_id: string | null;
   anonymous_id: string | null;
   title: string | null;
+  pre_prompt: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSettings {
+  user_code: string;
+  default_pre_prompt: string | null;
   created_at: string;
   updated_at: string;
 }

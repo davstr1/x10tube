@@ -2,7 +2,7 @@ extends layout
 
 block content
   //- Header section
-  section.mb-10
+  section.mb-6
     //- Title (editable if owner)
     if isOwner
       form(action=`/s/${x10.id}/title` method="POST")
@@ -25,8 +25,9 @@ block content
   //- Action buttons
   section.mb-10
     - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
-    - const claudePrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
-    - const chatgptPrompt = encodeURIComponent(`Read ${mdUrl} which contains transcripts from multiple YouTube videos. Then answer my questions about this content.`)
+    - const fullPrompt = (effectivePrePrompt || '') + '\n\nIf you cannot read the URL, ask me to paste the content.\n\nRead ' + mdUrl + ' which contains transcripts from multiple YouTube videos.'
+    - const claudePrompt = encodeURIComponent(fullPrompt)
+    - const chatgptPrompt = encodeURIComponent(fullPrompt)
 
     .flex.flex-wrap.gap-3.items-center
       a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-5.py-3.rounded-lg.text-sm.font-medium.no-underline.transition-colors(
@@ -43,6 +44,10 @@ block content
         type="button"
         onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy .md link', 2000)`
       ) Copy .md link
+
+      button#copy-md-btn.inline-flex.items-center.gap-2.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(
+        type="button"
+      ) Copy MD
 
       if isOwner
         form.inline(action=`/x10/${x10.id}/delete` method="POST")
@@ -89,9 +94,9 @@ block content
             .px-4.py-4.bg-gray-50.text-sm.text-gray-600.leading-relaxed.max-h-72.overflow-y-auto
               p.whitespace-pre-wrap= video.transcript
 
-  //- Add video form
+  //- Add video form (for owner)
   if isOwner
-    section.mt-10.pt-8.border-t.border-gray-200
+    section.mb-10
       h3.text-lg.font-semibold.text-gray-900.mb-4 Add a video
 
       if x10.videos.length >= 10
@@ -109,7 +114,68 @@ block content
 
   //- Copy to account button (for non-owners who are logged in)
   if currentUser && !isOwner
-    section.mt-10.pt-8.border-t.border-gray-200
+    section.mb-10
       form(action=`/api/x10/${x10.id}/fork` method="POST")
         button.bg-white.hover_bg-gray-50.text-gray-700.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-gray-200.transition-colors(type="submit")
           | Copy to my account
+
+  //- Settings section (bottom)
+  if isOwner
+    section.border-t.border-gray-200.pt-8
+      h2.text-lg.font-semibold.text-gray-900.mb-6 Settings
+
+      //- Pre-prompt for this x10
+      .bg-white.border.border-gray-200.rounded-lg.p-4
+        .flex.justify-between.items-center.mb-2
+          p.text-sm.text-gray-500 Pre-prompt for this x10
+          button#save-preprompt.text-xs.text-blue-600.hover_text-blue-800.hidden(type="button") Save
+        textarea#x10-preprompt.w-full.px-3.py-2.border.border-gray-200.rounded-md.text-sm.focus_outline-none.focus_border-gray-400.resize-none(
+          rows="2"
+          placeholder=defaultPrePrompt
+        )= x10.pre_prompt || effectivePrePrompt
+        p.text-xs.text-gray-400.mt-2 This prompt is sent to the LLM when opening in Claude or ChatGPT
+
+  script.
+    (function() {
+      // Pre-prompt save functionality
+      const prepromptTextarea = document.getElementById('x10-preprompt');
+      const saveBtn = document.getElementById('save-preprompt');
+
+      if (prepromptTextarea && saveBtn) {
+        const originalValue = prepromptTextarea.value;
+
+        prepromptTextarea.addEventListener('input', function() {
+          saveBtn.classList.toggle('hidden', prepromptTextarea.value === originalValue);
+        });
+
+        saveBtn.addEventListener('click', async function() {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/s/#{x10.id}/preprompt';
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'prePrompt';
+          input.value = prepromptTextarea.value;
+          form.appendChild(input);
+          document.body.appendChild(form);
+          form.submit();
+        });
+      }
+
+      // Copy MD functionality
+      const copyMdBtn = document.getElementById('copy-md-btn');
+      if (copyMdBtn) {
+        copyMdBtn.addEventListener('click', async function() {
+          try {
+            const response = await fetch('/s/#{x10.id}.md');
+            const md = await response.text();
+            await navigator.clipboard.writeText(md);
+            copyMdBtn.textContent = 'Copied!';
+            setTimeout(() => copyMdBtn.textContent = 'Copy MD', 2000);
+          } catch (e) {
+            copyMdBtn.textContent = 'Error';
+            setTimeout(() => copyMdBtn.textContent = 'Copy MD', 2000);
+          }
+        });
+      }
+    })();

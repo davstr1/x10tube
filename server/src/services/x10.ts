@@ -70,6 +70,7 @@ export async function createX10(
     user_id: userId,
     anonymous_id: anonymousId,
     title,
+    pre_prompt: null,
     created_at: now,
     updated_at: now,
     videos,
@@ -156,6 +157,13 @@ export function removeVideoFromX10(x10Id: string, videoId: string): boolean {
 export function updateX10Title(id: string, title: string): boolean {
   const result = db.prepare('UPDATE x10s SET title = ?, updated_at = ? WHERE id = ?')
     .run(title, new Date().toISOString(), id);
+  return result.changes > 0;
+}
+
+// Update x10 pre-prompt
+export function updateX10PrePrompt(id: string, prePrompt: string | null): boolean {
+  const result = db.prepare('UPDATE x10s SET pre_prompt = ?, updated_at = ? WHERE id = ?')
+    .run(prePrompt, new Date().toISOString(), id);
   return result.changes > 0;
 }
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { getX10ById, addVideoToX10, removeVideoFromX10, updateX10Title } from '../services/x10.js';
+import { getX10ById, addVideoToX10, removeVideoFromX10, updateX10Title, updateX10PrePrompt } from '../services/x10.js';
 import { extractVideoId } from '../services/transcript.js';
+import { getUserSettings, getDefaultPrePromptText } from '../services/settings.js';
 
 export const x10Router = Router();
 
@@ -13,8 +14,21 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
     return res.status(404).send('# Not found\n\nThis x10 does not exist.');
   }
 
+  // Get user settings for default pre-prompt
+  const anonymousId = req.anonymousId;
+  const settings = getUserSettings(anonymousId);
+  const defaultPrePrompt = getDefaultPrePromptText();
+  const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || defaultPrePrompt;
+
   // Build markdown content
-  let md = `# ${x10.title || 'Untitled'}\n\n`;
+  let md = '';
+
+  // Pre-prompt
+  if (effectivePrePrompt) {
+    md += `${effectivePrePrompt}\n\n`;
+  }
+
+  md += `# ${x10.title || 'Untitled'}\n\n`;
 
   // Videos list
   md += `## Videos included\n\n`;
@@ -76,6 +90,13 @@ x10Router.get('/:id', (req: Request, res: Response) => {
   // TODO: Also check user_id when auth is implemented
   const isOwner = x10.anonymous_id === anonymousId;
 
+  // Get user settings for default pre-prompt
+  const settings = getUserSettings(anonymousId);
+  const defaultPrePrompt = getDefaultPrePromptText();
+
+  // Determine effective pre-prompt (x10's own, or fall back to user's default)
+  const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || defaultPrePrompt;
+
   res.render('x10', {
     title: x10.title || 'Untitled x10',
     x10,
@@ -83,7 +104,9 @@ x10Router.get('/:id', (req: Request, res: Response) => {
     createdDate,
     currentUser: null,
     isOwner,
-    isOrphan: x10.user_id === null && x10.anonymous_id === null
+    isOrphan: x10.user_id === null && x10.anonymous_id === null,
+    effectivePrePrompt,
+    defaultPrePrompt
   });
 });
 
@@ -170,6 +193,29 @@ x10Router.post('/:id/title', (req: Request, res: Response) => {
   }
 
   const success = updateX10Title(id, title);
+  if (success) {
+    res.redirect(`/s/${id}`);
+  } else {
+    res.status(404).json({ error: 'X10 not found' });
+  }
+});
+
+// Update x10 pre-prompt
+x10Router.post('/:id/preprompt', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { prePrompt } = req.body;
+
+  const x10 = getX10ById(id);
+  if (!x10) {
+    return res.status(404).json({ error: 'X10 not found' });
+  }
+
+  // Check ownership
+  if (!canEdit(x10, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  }
+
+  const success = updateX10PrePrompt(id, prePrompt || null);
   if (success) {
     res.redirect(`/s/${id}`);
   } else {

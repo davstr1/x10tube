@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { createX10, getX10sForUser, getX10sForAnonymous, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, checkVideoInAnonymousX10s, forkX10, deleteX10 } from '../services/x10.js';
+import { createX10, getX10sForUser, getX10sForAnonymous, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, checkVideoInAnonymousX10s, forkX10, deleteX10, updateX10PrePrompt } from '../services/x10.js';
 import { extractVideoId } from '../services/transcript.js';
+import { getUserSettings, updateDefaultPrePrompt } from '../services/settings.js';
 
 export const apiRouter = Router();
 
@@ -318,5 +319,50 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to add video'
     });
+  }
+});
+
+// Get user settings
+apiRouter.get('/settings', (req: Request, res: Response) => {
+  const userCode = req.anonymousId;
+  const settings = getUserSettings(userCode);
+  res.json(settings);
+});
+
+// Update user's default pre-prompt
+apiRouter.patch('/settings/pre-prompt', (req: Request, res: Response) => {
+  const userCode = req.anonymousId;
+  const { prePrompt } = req.body;
+
+  if (typeof prePrompt !== 'string') {
+    return res.status(400).json({ error: 'prePrompt must be a string' });
+  }
+
+  const settings = updateDefaultPrePrompt(userCode, prePrompt);
+  res.json(settings);
+});
+
+// Update x10 pre-prompt
+apiRouter.patch('/x10/:id/pre-prompt', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { prePrompt } = req.body;
+  const userCode = req.anonymousId;
+
+  const x10 = getX10ById(id);
+  if (!x10) {
+    return res.status(404).json({ error: 'X10 not found' });
+  }
+
+  // Check ownership
+  const isOwner = x10.anonymous_id === userCode || x10.user_id === req.headers['x-user-id'];
+  if (!isOwner) {
+    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  }
+
+  const success = updateX10PrePrompt(id, prePrompt || null);
+  if (success) {
+    res.json({ success: true, prePrompt });
+  } else {
+    res.status(500).json({ error: 'Failed to update pre-prompt' });
   }
 });

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createX10, getX10sForAnonymous, getX10sForUser, getX10ById, deleteX10 } from '../services/x10.js';
+import { getUserSettings } from '../services/settings.js';
 
 export const indexRouter = Router();
 
@@ -117,11 +118,13 @@ indexRouter.get('/myx10s', (req: Request, res: Response) => {
   // For now, get x10s by anonymous ID
   const anonymousId = req.anonymousId;
   const x10s = getX10sForAnonymous(anonymousId);
+  const settings = getUserSettings(anonymousId);
 
   res.render('myx10s', {
     title: 'My x10s - x10tube',
     x10s,
-    userCode: anonymousId
+    userCode: anonymousId,
+    settings
   });
 });
 
