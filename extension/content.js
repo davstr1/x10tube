@@ -242,16 +242,12 @@ function injectStyles() {
 
     /* Master toggle button */
     #x10tube-master-toggle {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
       height: 36px;
       padding: 0 12px;
       background: #212121;
       border: none;
       border-radius: 18px;
       cursor: pointer;
-      z-index: 9999;
       box-shadow: 0 2px 10px rgba(0,0,0,0.4);
       transition: opacity 0.15s, transform 0.15s;
       display: flex;
@@ -276,6 +272,46 @@ function injectStyles() {
     #x10tube-master-toggle.disabled .logo-x10,
     #x10tube-master-toggle.disabled .logo-tube {
       color: #888;
+    }
+
+    /* Master toggle container with hover menu */
+    #x10tube-toggle-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+    #x10tube-toggle-menu {
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      margin-bottom: 8px;
+      background: #282828;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(5px);
+      transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    #x10tube-toggle-container:hover #x10tube-toggle-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    #x10tube-toggle-menu a {
+      display: block;
+      padding: 10px 16px;
+      color: #f1f1f1;
+      text-decoration: none;
+      font-family: 'Roboto', 'Arial', sans-serif;
+      font-size: 13px;
+      transition: background 0.1s;
+    }
+    #x10tube-toggle-menu a:hover {
+      background: #3a3a3a;
     }
 
     /* Dropdown */
@@ -861,8 +897,22 @@ function stopTitleButtonInjection() {
 // ============================================
 
 function createMasterToggle() {
-  if (document.getElementById('x10tube-master-toggle')) return;
+  if (document.getElementById('x10tube-toggle-container')) return;
 
+  // Create container
+  const container = document.createElement('div');
+  container.id = 'x10tube-toggle-container';
+
+  // Create hover menu
+  const menu = document.createElement('div');
+  menu.id = 'x10tube-toggle-menu';
+  const myX10sLink = document.createElement('a');
+  myX10sLink.href = api.getDashboardUrl();
+  myX10sLink.target = '_blank';
+  myX10sLink.textContent = 'My X10s';
+  menu.appendChild(myX10sLink);
+
+  // Create toggle button
   const toggle = document.createElement('button');
   toggle.id = 'x10tube-master-toggle';
   toggle.innerHTML = '<span class="logo-x10">X10</span><span class="logo-tube">Tube</span>';
@@ -895,7 +945,9 @@ function createMasterToggle() {
     showToast(titleButtonsEnabled ? 'X10Tube buttons enabled' : 'X10Tube buttons hidden', 'success');
   });
 
-  document.body.appendChild(toggle);
+  container.appendChild(menu);
+  container.appendChild(toggle);
+  document.body.appendChild(container);
 }
 
 // ============================================
