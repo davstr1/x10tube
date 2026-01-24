@@ -16,8 +16,8 @@ block content
       padding-top: 0.25rem;
     }
     .dropdown-menu-inner {
-      background: white;
-      border: 1px solid #e5e7eb;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-strong);
       border-radius: 0.5rem;
       box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
       padding: 0.25rem 0;
@@ -29,7 +29,7 @@ block content
     .dropdown:hover .dropdown-menu { display: block; }
 
   .flex.justify-between.items-center.mb-8
-    h1.text-2xl.font-semibold.text-gray-900 My x10s
+    h1.text-2xl.font-semibold.text-text-primary My x10s
     a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/") + New
 
   //- Main content: X10s list
@@ -46,7 +46,7 @@ block content
         - const fullPrompt = 'Fetch ' + mdUrl + '\n\n' + effectivePrePrompt
         - const encodedPrompt = encodeURIComponent(fullPrompt)
 
-        .bg-white.border.border-gray-200.rounded-lg.hover_border-gray-300.transition-colors
+        .bg-surface.border.border-border-strong.rounded-lg.hover_border-text-muted.transition-colors
           .flex.gap-4.p-4
             //- Thumbnail (first video)
             if thumbnailUrl
@@ -58,47 +58,47 @@ block content
               .flex.justify-between.items-start.gap-2.mb-2
                 div.min-w-0
                   a.block(href=`/s/${x10.id}`)
-                    h3.font-semibold.text-gray-900.hover_text-red-600.transition-colors.truncate= x10.title || 'Untitled'
-                  p.text-sm.text-gray-500.mt-1
+                    h3.font-semibold.text-text-primary.hover_text-red-600.transition-colors.truncate= x10.title || 'Untitled'
+                  p.text-sm.text-text-secondary.mt-1
                     | #{x10.videos.length} video#{x10.videos.length > 1 ? 's' : ''}
                     span.mx-1 ·
                     | #{tokenDisplay}
-                span.text-xs.text-gray-400.flex-shrink-0= date
+                span.text-xs.text-text-muted.flex-shrink-0= date
 
               //- Actions row (matching x10 video item style)
               .flex.items-center.gap-3.text-xs
-                a.text-gray-400.hover_text-gray-600(href=`/s/${x10.id}`) Open
+                a.text-text-muted.hover_text-text-secondary(href=`/s/${x10.id}`) Open
 
                 //- Open in... dropdown
                 .dropdown
-                  button.text-gray-400.hover_text-gray-600(type="button")
+                  button.text-text-muted.hover_text-text-secondary(type="button")
                     | Open in...
                     span.ml-1 ▾
                   .dropdown-menu
                     .dropdown-menu-inner
-                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://claude.ai/new?q=${encodedPrompt}` target="_blank") Claude
-                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://chat.openai.com/?q=${encodedPrompt}` target="_blank") ChatGPT
-                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${encodedPrompt}` target="_blank") Gemini
-                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://www.perplexity.ai/search/?q=${encodedPrompt}` target="_blank") Perplexity
-                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://x.com/i/grok?text=${encodedPrompt}` target="_blank") Grok
-                      a.block.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://claude.ai/new?q=${encodedPrompt}` target="_blank") Claude
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://chat.openai.com/?q=${encodedPrompt}` target="_blank") ChatGPT
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${encodedPrompt}` target="_blank") Gemini
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.perplexity.ai/search/?q=${encodedPrompt}` target="_blank") Perplexity
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://x.com/i/grok?text=${encodedPrompt}` target="_blank") Grok
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
 
                 //- Copy... dropdown
                 .dropdown
-                  button.text-gray-400.hover_text-gray-600(type="button")
+                  button.text-text-muted.hover_text-text-secondary(type="button")
                     | Copy...
                     span.ml-1 ▾
                   .dropdown-menu
                     .dropdown-menu-inner
-                      button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50(
+                      button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
                         type="button"
                         onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
                       ) MD Link
-                      button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.copy-md-content-btn(
+                      button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-md-content-btn(
                         type="button"
                         data-md-url=mdUrl
                       ) MD Content
-                      button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50(
+                      button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
                         type="button"
                         onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='This X10 URL', 1500)`
                       ) This X10 URL
@@ -108,44 +108,44 @@ block content
 
                 //- Delete button (right-aligned)
                 form.inline(action=`/x10/${x10.id}/delete` method="POST" style="display:inline")
-                  button.w-6.h-6.flex.items-center.justify-center.text-gray-300.hover_text-red-500.hover_bg-red-50.rounded-full.transition-colors(type="submit" onclick="return confirm('Delete this x10?')") ×
+                  button.w-6.h-6.flex.items-center.justify-center.text-text-muted.hover_text-red-500.hover_bg-red-500.hover_bg-opacity-10.rounded-full.transition-colors(type="submit" onclick="return confirm('Delete this x10?')") ×
 
   else
     .text-center.py-16.mb-12
-      p.text-gray-500.mb-6 You don't have any x10s yet
+      p.text-text-secondary.mb-6 You don't have any x10s yet
       a.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-md.text-sm.font-medium.no-underline(href="/")
         | Create my first x10
 
-      p.mt-8.text-gray-500 or
+      p.mt-8.text-text-secondary or
 
-      p.mt-4.text-sm.text-gray-600
+      p.mt-4.text-sm.text-text-secondary
         | Install the Chrome extension
         br
         | Add videos in one click from YouTube
 
   //- Settings section (bottom)
-  section.border-t.border-gray-200.pt-8
-    h2.text-lg.font-semibold.text-gray-900.mb-6 Settings
+  section.border-t.border-border-strong.pt-8
+    h2.text-lg.font-semibold.text-text-primary.mb-6 Settings
 
     //- Default prompt
-    .bg-white.border.border-gray-200.rounded-lg.p-4.mb-6
+    .bg-surface.border.border-border-strong.rounded-lg.p-4.mb-6
       .flex.justify-between.items-center.mb-2
-        p.text-sm.text-gray-500 Default prompt
+        p.text-sm.text-text-secondary Default prompt
         button#save-preprompt.text-xs.text-red-600.hover_text-red-700.hidden(type="button") Save
-      textarea#default-preprompt.w-full.px-3.py-2.border.border-gray-200.rounded-md.text-sm.focus_outline-none.focus_border-gray-400.resize-none(
+      textarea#default-preprompt.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-sm.focus_outline-none.focus_border-text-muted.resize-none.bg-surface.text-text-primary(
         rows="2"
         placeholder="Summarize the content. What do we learn?"
       )= settings.default_pre_prompt
-      p.text-xs.text-gray-400.mt-2 Instructions sent to the LLM after fetching the content
+      p.text-xs.text-text-muted.mt-2 Instructions sent to the LLM after fetching the content
 
     //- User code section
-    .bg-white.border.border-gray-200.rounded-lg.p-4
+    .bg-surface.border.border-border-strong.rounded-lg.p-4
       .flex.justify-between.items-center
         div
-          p.text-sm.text-gray-500.mb-1 Your user code
+          p.text-sm.text-text-secondary.mb-1 Your user code
           .flex.items-center.gap-2
-            code#user-code-display.text-sm.font-mono.text-gray-900.bg-gray-100.px-2.py-1.rounded ••••••••••••••••
-            button#toggle-code.text-gray-400.hover_text-gray-600(
+            code#user-code-display.text-sm.font-mono.text-text-primary.bg-surface-alt.px-2.py-1.rounded ••••••••••••••••
+            button#toggle-code.text-text-muted.hover_text-text-secondary(
               type="button"
               title="Show code"
               style="padding: 4px;"
@@ -161,8 +161,8 @@ block content
               type="button"
             ) Copy
         .flex.items-center.gap-4
-          a.text-sm.text-gray-500.hover_text-gray-700(href="/sync") Sync from another device
-          button#disconnect-btn.text-sm.text-gray-400.hover_text-red-600(type="button") Disconnect
+          a.text-sm.text-text-secondary.hover_text-text-primary(href="/sync") Sync from another device
+          button#disconnect-btn.text-sm.text-text-muted.hover_text-red-600(type="button") Disconnect
 
   script.
     (function() {

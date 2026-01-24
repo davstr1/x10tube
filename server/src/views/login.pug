@@ -2,11 +2,11 @@ extends layout
 
 block content
   section.max-w-sm.mx-auto
-    h1.text-2xl.font-semibold.text-gray-900.mb-6.text-center Log in
+    h1.text-2xl.font-semibold.text-text-primary.mb-6.text-center Log in
 
     form(action="/auth/login" method="POST")
-      label.block.text-sm.text-gray-600.mb-2(for="email") Email
-      input.w-full.px-3.py-2.border.border-gray-200.rounded-md.text-base.focus_outline-none.focus_border-gray-400(
+      label.block.text-sm.text-text-secondary.mb-2(for="email") Email
+      input.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.bg-surface.text-text-primary(
         type="email"
         id="email"
         name="email"
@@ -16,5 +16,5 @@ block content
       button.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
         | Send magic link
 
-    p.mt-6.text-sm.text-gray-500.text-center
+    p.mt-6.text-sm.text-text-secondary.text-center
       | We'll send you a link to log in. No password needed.
