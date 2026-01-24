@@ -198,6 +198,8 @@ function injectStyles() {
       justify-content: center;
       width: 20px;
       height: 20px;
+      min-width: 20px;
+      min-height: 20px;
       margin-right: 8px;
       background: #dc2626;
       color: white;
@@ -210,6 +212,16 @@ function injectStyles() {
       flex-shrink: 0;
       transition: background 0.15s, transform 0.15s;
       line-height: 1;
+    }
+
+    /* Make h3 container flex for inline button alignment */
+    h3.yt-lockup-metadata-view-model__heading-reset:has(.x10tube-title-btn) {
+      display: flex !important;
+      align-items: flex-start !important;
+      flex-direction: row !important;
+    }
+    h3.yt-lockup-metadata-view-model__heading-reset:has(.x10tube-title-btn) > a {
+      flex: 1;
     }
     .x10tube-title-btn:hover {
       background: #b91c1c;
@@ -721,33 +733,42 @@ function injectTitleButtons() {
       }
     });
 
-    // Format 2: New format (yt-lockup-view-model) - Homepage, Sidebar 2024+
-    const newFormatTitles = document.querySelectorAll('yt-lockup-view-model:not([data-x10-processed]) a.yt-lockup-metadata-view-model__title');
+    // Format 2: New format (yt-lockup-metadata-view-model) - Homepage, Sidebar 2024+
+    // Target the h3 directly to insert the button before the title link
+    const newFormatHeadings = document.querySelectorAll('yt-lockup-metadata-view-model:not([data-x10-processed]) h3.yt-lockup-metadata-view-model__heading-reset');
 
-    newFormatTitles.forEach(titleLink => {
+    newFormatHeadings.forEach(h3 => {
       try {
-        const lockup = titleLink.closest('yt-lockup-view-model');
-        if (!lockup) return;
+        const metadata = h3.closest('yt-lockup-metadata-view-model');
+        if (!metadata) return;
 
-        lockup.setAttribute('data-x10-processed', 'true');
+        metadata.setAttribute('data-x10-processed', 'true');
+
+        // Find the title link inside the h3
+        const titleLink = h3.querySelector('a.yt-lockup-metadata-view-model__title');
+        if (!titleLink) return;
 
         let videoId = extractVideoIdFromUrl(titleLink.href);
 
         if (!videoId) {
-          const container = lockup.querySelector('[class*="content-id-"]');
-          if (container) {
-            const contentClass = [...container.classList].find(c => c.startsWith('content-id-'));
-            videoId = contentClass?.replace('content-id-', '');
+          // Try to get from content-id class on a parent container
+          const lockup = metadata.closest('yt-lockup-view-model');
+          if (lockup) {
+            const container = lockup.querySelector('[class*="content-id-"]');
+            if (container) {
+              const contentClass = [...container.classList].find(c => c.startsWith('content-id-'));
+              videoId = contentClass?.replace('content-id-', '');
+            }
           }
         }
 
         if (!videoId) return;
 
-        const metadataContainer = titleLink.closest('.yt-lockup-metadata-view-model');
-        if (!metadataContainer || metadataContainer.querySelector('.x10tube-title-btn')) return;
+        // Check if already has button
+        if (h3.querySelector('.x10tube-title-btn')) return;
 
         const btn = createTitleButton(videoId);
-        metadataContainer.insertBefore(btn, metadataContainer.firstChild);
+        h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
         console.log('[X10Tube] Error injecting new format button:', e.message);
