@@ -1,33 +1,18 @@
 // X10Tube Content Script for YouTube
-// Injects button into YouTube interface
+// Injects button next to video titles
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 
 // ============================================
-// Video Info Functions
+// Utility Functions
 // ============================================
 
-function getVideoId() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('v');
+function extractVideoIdFromUrl(url) {
+  if (!url) return null;
+  const match = url.match(/[?&]v=([^&]+)/) || url.match(/\/shorts\/([^?&]+)/);
+  return match ? match[1] : null;
 }
 
-function getVideoTitle() {
-  const titleElement = document.querySelector('h1.ytd-video-primary-info-renderer yt-formatted-string, h1.ytd-watch-metadata yt-formatted-string');
-  return titleElement?.textContent || document.title.replace(' - YouTube', '');
-}
-
-function getChannelName() {
-  const channelElement = document.querySelector('#channel-name a, ytd-channel-name a');
-  return channelElement?.textContent?.trim() || '';
-}
-
-function getVideoDuration() {
-  const durationElement = document.querySelector('.ytp-time-duration');
-  return durationElement?.textContent || '';
-}
-
-// Check if extension context is still valid
 function isExtensionContextValid() {
   try {
     return !!chrome.runtime?.id;
@@ -36,12 +21,19 @@ function isExtensionContextValid() {
   }
 }
 
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (!isExtensionContextValid()) return;
 
   if (request.action === 'getVideoInfo') {
-    const videoId = getVideoId();
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('v');
     if (!videoId) {
       sendResponse({ success: false, error: 'Not on a video page' });
       return true;
@@ -49,9 +41,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({
       success: true,
       videoId: videoId,
-      title: getVideoTitle(),
-      channel: getChannelName(),
-      duration: getVideoDuration(),
+      title: document.title.replace(' - YouTube', ''),
       url: window.location.href
     });
     return true;
@@ -59,7 +49,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ============================================
-// API Client (simplified - server is source of truth)
+// API Client
 // ============================================
 
 class X10API {
@@ -75,13 +65,10 @@ class X10API {
     }
 
     try {
-      // Get base URL from storage
       const data = await chrome.storage.local.get(['x10BackendUrl']);
       if (data.x10BackendUrl) this.baseUrl = data.x10BackendUrl;
 
-      // Ask the SERVER who we are - server's cookie is the source of truth
       await this.syncFromServer();
-
       console.log('[X10Tube] Initialized with userCode:', this.userCode);
       return true;
     } catch (error) {
@@ -92,32 +79,24 @@ class X10API {
 
   async syncFromServer() {
     try {
-      console.log('[X10Tube] Asking server /api/whoami...');
       const response = await fetch(`${this.baseUrl}/api/whoami`, {
-        credentials: 'include' // This sends the httpOnly cookie!
+        credentials: 'include'
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
-      console.log('[X10Tube] Server says userCode:', data.userCode);
-
       if (data.userCode) {
         this.userCode = data.userCode;
-        // Cache locally (only if extension context is valid)
         if (isExtensionContextValid()) {
           await chrome.storage.local.set({ x10UserCode: data.userCode });
         }
       }
     } catch (error) {
       console.log('[X10Tube] Could not reach server:', error.message);
-      // Fallback to cached value (only if extension context is valid)
       if (isExtensionContextValid()) {
         const cached = await chrome.storage.local.get(['x10UserCode']);
         if (cached.x10UserCode) {
-          console.log('[X10Tube] Using cached userCode:', cached.x10UserCode);
           this.userCode = cached.x10UserCode;
         }
       }
@@ -147,7 +126,6 @@ class X10API {
       const data = await response.json();
       if (data.success && data.userCode) {
         this.userCode = data.userCode;
-        // Only save to storage if extension context is still valid
         if (isExtensionContextValid()) {
           await chrome.storage.local.set({ x10UserCode: data.userCode });
         }
@@ -189,21 +167,23 @@ class X10API {
   getDashboardUrl() {
     return `${this.baseUrl}/myx10s`;
   }
-
-  getX10Url(x10Id) {
-    return `${this.baseUrl}/s/${x10Id}`;
-  }
 }
 
 const api = new X10API();
 
 // ============================================
-// YouTube Button Injection
+// State
 // ============================================
 
 let isDropdownOpen = false;
 let currentX10s = [];
 let videoInX10s = [];
+let titleButtonsEnabled = true;
+let titleButtonInterval = null;
+
+// ============================================
+// Styles
+// ============================================
 
 function injectStyles() {
   if (document.getElementById('x10tube-styles')) return;
@@ -211,98 +191,69 @@ function injectStyles() {
   const styles = document.createElement('style');
   styles.id = 'x10tube-styles';
   styles.textContent = `
-    /* X10Tube Overlay Container */
-    #x10tube-overlay {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 0.2s;
-      pointer-events: none;
-    }
-    #movie_player:hover #x10tube-overlay,
-    #x10tube-overlay:hover,
-    #x10tube-overlay.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* X10Tube Button */
-    #x10tube-btn {
+    /* Title button - next to video titles */
+    .x10tube-title-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: rgba(0, 0, 0, 0.75);
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      background: #dc2626;
+      color: white;
       border: none;
-      border-radius: 8px;
-      font-family: 'Roboto', sans-serif;
+      border-radius: 50%;
       font-size: 14px;
-      font-weight: 500;
-      color: #f1f1f1;
+      font-weight: bold;
       cursor: pointer;
-      transition: background 0.2s;
-      backdrop-filter: blur(4px);
+      vertical-align: middle;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+      line-height: 1;
     }
-    #x10tube-btn:hover {
-      background: rgba(0, 0, 0, 0.9);
-    }
-    #x10tube-btn .x10-logo {
-      font-weight: 700;
-    }
-    #x10tube-btn .x10-logo-x10 {
-      color: #f1f1f1;
-    }
-    #x10tube-btn .x10-logo-tube {
-      color: #dc2626;
-    }
-
-    /* Mini button - X10Tube red circle style */
-    .x10tube-mini-btn {
-      width: 32px !important;
-      height: 32px !important;
-      min-width: 32px !important;
-      min-height: 32px !important;
-      background: #dc2626 !important;
-      color: white !important;
-      border: none !important;
-      border-radius: 50% !important;
-      font-size: 20px !important;
-      font-weight: bold !important;
-      cursor: pointer !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      line-height: 1 !important;
-      pointer-events: auto !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
-    }
-    .x10tube-mini-btn:hover {
-      background: #b91c1c !important;
+    .x10tube-title-btn:hover {
+      background: #b91c1c;
       transform: scale(1.1);
     }
-    .x10tube-mini-btn.added {
-      background: #16a34a !important;
+    .x10tube-title-btn.added {
+      background: #22c55e;
     }
-    .x10tube-mini-btn.adding {
-      opacity: 0.5 !important;
-      pointer-events: none !important;
-    }
-
-    /* Button wrapper in YouTube's overlay */
-    .x10tube-btn-wrapper {
-      display: inline-block !important;
+    .x10tube-title-btn.adding {
+      opacity: 0.5;
+      pointer-events: none;
     }
 
-    /* Fallback: button in thumbnail (old structure - search page) */
-    ytd-thumbnail .x10tube-mini-btn:not(.x10tube-mini-btn-overlay) {
-      position: absolute !important;
-      top: 4px !important;
-      right: 4px !important;
-      z-index: 2147483647 !important;
+    /* Hide title buttons when disabled */
+    body.x10tube-buttons-hidden .x10tube-title-btn {
+      display: none !important;
+    }
+
+    /* Master toggle button */
+    #x10tube-master-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      transition: background 0.15s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #x10tube-master-toggle:hover {
+      transform: scale(1.05);
+    }
+    #x10tube-master-toggle.disabled {
+      background: #666;
     }
 
     /* Dropdown */
@@ -315,6 +266,7 @@ function injectStyles() {
       z-index: 2147483647;
       overflow: hidden;
       display: none;
+      font-family: 'Roboto', 'Arial', sans-serif;
     }
     #x10tube-dropdown.open {
       display: block !important;
@@ -401,6 +353,7 @@ function injectStyles() {
       width: 16px;
       font-size: 14px;
       flex-shrink: 0;
+      color: #f1f1f1;
     }
     .x10-item-name {
       flex: 1;
@@ -415,17 +368,17 @@ function injectStyles() {
       flex-shrink: 0;
     }
 
+    /* Create item styling */
+    .x10-item-create {
+      border-bottom: 1px solid #3f3f3f;
+    }
+
     /* Empty state */
     .x10-empty {
       padding: 16px;
       text-align: center;
       color: #888;
       font-size: 13px;
-    }
-
-    /* Create item styling */
-    .x10-item-create {
-      border-bottom: 1px solid #3f3f3f;
     }
 
     /* Footer links */
@@ -448,7 +401,7 @@ function injectStyles() {
     /* Toast */
     #x10tube-toast {
       position: fixed;
-      bottom: 24px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
       background: #323232;
@@ -456,6 +409,7 @@ function injectStyles() {
       padding: 12px 24px;
       border-radius: 8px;
       font-size: 14px;
+      font-family: 'Roboto', 'Arial', sans-serif;
       z-index: 99999;
       display: none;
       animation: x10-toast-in 0.2s ease-out;
@@ -473,39 +427,13 @@ function injectStyles() {
       from { opacity: 0; transform: translateX(-50%) translateY(10px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
-
-    /* X10Tube Menu Item (inside YouTube's ⋮ menu) */
-    /* Minimal CSS - let YouTube's native styles handle tp-yt-paper-item */
-    .x10tube-menu-item {
-      cursor: pointer;
-    }
-    .x10tube-menu-item .x10tube-menu-icon {
-      width: 24px;
-      height: 24px;
-      margin-right: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #dc2626;
-    }
   `;
   document.head.appendChild(styles);
 }
 
-function createButton() {
-  const btn = document.createElement('button');
-  btn.id = 'x10tube-btn';
-  btn.innerHTML = `
-    <span class="x10-logo">+ <span class="x10-logo-x10">X10</span><span class="x10-logo-tube">Tube</span></span>
-  `;
-  btn.title = 'Add to X10Tube';
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleDropdown();
-  });
-  return btn;
-}
+// ============================================
+// Dropdown
+// ============================================
 
 function createDropdown() {
   const dropdown = document.createElement('div');
@@ -533,51 +461,67 @@ function createDropdown() {
   return dropdown;
 }
 
-function createToast() {
-  if (document.getElementById('x10tube-toast')) return;
-  const toast = document.createElement('div');
-  toast.id = 'x10tube-toast';
-  document.body.appendChild(toast);
-}
-
-async function toggleDropdown() {
-  const dropdown = document.getElementById('x10tube-dropdown');
-  const btn = document.getElementById('x10tube-btn');
-  const overlay = document.getElementById('x10tube-overlay');
-  if (!dropdown || !btn) return;
-
-  if (isDropdownOpen) {
-    closeDropdown();
-  } else {
-    // Keep overlay visible while dropdown is open
-    if (overlay) overlay.classList.add('show');
-
-    // Position dropdown below button
-    const rect = btn.getBoundingClientRect();
-    dropdown.style.top = (rect.bottom + 8) + 'px';
-    dropdown.style.left = Math.max(10, rect.right - 280) + 'px';
-
-    dropdown.classList.add('open');
-    dropdown.style.display = 'block';
-    isDropdownOpen = true;
-    await loadX10sForDropdown();
-  }
-}
-
 function closeDropdown() {
   const dropdown = document.getElementById('x10tube-dropdown');
-  const overlay = document.getElementById('x10tube-overlay');
   if (dropdown) {
     dropdown.classList.remove('open');
     dropdown.style.display = 'none';
   }
-  if (overlay) {
-    overlay.classList.remove('show');
-  }
   isDropdownOpen = false;
 }
 
-async function loadX10sForDropdown() {
+async function showDropdownForVideo(videoId, anchorElement) {
+  injectStyles();
+  createToast();
+
+  let dropdown = document.getElementById('x10tube-dropdown');
+  if (!dropdown) {
+    dropdown = createDropdown();
+    document.body.appendChild(dropdown);
+  }
+
+  dropdown.dataset.currentVideoId = videoId;
+
+  // Position near the button
+  const rect = anchorElement.getBoundingClientRect();
+  const dropdownWidth = 280;
+  const dropdownHeight = 300;
+
+  let top = rect.bottom + 8;
+  let left = rect.left;
+
+  // Keep within viewport
+  if (left + dropdownWidth > window.innerWidth) {
+    left = window.innerWidth - dropdownWidth - 10;
+  }
+  if (top + dropdownHeight > window.innerHeight) {
+    top = rect.top - dropdownHeight - 8;
+  }
+  if (left < 10) left = 10;
+  if (top < 10) top = 10;
+
+  dropdown.style.top = top + 'px';
+  dropdown.style.left = left + 'px';
+
+  dropdown.classList.add('open');
+  dropdown.style.display = 'block';
+  isDropdownOpen = true;
+
+  await loadX10sForDropdown(videoId);
+
+  // Close on outside click
+  setTimeout(() => {
+    const closeHandler = (e) => {
+      if (!e.target.closest('#x10tube-dropdown') && !e.target.closest('.x10tube-title-btn')) {
+        closeDropdown();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    document.addEventListener('click', closeHandler);
+  }, 100);
+}
+
+async function loadX10sForDropdown(videoId) {
   const listEl = document.getElementById('x10tube-list');
   if (!listEl) return;
 
@@ -592,16 +536,15 @@ async function loadX10sForDropdown() {
   const result = await api.getMyX10s();
   currentX10s = result.x10s || [];
 
-  const videoId = getVideoId();
   if (videoId) {
     const checkResult = await api.checkVideoInX10s(videoId);
     videoInX10s = checkResult.inX10s || [];
   }
 
-  renderX10List();
+  renderX10List(videoId);
 }
 
-function renderX10List() {
+function renderX10List(videoId) {
   const listEl = document.getElementById('x10tube-list');
   if (!listEl) return;
 
@@ -615,7 +558,7 @@ function renderX10List() {
     <span class="x10-item-name">Create a new X10</span>
     <span class="x10-item-count"></span>
   `;
-  createItem.addEventListener('click', handleCreate);
+  createItem.addEventListener('click', () => handleCreateWithVideo(videoId));
   listEl.appendChild(createItem);
 
   // Then add existing x10s
@@ -630,779 +573,12 @@ function renderX10List() {
       <span class="x10-item-count">${x10.videoCount}</span>
     `;
     if (!isIn) {
-      item.addEventListener('click', () => handleAddToX10(x10.id, x10.title));
-    } else {
-      item.style.cursor = 'default';
-    }
-    listEl.appendChild(item);
-  });
-}
-
-async function handleCreate() {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
-  const videoUrl = window.location.href;
-  const createItem = document.querySelector('.x10-item-create');
-  if (createItem) {
-    createItem.classList.add('adding');
-    const nameSpan = createItem.querySelector('.x10-item-name');
-    if (nameSpan) nameSpan.textContent = 'Creating...';
-  }
-
-  const result = await api.createX10(videoUrl, true);
-
-  if (result.success) {
-    showToast('Video added to new X10!', 'success');
-    closeDropdown();
-  } else {
-    showToast(`Error: ${result.error}`, 'error');
-    if (createItem) {
-      createItem.classList.remove('adding');
-      const nameSpan = createItem.querySelector('.x10-item-name');
-      if (nameSpan) nameSpan.textContent = 'Create a new X10';
-    }
-  }
-}
-
-async function handleAddToX10(x10Id, x10Title) {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
-  const videoUrl = window.location.href;
-  const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
-  if (item) item.classList.add('adding');
-
-  const result = await api.addVideoToX10(x10Id, videoUrl);
-
-  if (result.success) {
-    showToast(`Added to ${x10Title || 'x10'}`, 'success');
-    videoInX10s.push(x10Id);
-    if (item) {
-      item.classList.remove('adding');
-      const check = item.querySelector('.x10-item-check');
-      if (check) check.textContent = '✓';
-      item.style.cursor = 'default';
-    }
-  } else {
-    showToast(`Error: ${result.error}`, 'error');
-    if (item) item.classList.remove('adding');
-  }
-}
-
-function showToast(message, type = '') {
-  const toast = document.getElementById('x10tube-toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = 'show' + (type ? ` ${type}` : '');
-  setTimeout(() => {
-    toast.className = '';
-  }, 3000);
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ============================================
-// Injection Logic
-// ============================================
-
-function findVideoPlayer() {
-  // Try to find the video player container
-  const selectors = [
-    '#movie_player',
-    '.html5-video-player',
-    '#player-container-inner'
-  ];
-
-  for (const selector of selectors) {
-    const el = document.querySelector(selector);
-    if (el) return el;
-  }
-  return null;
-}
-
-function injectButton() {
-  if (!getVideoId()) return;
-  if (document.getElementById('x10tube-overlay')) return;
-
-  const player = findVideoPlayer();
-  if (!player) {
-    setTimeout(injectButton, 1000);
-    return;
-  }
-
-  // Ensure player has position relative for absolute positioning
-  const playerStyle = window.getComputedStyle(player);
-  if (playerStyle.position === 'static') {
-    player.style.position = 'relative';
-  }
-
-  injectStyles();
-  createToast();
-
-  // Create overlay container
-  const overlay = document.createElement('div');
-  overlay.id = 'x10tube-overlay';
-  overlay.appendChild(createButton());
-
-  player.appendChild(overlay);
-
-  // Append dropdown to body to avoid overflow clipping
-  document.body.appendChild(createDropdown());
-
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (isDropdownOpen && !e.target.closest('#x10tube-overlay') && !e.target.closest('#x10tube-dropdown')) {
-      closeDropdown();
-    }
-  });
-
-  console.log('[X10Tube] Button injected on video player');
-}
-
-function removeButton() {
-  const overlay = document.getElementById('x10tube-overlay');
-  if (overlay) overlay.remove();
-  const dropdown = document.getElementById('x10tube-dropdown');
-  if (dropdown) dropdown.remove();
-}
-
-// ============================================
-// Mini buttons on thumbnails
-// ============================================
-
-function extractVideoIdFromUrl(url) {
-  if (!url) return null;
-  const match = url.match(/[?&]v=([^&]+)/) || url.match(/\/shorts\/([^?&]+)/);
-  return match ? match[1] : null;
-}
-
-function createMiniButton(videoId) {
-  const btn = document.createElement('button');
-  btn.className = 'x10tube-mini-btn';
-  btn.textContent = '+';  // Use textContent instead of innerHTML (Trusted Types)
-  btn.title = 'Add to X10Tube';
-  btn.dataset.videoId = videoId;
-
-  btn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await handleMiniButtonClick(btn, videoId);
-  });
-
-  return btn;
-}
-
-function injectButtonIntoHoverOverlay(overlayContainer, videoId) {
-  if (overlayContainer.querySelector('.x10tube-mini-btn')) return;
-
-  const btn = createMiniButton(videoId);
-  btn.classList.add('x10tube-mini-btn-overlay');
-
-  // Create wrapper matching YouTube's button structure
-  const wrapper = document.createElement('div');
-  wrapper.className = 'ytThumbnailHoverOverlayToggleActionsViewModelButton x10tube-btn-wrapper';
-  wrapper.appendChild(btn);
-
-  // Insert as FIRST child so it appears at top (before Watch Later, Add to Queue)
-  overlayContainer.insertBefore(wrapper, overlayContainer.firstChild);
-}
-
-function setupHoverObserver(thumbnailViewModel, videoId) {
-  // Check if already has observer
-  if (thumbnailViewModel.dataset.x10Observer) return;
-  thumbnailViewModel.dataset.x10Observer = 'true';
-
-  // Observer to detect when YouTube adds the hover overlay
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          // Check if this is the hover overlay container
-          if (node.tagName.toLowerCase() === 'yt-thumbnail-hover-overlay-toggle-actions-view-model') {
-            injectButtonIntoHoverOverlay(node, videoId);
-          }
-          // Also check children in case it's wrapped
-          const overlay = node.querySelector?.('yt-thumbnail-hover-overlay-toggle-actions-view-model');
-          if (overlay) {
-            injectButtonIntoHoverOverlay(overlay, videoId);
-          }
-        }
-      }
-    }
-  });
-
-  observer.observe(thumbnailViewModel, { childList: true, subtree: true });
-}
-
-function injectMiniButtons() {
-  // Universal selector: target ALL video links
-  const videoLinks = document.querySelectorAll('a[href*="/watch?v="]:not([data-x10-processed]), a[href*="/shorts/"]:not([data-x10-processed])');
-
-  let count = 0;
-  videoLinks.forEach(link => {
-    link.setAttribute('data-x10-processed', 'true');
-
-    const videoId = extractVideoIdFromUrl(link.href);
-    if (!videoId) return;
-
-    // Skip player areas
-    if (link.closest('#movie_player') || link.closest('ytd-miniplayer') || link.closest('#player')) return;
-
-    // NEW structure: yt-thumbnail-view-model (sidebar, home)
-    const thumbnailViewModel = link.closest('yt-lockup-view-model')?.querySelector('yt-thumbnail-view-model')
-      || link.closest('yt-thumbnail-view-model');
-
-    if (thumbnailViewModel) {
-      // Set up observer to inject button when hover overlay appears
-      setupHoverObserver(thumbnailViewModel, videoId);
-
-      // Also check if overlay already exists (e.g., from previous hover)
-      const existingOverlay = thumbnailViewModel.querySelector('yt-thumbnail-hover-overlay-toggle-actions-view-model');
-      if (existingOverlay) {
-        injectButtonIntoHoverOverlay(existingOverlay, videoId);
-      }
-      count++;
-      return;
-    }
-
-    // OLD structure (search page): ytd-thumbnail
-    const thumbnail = link.closest('ytd-thumbnail');
-    if (thumbnail) {
-      // For old structure, add button directly to thumbnail (shown on hover via CSS)
-      if (thumbnail.querySelector('.x10tube-mini-btn')) return;
-
-      const rect = thumbnail.getBoundingClientRect();
-      if (rect.width > 0 && rect.width < 80) return;
-
-      const btn = createMiniButton(videoId);
-      thumbnail.style.position = 'relative';
-      thumbnail.appendChild(btn);
-      count++;
-      return;
-    }
-
-    // Fallback: other containers
-    const container = link.closest('ytd-video-renderer') ||
-      link.closest('ytd-rich-item-renderer') ||
-      link.closest('.yt-lockup-view-model');
-
-    if (container) {
-      if (container.querySelector('.x10tube-mini-btn')) return;
-
-      const rect = container.getBoundingClientRect();
-      if (rect.width > 0 && rect.width < 80) return;
-
-      const btn = createMiniButton(videoId);
-      container.style.position = 'relative';
-      container.appendChild(btn);
-      count++;
-    }
-  });
-
-  if (count > 0) {
-    console.log('[X10Tube] Mini buttons setup:', count);
-  }
-}
-
-async function handleMiniButtonClick(btn, videoId) {
-  if (btn.classList.contains('adding') || btn.classList.contains('added')) return;
-
-  // Check if extension context is still valid
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
-  btn.classList.add('adding');
-
-  // Initialize API if needed
-  await api.init();
-
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-  // Try to add to most recent x10, or create new one
-  const result = await api.createX10(videoUrl);
-
-  if (result.success) {
-    btn.classList.remove('adding');
-    btn.classList.add('added');
-    btn.textContent = '✓';  // Use textContent (Trusted Types)
-    showToast('Added to X10Tube!', 'success');
-  } else {
-    btn.classList.remove('adding');
-    showToast(`Error: ${result.error}`, 'error');
-  }
-}
-
-// Periodically check for new thumbnails (YouTube loads dynamically)
-let miniButtonInterval = null;
-
-function startMiniButtonInjection() {
-  injectMiniButtons();
-  if (!miniButtonInterval) {
-    // Check every 5 seconds for new thumbnails (YouTube loads dynamically)
-    miniButtonInterval = setInterval(injectMiniButtons, 5000);
-  }
-}
-
-function stopMiniButtonInjection() {
-  if (miniButtonInterval) {
-    clearInterval(miniButtonInterval);
-    miniButtonInterval = null;
-  }
-  // Remove all mini buttons
-  document.querySelectorAll('.x10tube-mini-btn').forEach(btn => btn.remove());
-  // Reset injection markers
-  document.querySelectorAll('[data-x10-processed]').forEach(el => {
-    el.removeAttribute('data-x10-processed');
-  });
-}
-
-// ============================================
-// YouTube Menu (⋮) Integration
-// ============================================
-
-let pendingMenuVideoId = null;
-
-function setupYouTubeMenuIntegration() {
-  // Listen for clicks on menu buttons (⋮) to capture videoId BEFORE popup opens
-  // Use capture phase to get the event before YouTube handles it
-  document.addEventListener('click', (e) => {
-    try {
-      // Multiple ways to detect the menu button click
-      // 1. Direct click on yt-icon-button#button
-      // 2. Click on button inside yt-icon-button
-      // 3. Click on the icon itself
-      // 4. New format: button with aria-label "More actions" (yt-lockup-view-model)
-      const menuButton = e.target.closest('yt-icon-button#button') ||
-                         e.target.closest('ytd-menu-renderer button') ||
-                         e.target.closest('ytd-menu-renderer yt-icon') ||
-                         e.target.closest('button[aria-label="More actions"]');
-
-      if (!menuButton) return;
-
-      // Find the menu renderer (may be null for new yt-lockup-view-model format)
-      const menuRenderer = menuButton.closest('ytd-menu-renderer');
-      const isLockupFormat = !!menuButton.closest('yt-lockup-view-model');
-
-      // For classic format, we require ytd-menu-renderer
-      if (!menuRenderer && !isLockupFormat) return;
-
-      console.log('[X10Tube] Menu button clicked, format:', isLockupFormat ? 'lockup' : 'classic');
-
-      // Find the parent video renderer
-      // Search from menuButton upward for any video container
-      const rendererSelectors = [
-        'ytd-video-renderer',        // Search results
-        'ytd-rich-item-renderer',    // Homepage
-        'ytd-compact-video-renderer', // Old sidebar (may not exist anymore)
-        'ytd-playlist-video-renderer', // Playlists
-        'ytd-grid-video-renderer',    // Channel videos
-        'ytd-playlist-panel-video-renderer', // Playlist panel
-        'yt-lockup-view-model'       // New sidebar format (2024+)
-      ].join(', ');
-
-      // Search from menuButton (not menuRenderer) because menuRenderer may be null
-      const renderer = menuButton.closest(rendererSelectors);
-
-      if (!renderer) {
-        console.log('[X10Tube] No video renderer found, parent chain:');
-        let p = menuButton.parentElement;
-        for (let i = 0; i < 8 && p; i++) {
-          console.log('  ' + i + ':', p.tagName);
-          p = p.parentElement;
-        }
-        pendingMenuVideoId = null;
-        return;
-      }
-
-      console.log('[X10Tube] Found renderer:', renderer.tagName);
-
-      // Extract the videoId from the link
-      const link = renderer.querySelector('a[href*="/watch?v="], a[href*="/shorts/"]');
-      if (link) {
-        const match = link.href.match(/[?&]v=([^&]+)/) || link.href.match(/\/shorts\/([^?&]+)/);
-        pendingMenuVideoId = match ? match[1] : null;
-        console.log('[X10Tube] Menu clicked for video:', pendingMenuVideoId);
-      } else {
-        console.log('[X10Tube] No video link found in renderer');
-        pendingMenuVideoId = null;
-      }
-    } catch (err) {
-      console.error('[X10Tube] Error in menu click handler:', err);
-    }
-  }, true); // Capture phase - important!
-
-  // Observe popup container for menu opening
-  setupPopupObserver();
-}
-
-function setupPopupObserver() {
-  const popupContainer = document.querySelector('ytd-popup-container');
-  if (!popupContainer) {
-    console.log('[X10Tube] Popup container not found, retrying...');
-    setTimeout(setupPopupObserver, 1000);
-    return;
-  }
-
-  console.log('[X10Tube] Found popup container, setting up observer');
-
-  const observer = new MutationObserver((mutations) => {
-    if (!pendingMenuVideoId) return;
-
-    // Check for classic popup (ytd-menu-popup-renderer)
-    const classicPopup = popupContainer.querySelector('ytd-menu-popup-renderer');
-    if (classicPopup) {
-      console.log('[X10Tube] Classic popup detected, pendingVideoId:', pendingMenuVideoId);
-      setTimeout(() => injectX10MenuItemIntoPopup(classicPopup, pendingMenuVideoId), 50);
-      return;
-    }
-
-    // Check for new format popup (tp-yt-iron-dropdown with yt-list-view-model)
-    const ironDropdown = popupContainer.querySelector('tp-yt-iron-dropdown:not([aria-hidden="true"])');
-    if (ironDropdown) {
-      const listView = ironDropdown.querySelector('yt-list-view-model');
-      if (listView) {
-        console.log('[X10Tube] New format popup detected, pendingVideoId:', pendingMenuVideoId);
-        setTimeout(() => injectX10MenuItemIntoNewPopup(ironDropdown, pendingMenuVideoId), 50);
-      }
-    }
-  });
-
-  observer.observe(popupContainer, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['style', 'hidden', 'aria-hidden']
-  });
-
-  console.log('[X10Tube] Popup observer set up successfully');
-}
-
-function injectX10MenuItemIntoPopup(popup, videoId) {
-  // Check if already injected
-  const existingItem = popup.querySelector('.x10tube-menu-item');
-  if (existingItem) {
-    // Update videoId if different
-    if (existingItem.dataset.videoId === videoId) return;
-    existingItem.remove();
-  }
-
-  // Find the items list
-  const itemsList = popup.querySelector('tp-yt-paper-listbox#items');
-  if (!itemsList) {
-    console.log('[X10Tube] Could not find menu items list');
-    return;
-  }
-
-  // Create X10Tube menu item
-  const x10Item = createX10MenuItem(videoId);
-
-  // Insert as first item
-  itemsList.insertBefore(x10Item, itemsList.firstChild);
-  console.log('[X10Tube] Menu item injected for video:', videoId);
-}
-
-// Inject menu item into new format popup (yt-list-view-model)
-function injectX10MenuItemIntoNewPopup(dropdown, videoId) {
-  // Check if already injected
-  const existingItem = dropdown.querySelector('.x10tube-menu-item');
-  if (existingItem) {
-    if (existingItem.dataset.videoId === videoId) return;
-    existingItem.remove();
-  }
-
-  // Find the list view model
-  const listView = dropdown.querySelector('yt-list-view-model');
-  if (!listView) {
-    console.log('[X10Tube] Could not find yt-list-view-model');
-    return;
-  }
-
-  // Create X10Tube menu item for new format
-  const x10Item = createX10MenuItemNewFormat(videoId);
-
-  // Insert as first item
-  listView.insertBefore(x10Item, listView.firstChild);
-  console.log('[X10Tube] Menu item injected (new format) for video:', videoId);
-}
-
-// Create menu item matching the new yt-list-item-view-model format
-function createX10MenuItemNewFormat(videoId) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'x10tube-menu-item x10tube-menu-item-new';
-  wrapper.dataset.videoId = videoId;
-  wrapper.setAttribute('role', 'menuitem');
-  wrapper.setAttribute('tabindex', '0');
-
-  wrapper.innerHTML = `
-    <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; color: var(--yt-spec-text-primary, #f1f1f1);">
-      <div style="width: 24px; height: 24px; margin-right: 12px; display: flex; align-items: center; justify-content: center;">
-        <span style="font-size: 18px; font-weight: bold; color: #dc2626;">+</span>
-      </div>
-      <span style="font-size: 14px;">Add to X10Tube</span>
-    </div>
-  `;
-
-  // Hover effect
-  wrapper.addEventListener('mouseenter', () => {
-    wrapper.style.backgroundColor = 'var(--yt-spec-10-percent-layer, rgba(255,255,255,0.1))';
-  });
-  wrapper.addEventListener('mouseleave', () => {
-    wrapper.style.backgroundColor = 'transparent';
-  });
-
-  // Click handler - capture click position
-  wrapper.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleX10MenuItemClick(videoId, { x: e.clientX, y: e.clientY });
-  });
-
-  return wrapper;
-}
-
-function createX10MenuItem(videoId) {
-  // Wrapper
-  const wrapper = document.createElement('div');
-  wrapper.className = 'x10tube-menu-item';
-  wrapper.setAttribute('role', 'option');
-  wrapper.setAttribute('tabindex', '-1');
-  wrapper.dataset.videoId = videoId;
-
-  // Paper item (YouTube's structure)
-  const paperItem = document.createElement('tp-yt-paper-item');
-  paperItem.className = 'style-scope ytd-menu-service-item-renderer';
-  paperItem.setAttribute('role', 'option');
-  paperItem.setAttribute('tabindex', '0');
-
-  // Icon container
-  const iconContainer = document.createElement('div');
-  iconContainer.className = 'x10tube-menu-icon';
-  iconContainer.textContent = '+';
-
-  // Text (span instead of yt-formatted-string to avoid YouTube's Web Component emptying it)
-  const text = document.createElement('span');
-  text.className = 'style-scope ytd-menu-service-item-renderer';
-  text.textContent = 'Add to X10Tube';
-
-  // Assemble
-  paperItem.appendChild(iconContainer);
-  paperItem.appendChild(text);
-  wrapper.appendChild(paperItem);
-
-  // Click handler - capture click position
-  wrapper.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleX10MenuItemClick(videoId, { x: e.clientX, y: e.clientY });
-  });
-
-  return wrapper;
-}
-
-function handleX10MenuItemClick(videoId, clickPosition) {
-  console.log('[X10Tube] Menu item clicked for video:', videoId);
-
-  // Close YouTube's menu
-  const ironDropdown = document.querySelector('tp-yt-iron-dropdown[aria-hidden="false"], tp-yt-iron-dropdown:not([aria-hidden])');
-  if (ironDropdown) {
-    ironDropdown.setAttribute('aria-hidden', 'true');
-    ironDropdown.style.display = 'none';
-  }
-  // Also try pressing Escape
-  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-
-  // Show X10Tube dropdown near click position
-  showX10DropdownForVideo(videoId, clickPosition);
-}
-
-async function showX10DropdownForVideo(videoId, clickPosition) {
-  injectStyles();
-  createToast();
-
-  // Create or get dropdown
-  let dropdown = document.getElementById('x10tube-dropdown');
-  if (!dropdown) {
-    dropdown = createDropdown();
-    document.body.appendChild(dropdown);
-  }
-
-  // Store the videoId for actions
-  dropdown.dataset.currentVideoId = videoId;
-
-  // Position near the click (with some offset so it doesn't cover the cursor)
-  const dropdownWidth = 280;
-  const dropdownHeight = 350; // approximate
-  let top = clickPosition.y - 20;
-  let left = clickPosition.x - dropdownWidth - 10;
-
-  // Keep within viewport bounds
-  if (left < 10) {
-    left = clickPosition.x + 10; // Show to the right instead
-  }
-  if (top + dropdownHeight > window.innerHeight) {
-    top = window.innerHeight - dropdownHeight - 10;
-  }
-  if (top < 10) {
-    top = 10;
-  }
-
-  dropdown.style.top = top + 'px';
-  dropdown.style.left = left + 'px';
-
-  // Open dropdown
-  dropdown.classList.add('open');
-  dropdown.style.display = 'block';
-  isDropdownOpen = true;
-
-  // Load X10s
-  await loadX10sForDropdownWithVideoId(videoId);
-
-  // Setup close on outside click
-  setTimeout(() => {
-    const closeHandler = (e) => {
-      if (!e.target.closest('#x10tube-dropdown')) {
-        closeDropdown();
-        document.removeEventListener('click', closeHandler);
-      }
-    };
-    document.addEventListener('click', closeHandler);
-  }, 100);
-}
-
-async function loadX10sForDropdownWithVideoId(videoId) {
-  const listEl = document.getElementById('x10tube-list');
-  if (!listEl) return;
-
-  listEl.textContent = '';
-  const loadingDiv = document.createElement('div');
-  loadingDiv.className = 'x10-empty';
-  loadingDiv.textContent = 'Loading...';
-  listEl.appendChild(loadingDiv);
-
-  const initOk = await api.init();
-  if (!initOk) {
-    listEl.textContent = '';
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'x10-empty';
-    errorDiv.textContent = 'Could not connect';
-    listEl.appendChild(errorDiv);
-    return;
-  }
-
-  const result = await api.getMyX10s();
-  currentX10s = result.x10s || [];
-
-  // Check if video is already in x10s
-  if (videoId) {
-    const checkResult = await api.checkVideoInX10s(videoId);
-    videoInX10s = checkResult.inX10s || [];
-  }
-
-  renderX10ListForVideo(videoId);
-}
-
-function renderX10ListForVideo(videoId) {
-  const listEl = document.getElementById('x10tube-list');
-  const dropdown = document.getElementById('x10tube-dropdown');
-  if (!listEl) return;
-
-  listEl.textContent = '';
-
-  // Add "Create new X10" item at the top
-  const createItem = document.createElement('button');
-  createItem.className = 'x10-item x10-item-create';
-
-  const createCheck = document.createElement('span');
-  createCheck.className = 'x10-item-check';
-  createCheck.style.fontWeight = 'bold';
-  createCheck.textContent = '+';
-
-  const createName = document.createElement('span');
-  createName.className = 'x10-item-name';
-  createName.textContent = 'Create a new X10';
-
-  const createCount = document.createElement('span');
-  createCount.className = 'x10-item-count';
-  createCount.textContent = '';
-
-  createItem.appendChild(createCheck);
-  createItem.appendChild(createName);
-  createItem.appendChild(createCount);
-  createItem.addEventListener('click', () => handleCreateWithVideo(videoId));
-  listEl.appendChild(createItem);
-
-  // Then add existing x10s
-  currentX10s.forEach(x10 => {
-    const isIn = videoInX10s.includes(x10.id);
-    const item = document.createElement('button');
-    item.className = 'x10-item';
-    item.dataset.x10Id = x10.id;
-
-    const check = document.createElement('span');
-    check.className = 'x10-item-check';
-    check.textContent = isIn ? '✓' : '';
-
-    const name = document.createElement('span');
-    name.className = 'x10-item-name';
-    name.textContent = x10.title || 'Untitled';
-
-    const count = document.createElement('span');
-    count.className = 'x10-item-count';
-    count.textContent = x10.videoCount;
-
-    item.appendChild(check);
-    item.appendChild(name);
-    item.appendChild(count);
-
-    if (!isIn) {
       item.addEventListener('click', () => handleAddVideoToX10(x10.id, x10.title, videoId));
     } else {
       item.style.cursor = 'default';
     }
     listEl.appendChild(item);
   });
-}
-
-async function handleAddVideoToX10(x10Id, x10Title, videoId) {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  console.log('[X10Tube] Adding video to x10:', { x10Id, videoId, videoUrl });
-
-  const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
-  if (item) item.classList.add('adding');
-
-  const result = await api.addVideoToX10(x10Id, videoUrl);
-  console.log('[X10Tube] Add result:', result);
-
-  if (result.success) {
-    showToast(`Added to ${x10Title || 'x10'}`, 'success');
-    videoInX10s.push(x10Id);
-    if (item) {
-      item.classList.remove('adding');
-      const check = item.querySelector('.x10-item-check');
-      if (check) check.textContent = '✓';
-      item.style.cursor = 'default';
-    }
-    closeDropdown();
-  } else {
-    showToast(`Error: ${result.error}`, 'error');
-    if (item) item.classList.remove('adding');
-  }
 }
 
 async function handleCreateWithVideo(videoId) {
@@ -1424,6 +600,12 @@ async function handleCreateWithVideo(videoId) {
   if (result.success) {
     showToast('Video added to new X10!', 'success');
     closeDropdown();
+    // Mark the button as added
+    const btn = document.querySelector(`.x10tube-title-btn[data-video-id="${videoId}"]`);
+    if (btn) {
+      btn.classList.add('added');
+      btn.textContent = '✓';
+    }
   } else {
     showToast(`Error: ${result.error}`, 'error');
     if (createItem) {
@@ -1434,12 +616,262 @@ async function handleCreateWithVideo(videoId) {
   }
 }
 
+async function handleAddVideoToX10(x10Id, x10Title, videoId) {
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
+  if (item) item.classList.add('adding');
+
+  const result = await api.addVideoToX10(x10Id, videoUrl);
+
+  if (result.success) {
+    showToast(`Added to ${x10Title || 'x10'}`, 'success');
+    videoInX10s.push(x10Id);
+    if (item) {
+      item.classList.remove('adding');
+      const check = item.querySelector('.x10-item-check');
+      if (check) check.textContent = '✓';
+      item.style.cursor = 'default';
+    }
+    closeDropdown();
+    // Mark the button as added
+    const btn = document.querySelector(`.x10tube-title-btn[data-video-id="${videoId}"]`);
+    if (btn) {
+      btn.classList.add('added');
+      btn.textContent = '✓';
+    }
+  } else {
+    showToast(`Error: ${result.error}`, 'error');
+    if (item) item.classList.remove('adding');
+  }
+}
+
+// ============================================
+// Toast
+// ============================================
+
+function createToast() {
+  if (document.getElementById('x10tube-toast')) return;
+  const toast = document.createElement('div');
+  toast.id = 'x10tube-toast';
+  document.body.appendChild(toast);
+}
+
+function showToast(message, type = '') {
+  const toast = document.getElementById('x10tube-toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = 'show' + (type ? ` ${type}` : '');
+  setTimeout(() => {
+    toast.className = '';
+  }, 3000);
+}
+
+// ============================================
+// Title Button Injection
+// ============================================
+
+function createTitleButton(videoId) {
+  const btn = document.createElement('button');
+  btn.className = 'x10tube-title-btn';
+  btn.textContent = '+';
+  btn.title = 'Add to X10Tube';
+  btn.dataset.videoId = videoId;
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showDropdownForVideo(videoId, btn);
+  });
+
+  return btn;
+}
+
+function injectTitleButtons() {
+  if (!titleButtonsEnabled) return;
+
+  let count = 0;
+
+  try {
+    // Format 1: Classic format (ytd-video-renderer) - Search, Sidebar
+    const classicTitles = document.querySelectorAll('ytd-video-renderer:not([data-x10-processed]) a#video-title');
+
+    classicTitles.forEach(titleLink => {
+      try {
+        const renderer = titleLink.closest('ytd-video-renderer');
+        if (!renderer) return;
+
+        renderer.setAttribute('data-x10-processed', 'true');
+
+        const videoId = extractVideoIdFromUrl(titleLink.href);
+        if (!videoId) return;
+
+        const h3 = titleLink.closest('h3');
+        if (!h3 || h3.querySelector('.x10tube-title-btn')) return;
+
+        const btn = createTitleButton(videoId);
+        h3.insertBefore(btn, h3.firstChild);
+        count++;
+      } catch (e) {
+        console.log('[X10Tube] Error injecting classic button:', e.message);
+      }
+    });
+
+    // Format 2: New format (yt-lockup-view-model) - Homepage, Sidebar 2024+
+    const newFormatTitles = document.querySelectorAll('yt-lockup-view-model:not([data-x10-processed]) a.yt-lockup-metadata-view-model__title');
+
+    newFormatTitles.forEach(titleLink => {
+      try {
+        const lockup = titleLink.closest('yt-lockup-view-model');
+        if (!lockup) return;
+
+        lockup.setAttribute('data-x10-processed', 'true');
+
+        let videoId = extractVideoIdFromUrl(titleLink.href);
+
+        if (!videoId) {
+          const container = lockup.querySelector('[class*="content-id-"]');
+          if (container) {
+            const contentClass = [...container.classList].find(c => c.startsWith('content-id-'));
+            videoId = contentClass?.replace('content-id-', '');
+          }
+        }
+
+        if (!videoId) return;
+
+        const metadataContainer = titleLink.closest('.yt-lockup-metadata-view-model');
+        if (!metadataContainer || metadataContainer.querySelector('.x10tube-title-btn')) return;
+
+        const btn = createTitleButton(videoId);
+        metadataContainer.insertBefore(btn, metadataContainer.firstChild);
+        count++;
+      } catch (e) {
+        console.log('[X10Tube] Error injecting new format button:', e.message);
+      }
+    });
+
+    // Format 3: Rich grid items (ytd-rich-item-renderer) - Homepage alternative
+    const richItems = document.querySelectorAll('ytd-rich-item-renderer:not([data-x10-processed]) a#video-title-link');
+
+    richItems.forEach(titleLink => {
+      try {
+        const renderer = titleLink.closest('ytd-rich-item-renderer');
+        if (!renderer) return;
+
+        renderer.setAttribute('data-x10-processed', 'true');
+
+        const videoId = extractVideoIdFromUrl(titleLink.href);
+        if (!videoId) return;
+
+        const titleContainer = titleLink.closest('#details, #meta');
+        if (!titleContainer || titleContainer.querySelector('.x10tube-title-btn')) return;
+
+        const btn = createTitleButton(videoId);
+        titleContainer.insertBefore(btn, titleContainer.firstChild);
+        count++;
+      } catch (e) {
+        console.log('[X10Tube] Error injecting rich item button:', e.message);
+      }
+    });
+    // Format 4: Main video on watch page (ytd-watch-metadata)
+    const watchPage = document.querySelector('ytd-watch-metadata:not([data-x10-processed])');
+    if (watchPage) {
+      try {
+        watchPage.setAttribute('data-x10-processed', 'true');
+
+        // Get videoId from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoId = urlParams.get('v');
+
+        if (videoId) {
+          // Find the title container (h1 with the video title)
+          const titleContainer = watchPage.querySelector('#title h1, h1.ytd-watch-metadata');
+          if (titleContainer && !titleContainer.querySelector('.x10tube-title-btn')) {
+            const btn = createTitleButton(videoId);
+            titleContainer.insertBefore(btn, titleContainer.firstChild);
+            count++;
+          }
+        }
+      } catch (e) {
+        console.log('[X10Tube] Error injecting watch page button:', e.message);
+      }
+    }
+
+  } catch (e) {
+    console.error('[X10Tube] Error in injectTitleButtons:', e);
+  }
+
+  if (count > 0) {
+    console.log('[X10Tube] Title buttons injected:', count);
+  }
+}
+
+function startTitleButtonInjection() {
+  injectTitleButtons();
+  if (!titleButtonInterval) {
+    // Check every 2 seconds for new videos (YouTube loads dynamically)
+    titleButtonInterval = setInterval(injectTitleButtons, 2000);
+  }
+}
+
+function stopTitleButtonInjection() {
+  if (titleButtonInterval) {
+    clearInterval(titleButtonInterval);
+    titleButtonInterval = null;
+  }
+}
+
+// ============================================
+// Master Toggle Button
+// ============================================
+
+function createMasterToggle() {
+  if (document.getElementById('x10tube-master-toggle')) return;
+
+  const toggle = document.createElement('button');
+  toggle.id = 'x10tube-master-toggle';
+  toggle.textContent = '+';
+  toggle.title = 'Toggle X10Tube buttons';
+
+  // Load saved state
+  chrome.storage.local.get(['x10TitleButtonsEnabled'], (data) => {
+    if (data.x10TitleButtonsEnabled === false) {
+      titleButtonsEnabled = false;
+      toggle.classList.add('disabled');
+      document.body.classList.add('x10tube-buttons-hidden');
+    }
+  });
+
+  toggle.addEventListener('click', () => {
+    titleButtonsEnabled = !titleButtonsEnabled;
+
+    if (titleButtonsEnabled) {
+      toggle.classList.remove('disabled');
+      document.body.classList.remove('x10tube-buttons-hidden');
+      injectTitleButtons();
+    } else {
+      toggle.classList.add('disabled');
+      document.body.classList.add('x10tube-buttons-hidden');
+    }
+
+    // Save state
+    chrome.storage.local.set({ x10TitleButtonsEnabled: titleButtonsEnabled });
+
+    showToast(titleButtonsEnabled ? 'X10Tube buttons enabled' : 'X10Tube buttons hidden', 'success');
+  });
+
+  document.body.appendChild(toggle);
+}
+
 // ============================================
 // SPA Navigation Handling
 // ============================================
 
 let lastUrl = location.href;
-let injectionTimeout = null;
 
 function onUrlChange() {
   const newUrl = location.href;
@@ -1448,22 +880,42 @@ function onUrlChange() {
   lastUrl = newUrl;
   console.log('[X10Tube] URL changed:', newUrl);
 
-  removeButton();
   closeDropdown();
   videoInX10s = [];
 
+  // Reset processed markers and re-inject
+  document.querySelectorAll('[data-x10-processed]').forEach(el => {
+    el.removeAttribute('data-x10-processed');
+  });
+
+  // Re-inject after a short delay to let YouTube render
+  setTimeout(injectTitleButtons, 500);
 }
 
-const observer = new MutationObserver(() => {
+const urlObserver = new MutationObserver(() => {
   onUrlChange();
 });
 
-observer.observe(document.body, { subtree: true, childList: true });
-window.addEventListener('popstate', onUrlChange);
+// ============================================
+// Initialization
+// ============================================
 
-// Initial injection
-injectStyles();
-createToast();
+function init() {
+  console.log('[X10Tube] Initializing...');
 
-// YouTube menu (⋮) integration - works on all pages with video thumbnails
-setTimeout(setupYouTubeMenuIntegration, 1000);
+  injectStyles();
+  createToast();
+  createMasterToggle();
+
+  // Start title button injection
+  setTimeout(startTitleButtonInjection, 1000);
+
+  // Watch for URL changes (SPA navigation)
+  urlObserver.observe(document.body, { subtree: true, childList: true });
+  window.addEventListener('popstate', onUrlChange);
+
+  console.log('[X10Tube] Initialized');
+}
+
+// Run initialization
+init();
