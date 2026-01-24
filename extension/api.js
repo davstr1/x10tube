@@ -17,9 +17,10 @@ class X10TubeAPI {
     }
 
     // Ask the SERVER who we are - server's cookie is the source of truth
-    await this.syncFromServer();
+    const connected = await this.syncFromServer();
 
     console.log('[X10Tube] Initialized with userCode:', this.userCode);
+    return connected;
   }
 
   async syncFromServer() {
@@ -41,6 +42,7 @@ class X10TubeAPI {
         // Cache locally (but server is always the source of truth)
         await chrome.storage.local.set({ x10UserCode: data.userCode });
       }
+      return true;
     } catch (error) {
       console.log('[X10Tube] Could not reach server:', error.message);
       // Fallback to cached value if server unreachable
@@ -48,7 +50,9 @@ class X10TubeAPI {
       if (cached.x10UserCode) {
         console.log('[X10Tube] Using cached userCode:', cached.x10UserCode);
         this.userCode = cached.x10UserCode;
+        return true; // We have a cached userCode, so we can still work
       }
+      return false;
     }
   }
 

@@ -94,10 +94,14 @@ block content
                         type="button"
                         onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
                       ) MD Link
+                      button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50.copy-md-content-btn(
+                        type="button"
+                        data-md-url=mdUrl
+                      ) MD Content
                       button.block.w-full.px-3.py-1.text-xs.text-gray-700.hover_bg-gray-50(
                         type="button"
-                        onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='X10 URL', 1500)`
-                      ) X10 URL
+                        onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='This X10 URL', 1500)`
+                      ) This X10 URL
 
                 //- Spacer to push delete to the right
                 .flex-1
@@ -222,5 +226,22 @@ block content
         } catch (e) {
           saveBtn.textContent = 'Error';
         }
+      });
+
+      // Copy MD Content functionality
+      document.querySelectorAll('.copy-md-content-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          const mdUrl = btn.dataset.mdUrl;
+          try {
+            const response = await fetch(mdUrl);
+            const md = await response.text();
+            await navigator.clipboard.writeText(md);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'MD Content', 1500);
+          } catch (e) {
+            btn.textContent = 'Error';
+            setTimeout(() => btn.textContent = 'MD Content', 1500);
+          }
+        });
       });
     })();
