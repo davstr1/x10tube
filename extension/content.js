@@ -245,27 +245,37 @@ function injectStyles() {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 48px;
-      height: 48px;
-      background: #dc2626;
-      color: white;
+      height: 36px;
+      padding: 0 12px;
+      background: #212121;
       border: none;
-      border-radius: 50%;
-      font-size: 24px;
-      font-weight: bold;
+      border-radius: 18px;
       cursor: pointer;
       z-index: 9999;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      transition: background 0.15s, transform 0.15s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      transition: opacity 0.15s, transform 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: 'Roboto', 'Arial', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
     }
     #x10tube-master-toggle:hover {
       transform: scale(1.05);
     }
+    #x10tube-master-toggle .logo-x10 {
+      color: #f1f1f1;
+    }
+    #x10tube-master-toggle .logo-tube {
+      color: #dc2626;
+    }
     #x10tube-master-toggle.disabled {
-      background: #666;
+      opacity: 0.5;
+    }
+    #x10tube-master-toggle.disabled .logo-x10,
+    #x10tube-master-toggle.disabled .logo-tube {
+      color: #888;
     }
 
     /* Dropdown */
@@ -855,7 +865,7 @@ function createMasterToggle() {
 
   const toggle = document.createElement('button');
   toggle.id = 'x10tube-master-toggle';
-  toggle.textContent = '+';
+  toggle.innerHTML = '<span class="logo-x10">X10</span><span class="logo-tube">Tube</span>';
   toggle.title = 'Toggle X10Tube buttons';
 
   // Load saved state
