@@ -1,7 +1,7 @@
 // x10 CRUD operations
 import { nanoid } from 'nanoid';
 import db, { X10, Video } from '../db.js';
-import { extractVideoInfo, estimateTokens, VideoInfo } from './transcript.js';
+import { extractContent, estimateTokens, ContentInfo } from './content.js';
 
 export interface X10WithVideos extends X10 {
   videos: Video[];
@@ -35,23 +35,24 @@ export async function createX10(
 
   for (const url of urls) {
     try {
-      const info = await extractVideoInfo(url);
+      const info = await extractContent(url);
       const videoId = generateId();
 
       db.prepare(`
-        INSERT INTO videos (id, x10_id, url, youtube_id, title, channel, duration, transcript, added_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(videoId, x10Id, info.url, info.youtubeId, info.title, info.channel, info.duration, info.transcript, now);
+        INSERT INTO videos (id, x10_id, url, type, youtube_id, title, channel, duration, transcript, added_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(videoId, x10Id, info.url, info.type, info.sourceId, info.title, info.sourceName, info.metadata.duration || null, info.content, now);
 
       videos.push({
         id: videoId,
         x10_id: x10Id,
         url: info.url,
-        youtube_id: info.youtubeId,
+        type: info.type,
+        youtube_id: info.sourceId,
         title: info.title,
-        channel: info.channel,
-        duration: info.duration,
-        transcript: info.transcript,
+        channel: info.sourceName,
+        duration: info.metadata.duration || null,
+        transcript: info.content,
         added_at: now
       });
     } catch (error) {
@@ -120,16 +121,16 @@ export function getX10sForAnonymous(anonymousId: string): X10WithVideos[] {
   });
 }
 
-// Add video to existing x10
+// Add video/page to existing x10
 export async function addVideoToX10(x10Id: string, url: string): Promise<Video> {
-  const info = await extractVideoInfo(url);
+  const info = await extractContent(url);
   const videoId = generateId();
   const now = new Date().toISOString();
 
   db.prepare(`
-    INSERT INTO videos (id, x10_id, url, youtube_id, title, channel, duration, transcript, added_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(videoId, x10Id, info.url, info.youtubeId, info.title, info.channel, info.duration, info.transcript, now);
+    INSERT INTO videos (id, x10_id, url, type, youtube_id, title, channel, duration, transcript, added_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(videoId, x10Id, info.url, info.type, info.sourceId, info.title, info.sourceName, info.metadata.duration || null, info.content, now);
 
   // Update x10 updated_at
   db.prepare('UPDATE x10s SET updated_at = ? WHERE id = ?').run(now, x10Id);
@@ -138,11 +139,12 @@ export async function addVideoToX10(x10Id: string, url: string): Promise<Video> 
     id: videoId,
     x10_id: x10Id,
     url: info.url,
-    youtube_id: info.youtubeId,
+    type: info.type,
+    youtube_id: info.sourceId,
     title: info.title,
-    channel: info.channel,
-    duration: info.duration,
-    transcript: info.transcript,
+    channel: info.sourceName,
+    duration: info.metadata.duration || null,
+    transcript: info.content,
     added_at: now
   };
 }
@@ -198,9 +200,9 @@ export function forkX10(originalId: string, newUserId: string): X10WithVideos | 
   for (const video of original.videos) {
     const videoId = generateId();
     db.prepare(`
-      INSERT INTO videos (id, x10_id, url, youtube_id, title, channel, duration, transcript, added_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(videoId, newId, video.url, video.youtube_id, video.title, video.channel, video.duration, video.transcript, now);
+      INSERT INTO videos (id, x10_id, url, type, youtube_id, title, channel, duration, transcript, added_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(videoId, newId, video.url, video.type || 'youtube', video.youtube_id, video.title, video.channel, video.duration, video.transcript, now);
   }
 
   return getX10ById(newId);

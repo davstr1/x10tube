@@ -25,13 +25,13 @@ class X10TubeAPI {
 
   async syncFromServer() {
     try {
-      console.log('[X10Tube] Asking server /api/whoami...');
+      console.log('[X10Tube] Asking server /api/whoami at', this.baseUrl);
       const response = await fetch(`${this.baseUrl}/api/whoami`, {
         credentials: 'include' // This sends the httpOnly cookie!
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(`Server returned ${response.status}`);
       }
 
       const data = await response.json();
@@ -42,9 +42,11 @@ class X10TubeAPI {
         // Cache locally (but server is always the source of truth)
         await chrome.storage.local.set({ x10UserCode: data.userCode });
       }
+      this.lastError = null;
       return true;
     } catch (error) {
-      console.log('[X10Tube] Could not reach server:', error.message);
+      this.lastError = error.message;
+      console.error('[X10Tube] Could not reach server:', error.message, error);
       // Fallback to cached value if server unreachable
       const cached = await chrome.storage.local.get(['x10UserCode']);
       if (cached.x10UserCode) {

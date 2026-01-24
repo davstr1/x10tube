@@ -1,14 +1,11 @@
 {
   "manifest_version": 3,
   "name": "X10Tube",
-  "version": "2.0",
-  "description": "Add YouTube videos to X10Tube for AI analysis",
+  "version": "2.1",
+  "description": "Add YouTube videos and web pages to X10Tube for AI analysis",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://www.youtube.com/*",
-    "http://localhost:3000/*",
-    "https://*.x10tube.com/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"

@@ -24,9 +24,18 @@
       </div>
     </div>
 
-    <!-- Not on YouTube message -->
-    <div id="not-youtube" class="not-youtube hidden">
-      <p>Open a YouTube video to add it to your x10s</p>
+    <!-- Page info (shown on any web page) -->
+    <div id="page-info" class="video-info hidden">
+      <div class="page-icon" id="page-icon">🌐</div>
+      <div class="video-details">
+        <p class="video-title" id="page-title"></p>
+        <p class="video-meta" id="page-meta"></p>
+      </div>
+    </div>
+
+    <!-- Not supported message (chrome://, file://, etc.) -->
+    <div id="not-supported" class="not-youtube hidden">
+      <p>This page cannot be added to x10s</p>
     </div>
 
     <!-- Loading state -->

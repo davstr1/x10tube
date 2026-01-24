@@ -30,24 +30,33 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
 
   md += `# ${x10.title || 'Untitled'}\n\n`;
 
-  // Videos list
-  md += `## Videos included\n\n`;
-  x10.videos.forEach((video, index) => {
-    md += `${index + 1}. ${video.title} — ${video.channel} — ${video.duration}\n`;
+  // Items list
+  md += `## Items included\n\n`;
+  x10.videos.forEach((item, index) => {
+    const isYouTube = item.type === 'youtube' || item.youtube_id;
+    const typeLabel = isYouTube ? 'YouTube' : 'Web';
+    const durationPart = item.duration ? ` — ${item.duration}` : '';
+    md += `${index + 1}. [${typeLabel}] ${item.title} — ${item.channel}${durationPart}\n`;
   });
 
   md += `\n---\n\n`;
 
-  // Transcripts
+  // Content
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-  md += `## Transcripts\n\n`;
-  x10.videos.forEach((video, index) => {
-    md += `### ${index + 1}. ${video.title}\n\n`;
-    md += `**Channel**: ${video.channel}  \n`;
-    md += `**Duration**: ${video.duration}  \n`;
-    md += `**URL**: ${video.url}  \n`;
-    md += `**MD**: ${baseUrl}/s/${id}/v/${video.youtube_id}.md\n\n`;
-    md += `${video.transcript}\n\n`;
+  md += `## Content\n\n`;
+  x10.videos.forEach((item, index) => {
+    const isYouTube = item.type === 'youtube' || item.youtube_id;
+    const itemId = isYouTube ? item.youtube_id : item.id;
+
+    md += `### ${index + 1}. ${item.title}\n\n`;
+    md += `**Type**: ${isYouTube ? 'YouTube Video' : 'Web Page'}  \n`;
+    md += `**Source**: ${item.channel}  \n`;
+    if (item.duration) {
+      md += `**Duration**: ${item.duration}  \n`;
+    }
+    md += `**URL**: ${item.url}  \n`;
+    md += `**MD**: ${baseUrl}/s/${id}/v/${itemId}.md\n\n`;
+    md += `${item.transcript}\n\n`;
     md += `---\n\n`;
   });
 
@@ -63,20 +72,22 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
   res.send(md);
 });
 
-// Single video MD - /s/:id/v/:youtubeId.md
-x10Router.get('/:id/v/:youtubeId.md', (req: Request, res: Response) => {
-  const { id, youtubeId } = req.params;
+// Single item MD - /s/:id/v/:itemId.md (itemId can be youtube_id or item.id)
+x10Router.get('/:id/v/:itemId.md', (req: Request, res: Response) => {
+  const { id, itemId } = req.params;
   const x10 = getX10ById(id);
 
   if (!x10) {
     return res.status(404).send('# Not found\n\nThis x10 does not exist.');
   }
 
-  // Find video by YouTube ID
-  const video = x10.videos.find(v => v.youtube_id === youtubeId);
-  if (!video) {
-    return res.status(404).send(`# Not found\n\nVideo ${youtubeId} does not exist in this x10.`);
+  // Find item by youtube_id OR by item id (for web pages)
+  const item = x10.videos.find(v => v.youtube_id === itemId || v.id === itemId);
+  if (!item) {
+    return res.status(404).send(`# Not found\n\nItem ${itemId} does not exist in this x10.`);
   }
+
+  const isYouTube = item.type === 'youtube' || item.youtube_id;
 
   // Get user settings for default pre-prompt
   const anonymousId = req.anonymousId;
@@ -92,13 +103,16 @@ x10Router.get('/:id/v/:youtubeId.md', (req: Request, res: Response) => {
     md += `${effectivePrePrompt}\n\n`;
   }
 
-  md += `# ${video.title}\n\n`;
-  md += `**Channel**: ${video.channel}  \n`;
-  md += `**Duration**: ${video.duration}  \n`;
-  md += `**URL**: ${video.url}\n\n`;
+  md += `# ${item.title}\n\n`;
+  md += `**Type**: ${isYouTube ? 'YouTube Video' : 'Web Page'}  \n`;
+  md += `**Source**: ${item.channel}  \n`;
+  if (item.duration) {
+    md += `**Duration**: ${item.duration}  \n`;
+  }
+  md += `**URL**: ${item.url}\n\n`;
   md += `---\n\n`;
-  md += `## Transcript\n\n`;
-  md += `${video.transcript}\n\n`;
+  md += `## ${isYouTube ? 'Transcript' : 'Content'}\n\n`;
+  md += `${item.transcript}\n\n`;
 
   // Footer
   const date = new Date(x10.created_at).toLocaleDateString('en-US', {
@@ -170,7 +184,7 @@ function canEdit(x10: ReturnType<typeof getX10ById>, anonymousId: string): boole
   return false;
 }
 
-// Add video to x10
+// Add item (video or web page) to x10
 x10Router.post('/:id/add', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { url } = req.body;
@@ -185,23 +199,28 @@ x10Router.post('/:id/add', async (req: Request, res: Response) => {
     return res.status(403).json({ error: 'Not authorized to edit this x10' });
   }
 
-  // Check video limit
+  // Check item limit
   if (x10.videos.length >= 10) {
-    return res.status(400).json({ error: 'Maximum 10 videos per x10' });
+    return res.status(400).json({ error: 'Maximum 10 items per x10' });
   }
 
-  // Check if video already exists
+  // Check if YouTube video already exists
   const videoId = extractVideoId(url);
   if (videoId && x10.videos.some(v => v.youtube_id === videoId)) {
     return res.status(400).json({ error: 'This video is already in this x10' });
   }
 
+  // Check if URL already exists (for web pages)
+  if (x10.videos.some(v => v.url === url)) {
+    return res.status(400).json({ error: 'This URL is already in this x10' });
+  }
+
   try {
-    const video = await addVideoToX10(id, url);
+    const item = await addVideoToX10(id, url);
     res.redirect(`/s/${id}`);
   } catch (error) {
     res.status(400).json({
-      error: error instanceof Error ? error.message : 'Could not add video'
+      error: error instanceof Error ? error.message : 'Could not add content'
     });
   }
 });

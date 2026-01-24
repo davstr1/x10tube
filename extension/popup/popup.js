@@ -10,7 +10,11 @@ const elements = {
   videoThumbnail: null,
   videoTitle: null,
   videoMeta: null,
-  notYoutube: null,
+  pageInfo: null,
+  pageIcon: null,
+  pageTitle: null,
+  pageMeta: null,
+  notSupported: null,
   x10sSection: null,
   x10sList: null,
   emptyState: null,
@@ -22,9 +26,9 @@ const elements = {
   toastMessage: null
 };
 
-// Current video info
-let currentVideo = null;
-let videoInX10s = [];
+// Current page/video info
+let currentItem = null;  // { type: 'youtube' | 'webpage', url, title, ... }
+let itemInX10s = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -34,7 +38,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.videoThumbnail = document.getElementById('video-thumbnail');
   elements.videoTitle = document.getElementById('video-title');
   elements.videoMeta = document.getElementById('video-meta');
-  elements.notYoutube = document.getElementById('not-youtube');
+  elements.pageInfo = document.getElementById('page-info');
+  elements.pageIcon = document.getElementById('page-icon');
+  elements.pageTitle = document.getElementById('page-title');
+  elements.pageMeta = document.getElementById('page-meta');
+  elements.notSupported = document.getElementById('not-supported');
   elements.x10sSection = document.getElementById('x10s-section');
   elements.x10sList = document.getElementById('x10s-list');
   elements.emptyState = document.getElementById('empty-state');
@@ -78,37 +86,48 @@ async function checkCurrentTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (!tab.url || !tab.url.includes('youtube.com/watch')) {
-      showNotYoutube();
+    // Check for unsupported pages (chrome://, file://, about:, etc.)
+    if (!tab.url || !tab.url.startsWith('http')) {
+      showNotSupported();
       await loadX10sList();
       return;
     }
 
-    // Extract video ID from URL
     const url = new URL(tab.url);
-    const videoId = url.searchParams.get('v');
+    const isYouTube = url.hostname.includes('youtube.com') && url.searchParams.get('v');
 
-    if (!videoId) {
-      showNotYoutube();
-      await loadX10sList();
-      return;
-    }
+    if (isYouTube) {
+      // YouTube video
+      const videoId = url.searchParams.get('v');
 
-    // Get video info from content script
-    try {
-      const response = await chrome.tabs.sendMessage(tab.id, { action: 'getVideoInfo' });
+      // Get video info from content script
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'getVideoInfo' });
 
-      if (response && response.success) {
-        currentVideo = {
-          id: videoId,
-          url: tab.url,
-          title: response.title,
-          channel: response.channel,
-          duration: response.duration
-        };
-      } else {
-        // Fallback: use tab title
-        currentVideo = {
+        if (response && response.success) {
+          currentItem = {
+            type: 'youtube',
+            id: videoId,
+            url: tab.url,
+            title: response.title,
+            channel: response.channel,
+            duration: response.duration
+          };
+        } else {
+          // Fallback: use tab title
+          currentItem = {
+            type: 'youtube',
+            id: videoId,
+            url: tab.url,
+            title: tab.title.replace(' - YouTube', ''),
+            channel: '',
+            duration: ''
+          };
+        }
+      } catch (e) {
+        // Content script not loaded, use fallback
+        currentItem = {
+          type: 'youtube',
           id: videoId,
           url: tab.url,
           title: tab.title.replace(' - YouTube', ''),
@@ -116,52 +135,70 @@ async function checkCurrentTab() {
           duration: ''
         };
       }
-    } catch (e) {
-      // Content script not loaded, use fallback
-      currentVideo = {
-        id: videoId,
+
+      showVideoInfo();
+    } else {
+      // Any other web page
+      currentItem = {
+        type: 'webpage',
         url: tab.url,
-        title: tab.title.replace(' - YouTube', ''),
-        channel: '',
-        duration: ''
+        title: tab.title,
+        domain: url.hostname.replace(/^www\./, '')
       };
+
+      showPageInfo();
     }
 
-    showVideoInfo();
     await loadX10sList();
 
   } catch (error) {
     console.error('[X10Tube Popup] Error:', error);
-    showNotYoutube();
+    showNotSupported();
     await loadX10sList();
   }
 }
 
-function showNotYoutube() {
+function showNotSupported() {
   elements.loading.classList.add('hidden');
   elements.videoInfo.classList.add('hidden');
-  elements.notYoutube.classList.remove('hidden');
+  elements.pageInfo.classList.add('hidden');
+  elements.notSupported.classList.remove('hidden');
   elements.createBtn.disabled = true;
-  elements.createBtn.textContent = 'Open a YouTube video first';
+  elements.createBtn.textContent = 'Open a web page first';
 }
 
 function showVideoInfo() {
   elements.loading.classList.add('hidden');
-  elements.notYoutube.classList.add('hidden');
+  elements.notSupported.classList.add('hidden');
+  elements.pageInfo.classList.add('hidden');
   elements.videoInfo.classList.remove('hidden');
 
   // Set thumbnail
-  const thumbnailUrl = `https://img.youtube.com/vi/${currentVideo.id}/mqdefault.jpg`;
+  const thumbnailUrl = `https://img.youtube.com/vi/${currentItem.id}/mqdefault.jpg`;
   elements.videoThumbnail.style.backgroundImage = `url(${thumbnailUrl})`;
 
   // Set title
-  elements.videoTitle.textContent = currentVideo.title;
+  elements.videoTitle.textContent = currentItem.title;
 
   // Set meta (channel + duration)
   const metaParts = [];
-  if (currentVideo.channel) metaParts.push(currentVideo.channel);
-  if (currentVideo.duration) metaParts.push(currentVideo.duration);
+  if (currentItem.channel) metaParts.push(currentItem.channel);
+  if (currentItem.duration) metaParts.push(currentItem.duration);
   elements.videoMeta.textContent = metaParts.join(' · ') || 'YouTube video';
+
+  elements.createBtn.disabled = false;
+  elements.createBtn.textContent = '+ Create a new x10';
+}
+
+function showPageInfo() {
+  elements.loading.classList.add('hidden');
+  elements.notSupported.classList.add('hidden');
+  elements.videoInfo.classList.add('hidden');
+  elements.pageInfo.classList.remove('hidden');
+
+  // Set title and domain
+  elements.pageTitle.textContent = currentItem.title || 'Untitled page';
+  elements.pageMeta.textContent = currentItem.domain;
 
   elements.createBtn.disabled = false;
   elements.createBtn.textContent = '+ Create a new x10';
@@ -179,10 +216,12 @@ async function loadX10sList() {
     elements.emptyState.classList.add('hidden');
     elements.x10sSection.classList.remove('hidden');
 
-    // Check which x10s contain this video
-    if (currentVideo) {
-      const checkResult = await api.checkVideoInX10s(currentVideo.id);
-      videoInX10s = checkResult.inX10s || [];
+    // Check which x10s contain this item (only for YouTube videos for now)
+    if (currentItem && currentItem.type === 'youtube') {
+      const checkResult = await api.checkVideoInX10s(currentItem.id);
+      itemInX10s = checkResult.inX10s || [];
+    } else {
+      itemInX10s = [];
     }
 
     renderX10sList(result.x10s);
@@ -193,7 +232,7 @@ function renderX10sList(x10s) {
   elements.x10sList.innerHTML = '';
 
   x10s.forEach(x10 => {
-    const isInX10 = videoInX10s.includes(x10.id);
+    const isInX10 = itemInX10s.includes(x10.id);
 
     const item = document.createElement('button');
     item.className = 'x10-item';
@@ -202,14 +241,14 @@ function renderX10sList(x10s) {
     item.innerHTML = `
       <span class="x10-check">${isInX10 ? '✓' : ''}</span>
       <span class="x10-name">${escapeHtml(x10.title || 'Untitled')}</span>
-      <span class="x10-count">${x10.videoCount} video${x10.videoCount > 1 ? 's' : ''}</span>
+      <span class="x10-count">${x10.videoCount} item${x10.videoCount > 1 ? 's' : ''}</span>
     `;
 
-    if (!isInX10 && currentVideo) {
+    if (!isInX10 && currentItem) {
       item.addEventListener('click', () => handleAddToX10(x10.id, x10.title));
     } else if (isInX10) {
       item.style.cursor = 'default';
-      item.title = 'Video already in this x10';
+      item.title = 'Already in this x10';
     } else {
       item.disabled = true;
     }
@@ -219,12 +258,12 @@ function renderX10sList(x10s) {
 }
 
 async function handleCreateX10() {
-  if (!currentVideo) return;
+  if (!currentItem) return;
 
   elements.createBtn.disabled = true;
   elements.createBtn.textContent = 'Creating...';
 
-  const result = await api.createX10(currentVideo.url);
+  const result = await api.createX10(currentItem.url);
 
   if (result.success) {
     showToast(`Created new x10!`, 'success');
@@ -241,7 +280,7 @@ async function handleCreateX10() {
 }
 
 async function handleAddToX10(x10Id, x10Title) {
-  if (!currentVideo) return;
+  if (!currentItem) return;
 
   // Find and disable the item
   const item = elements.x10sList.querySelector(`[data-x10-id="${x10Id}"]`);
@@ -249,7 +288,7 @@ async function handleAddToX10(x10Id, x10Title) {
     item.classList.add('adding');
   }
 
-  const result = await api.addVideoToX10(x10Id, currentVideo.url);
+  const result = await api.addVideoToX10(x10Id, currentItem.url);
 
   if (result.success) {
     showToast(`Added to ${x10Title || 'x10'}`, 'success');
@@ -262,7 +301,7 @@ async function handleAddToX10(x10Id, x10Title) {
       item.style.cursor = 'default';
     }
 
-    videoInX10s.push(x10Id);
+    itemInX10s.push(x10Id);
   } else {
     showToast(`Error: ${result.error}`, 'error');
     if (item) {

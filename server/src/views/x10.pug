@@ -16,7 +16,7 @@ block content
       h1.text-2xl.font-semibold.text-text-primary= x10.title || 'Untitled'
 
     p.text-sm.text-text-secondary.mt-2
-      | #{x10.videos.length} video#{x10.videos.length > 1 ? 's' : ''}
+      | #{x10.videos.length} item#{x10.videos.length > 1 ? 's' : ''}
       span.mx-2 ·
       | #{tokenDisplay}
       span.mx-2 ·
@@ -120,33 +120,42 @@ block content
             onclick="return confirm('Delete this x10?')"
           ) ×
 
-  //- Videos list
+  //- Items list (videos + web pages)
   section.mb-10
     .space-y-4
-      each video, index in x10.videos
-        - const thumbnailUrl = `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`
+      each item, index in x10.videos
+        - const isYouTube = item.type === 'youtube' || item.youtube_id
+        - const thumbnailUrl = isYouTube ? `https://img.youtube.com/vi/${item.youtube_id}/mqdefault.jpg` : `https://www.google.com/s2/favicons?domain=${item.channel}&sz=128`
+        - const itemId = isYouTube ? item.youtube_id : item.id
         .border.border-border-strong.rounded-lg.bg-surface
           .flex.gap-4.p-4
             //- Thumbnail
-            a.flex-shrink-0.block(href=video.url target="_blank" title="Watch on YouTube")
-              img.w-44.h-24.object-cover.rounded-md(src=thumbnailUrl alt=video.title)
+            a.flex-shrink-0.block(href=item.url target="_blank" title=isYouTube ? "Watch on YouTube" : "Open page")
+              if isYouTube
+                img.w-44.h-24.object-cover.rounded-md(src=thumbnailUrl alt=item.title)
+              else
+                .w-44.h-24.rounded-md.bg-surface-alt.flex.items-center.justify-center
+                  img.w-12.h-12(src=thumbnailUrl alt=item.channel)
 
-            //- Video info
-            - const videoMdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}/v/${video.youtube_id}.md`
-            - const videoPrompt = 'Fetch ' + videoMdUrl + '\n\n' + (effectivePrePrompt || '')
-            - const videoPromptEncoded = encodeURIComponent(videoPrompt)
+            //- Item info
+            - const itemMdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}/v/${itemId}.md`
+            - const itemPrompt = 'Fetch ' + itemMdUrl + '\n\n' + (effectivePrePrompt || '')
+            - const itemPromptEncoded = encodeURIComponent(itemPrompt)
             .flex-1.min-w-0
               .flex.justify-between.items-start.gap-2
                 div.min-w-0
                   h3.font-medium.text-text-primary.leading-snug.mb-1
                     span.text-text-muted.mr-1 #{index + 1}.
-                    = video.title
+                    if !isYouTube
+                      span.text-xs.text-text-muted.mr-1 🌐
+                    = item.title
                   p.text-sm.text-text-secondary
-                    = video.channel
-                    span.mx-1 ·
-                    = video.duration
+                    = item.channel
+                    if item.duration
+                      span.mx-1 ·
+                      = item.duration
 
-                  //- Video actions
+                  //- Item actions
                   .flex.items-center.gap-3.mt-2
                     //- Open in... dropdown
                     .dropdown.text-xs
@@ -155,11 +164,11 @@ block content
                         span.ml-1 ▾
                       .dropdown-menu
                         .dropdown-menu-inner
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://claude.ai/new?q=${videoPromptEncoded}` target="_blank") Claude
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://chat.openai.com/?q=${videoPromptEncoded}` target="_blank") ChatGPT
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${videoPromptEncoded}` target="_blank") Gemini
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.perplexity.ai/search/?q=${videoPromptEncoded}` target="_blank") Perplexity
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://x.com/i/grok?text=${videoPromptEncoded}` target="_blank") Grok
+                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://claude.ai/new?q=${itemPromptEncoded}` target="_blank") Claude
+                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://chat.openai.com/?q=${itemPromptEncoded}` target="_blank") ChatGPT
+                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${itemPromptEncoded}` target="_blank") Gemini
+                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.perplexity.ai/search/?q=${itemPromptEncoded}` target="_blank") Perplexity
+                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://x.com/i/grok?text=${itemPromptEncoded}` target="_blank") Grok
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
 
                     //- Copy... dropdown
@@ -171,35 +180,35 @@ block content
                         .dropdown-menu-inner
                           button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
                             type="button"
-                            onclick=`navigator.clipboard.writeText('${videoMdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
+                            onclick=`navigator.clipboard.writeText('${itemMdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
                           ) MD Link
-                          button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-video-md-btn(
+                          button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-item-md-btn(
                             type="button"
-                            data-youtube-id=video.youtube_id
+                            data-item-id=itemId
                           ) MD Content
 
                 if isOwner
-                  form(action=`/s/${x10.id}/remove/${video.id}` method="POST")
+                  form(action=`/s/${x10.id}/remove/${item.id}` method="POST")
                     button.w-8.h-8.flex.items-center.justify-center.text-text-muted.hover_text-red-500.hover_bg-red-500.hover_bg-opacity-10.rounded-full.transition-colors(
                       type="submit"
-                      title="Remove video"
+                      title="Remove item"
                     ) ×
 
-          //- Transcript accordion
+          //- Content accordion
           details.border-t.border-border-default.group
             summary.px-4.py-3.text-sm.text-text-secondary.cursor-pointer.hover_bg-surface-hover.select-none.flex.items-center.gap-2
               span.text-text-muted.transition-transform.group-open_rotate-90 ▶
-              | Show transcript
+              | #{isYouTube ? 'Show transcript' : 'Show content'}
             .px-4.py-4.bg-surface-alt.text-sm.text-text-secondary.leading-relaxed.max-h-72.overflow-y-auto
-              p.whitespace-pre-wrap= video.transcript
+              p.whitespace-pre-wrap= item.transcript
 
-  //- Add video form (for owner)
+  //- Add item form (for owner)
   if isOwner
     section.mb-10
-      h3.text-lg.font-semibold.text-text-primary.mb-4 Add a video
+      h3.text-lg.font-semibold.text-text-primary.mb-4 Add content
 
       if x10.videos.length >= 10
-        p.text-sm.text-text-secondary Maximum 10 videos reached
+        p.text-sm.text-text-secondary Maximum 10 items reached
       else
         form.flex.gap-3(action=`/s/${x10.id}/add` method="POST")
           input.flex-1.px-4.py-3.border.border-border-strong.rounded-lg.text-sm.focus_outline-none.focus_ring-2.focus_ring-red-500.focus_border-transparent.font-mono.bg-surface.text-text-primary.placeholder-text-muted(
@@ -304,12 +313,12 @@ block content
         });
       }
 
-      // Copy MD functionality (individual videos)
-      document.querySelectorAll('.copy-video-md-btn').forEach(function(btn) {
+      // Copy MD functionality (individual items)
+      document.querySelectorAll('.copy-item-md-btn').forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          const youtubeId = btn.dataset.youtubeId;
+          const itemId = btn.dataset.itemId;
           try {
-            const response = await fetch('/s/#{x10.id}/v/' + youtubeId + '.md');
+            const response = await fetch('/s/#{x10.id}/v/' + itemId + '.md');
             const md = await response.text();
             await navigator.clipboard.writeText(md);
             btn.textContent = 'Copied!';

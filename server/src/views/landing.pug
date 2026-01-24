@@ -14,7 +14,7 @@ block content
       textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
         name="urls"
         rows="5"
-        placeholder="https://youtube.com/watch?v=...\nhttps://youtube.com/watch?v=...\n(one URL per line)"
+        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article\n(one URL per line, YouTube or any web page)"
         required
       )
       button.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
@@ -25,11 +25,11 @@ block content
 
   section.py-8.border-t.border-border-strong
     p.text-lg.text-text-secondary.mb-2
-      | Summarize and discuss multiple YouTube videos
+      | Summarize and discuss YouTube videos and web pages
       br
       | in Claude, ChatGPT, Gemini, Grok, or your favorite AI assistant.
     p.text-text-muted
-      | 10 videos. 10 minutes. Instead of 10 hours.
+      | 10 items. 10 minutes. Instead of 10 hours.
 
   section.py-8.border-t.border-border-strong
     h2.text-xl.font-semibold.mb-4 Why X10Tube?
@@ -41,8 +41,8 @@ block content
   section.py-8.border-t.border-border-strong
     h2.text-xl.font-semibold.mb-4 How it works
     ol.space-y-2.text-text-secondary.list-decimal.list-inside
-      li Paste your YouTube URLs (or use the Chrome extension)
-      li Open the transcripts compilation in your AI assistant
+      li Paste your URLs (YouTube videos or web pages)
+      li Open the content compilation in your AI assistant
       li Ask your questions
 
   section.py-8.border-t.border-border-strong
@@ -58,9 +58,9 @@ block content
         p.text-text-secondary Yes, and with any AI. Use "Open in..." or copy-paste the content.
 
       div
-        h3.font-medium How many videos max?
+        h3.font-medium How many items max?
         p.text-text-secondary
-          | We suggest 10, but it's a soft limit. The real limit depends on your LLM's capacity. Claude can read ~100K tokens, roughly 10-15 average videos. We show an estimate on each x10.
+          | We suggest 10, but it's a soft limit. The real limit depends on your LLM's capacity. Claude can read ~100K tokens. We show an estimate on each x10.
 
       div
         h3.font-medium Is my data stored?

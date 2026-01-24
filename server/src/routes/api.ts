@@ -9,18 +9,22 @@ export const apiRouter = Router();
 apiRouter.use((req, res, next) => {
   // For credentials to work, we need specific origin (not *)
   const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://www.youtube.com',
-    'https://youtube.com',
-    'http://localhost:3000',
-    'https://x10tube.com'
-  ];
 
-  if (origin && allowedOrigins.some(o => origin.startsWith(o) || origin.includes('youtube.com'))) {
+  // Allow these origins + any chrome-extension origin
+  const isAllowed = origin && (
+    origin.includes('youtube.com') ||
+    origin.includes('localhost:3000') ||
+    origin.includes('x10tube.com') ||
+    origin.startsWith('chrome-extension://') ||
+    origin.startsWith('moz-extension://') // Firefox
+  );
+
+  if (isAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else if (origin) {
+    // For other origins, allow without credentials
+    res.setHeader('Access-Control-Allow-Origin', origin);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
@@ -91,7 +95,7 @@ apiRouter.post('/x10/create', async (req: Request, res: Response) => {
   }
 
   if (urls.length > 10) {
-    return res.status(400).json({ error: 'Maximum 10 videos per x10' });
+    return res.status(400).json({ error: 'Maximum 10 items per x10' });
   }
 
   try {
@@ -135,16 +139,16 @@ apiRouter.post('/x10/:id/add', async (req: Request, res: Response) => {
   }
 
   if (x10.videos.length >= 10) {
-    return res.status(400).json({ error: 'Maximum 10 videos per x10' });
+    return res.status(400).json({ error: 'Maximum 10 items per x10' });
   }
 
   try {
-    const video = await addVideoToX10(id, url);
-    res.json({ success: true, video });
+    const item = await addVideoToX10(id, url);
+    res.json({ success: true, item });
   } catch (error) {
-    console.error('[API] Error adding video to x10:', id, url, error);
+    console.error('[API] Error adding item to x10:', id, url, error);
     res.status(400).json({
-      error: error instanceof Error ? error.message : 'Failed to add video'
+      error: error instanceof Error ? error.message : 'Failed to add content'
     });
   }
 });
@@ -246,7 +250,8 @@ apiRouter.delete('/x10/:id', (req: Request, res: Response) => {
   }
 });
 
-// Add video from Chrome extension (creates new x10 or adds to most recent)
+// Add content from Chrome extension (creates new x10 or adds to most recent)
+// Supports both YouTube videos and web pages
 apiRouter.post('/x10/add', async (req: Request, res: Response) => {
   const { url, userCode, forceNew } = req.body;
 
@@ -254,10 +259,9 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'URL required' });
   }
 
+  // Check if it's a YouTube URL
   const videoId = extractVideoId(url);
-  if (!videoId) {
-    return res.status(400).json({ success: false, error: 'Invalid YouTube URL' });
-  }
+  const isYouTube = !!videoId;
 
   try {
     // Use the provided user code or generate a new one
@@ -277,19 +281,22 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
       // Add to the most recent x10
       const recentX10 = existingX10s[0];
 
-      // Check if video is already in this x10
-      const alreadyExists = recentX10.videos.some(v => v.youtube_id === videoId);
+      // Check if item is already in this x10
+      const alreadyExists = isYouTube
+        ? recentX10.videos.some(v => v.youtube_id === videoId)
+        : recentX10.videos.some(v => v.url === url);
+
       if (alreadyExists) {
         return res.json({
           success: true,
           x10Id: recentX10.id,
           x10Url: `/s/${recentX10.id}`,
           userCode: anonymousId,
-          message: 'Video already in your most recent x10'
+          message: isYouTube ? 'Video already in your most recent x10' : 'Page already in your most recent x10'
         });
       }
 
-      const video = await addVideoToX10(recentX10.id, url);
+      const item = await addVideoToX10(recentX10.id, url);
       x10Id = recentX10.id;
       x10Url = `/s/${recentX10.id}`;
     } else {
@@ -299,7 +306,7 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
       if (x10.videos.length === 0) {
         return res.status(400).json({
           success: false,
-          error: failed[0]?.error || 'Could not extract transcript'
+          error: failed[0]?.error || 'Could not extract content'
         });
       }
 
@@ -315,10 +322,10 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Error adding video from extension:', error);
+    console.error('Error adding content from extension:', error);
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to add video'
+      error: error instanceof Error ? error.message : 'Failed to add content'
     });
   }
 });

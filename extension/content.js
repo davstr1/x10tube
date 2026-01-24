@@ -79,6 +79,7 @@ class X10API {
 
   async syncFromServer() {
     try {
+      console.log('[X10Tube] Syncing from server:', this.baseUrl);
       const response = await fetch(`${this.baseUrl}/api/whoami`, {
         credentials: 'include'
       });
@@ -86,20 +87,25 @@ class X10API {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
+      console.log('[X10Tube] Server response:', data);
       if (data.userCode) {
         this.userCode = data.userCode;
         if (isExtensionContextValid()) {
           await chrome.storage.local.set({ x10UserCode: data.userCode });
         }
       }
+      return true;
     } catch (error) {
-      console.log('[X10Tube] Could not reach server:', error.message);
+      console.error('[X10Tube] Could not reach server:', error.message, error);
       if (isExtensionContextValid()) {
         const cached = await chrome.storage.local.get(['x10UserCode']);
         if (cached.x10UserCode) {
+          console.log('[X10Tube] Using cached userCode');
           this.userCode = cached.x10UserCode;
+          return true;
         }
       }
+      return false;
     }
   }
 
@@ -585,21 +591,27 @@ async function loadX10sForDropdown(videoId) {
 
   listEl.innerHTML = '<div class="x10-empty">Loading...</div>';
 
-  const initOk = await api.init();
-  if (!initOk) {
-    listEl.innerHTML = '<div class="x10-empty">Could not connect</div>';
-    return;
+  try {
+    const initOk = await api.init();
+    if (!initOk) {
+      console.error('[X10Tube] Init failed, no cached userCode');
+      listEl.innerHTML = `<div class="x10-empty">Could not connect to server<br><small style="color:#888">${api.baseUrl}</small></div>`;
+      return;
+    }
+
+    const result = await api.getMyX10s();
+    currentX10s = result.x10s || [];
+
+    if (videoId) {
+      const checkResult = await api.checkVideoInX10s(videoId);
+      videoInX10s = checkResult.inX10s || [];
+    }
+
+    renderX10List(videoId);
+  } catch (error) {
+    console.error('[X10Tube] loadX10sForDropdown error:', error);
+    listEl.innerHTML = `<div class="x10-empty">Error: ${error.message}</div>`;
   }
-
-  const result = await api.getMyX10s();
-  currentX10s = result.x10s || [];
-
-  if (videoId) {
-    const checkResult = await api.checkVideoInX10s(videoId);
-    videoInX10s = checkResult.inX10s || [];
-  }
-
-  renderX10List(videoId);
 }
 
 function renderX10List(videoId) {
