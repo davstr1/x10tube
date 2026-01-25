@@ -367,6 +367,72 @@ function injectStyles() {
       color: #fff;
     }
 
+    /* Quick actions */
+    .x10-quick-actions {
+      border-bottom: 1px solid #3f3f3f;
+      padding: 8px 0;
+    }
+    .x10-quick-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: inherit;
+      font-size: 14px;
+      color: #f1f1f1;
+      position: relative;
+    }
+    .x10-quick-item:hover {
+      background: #3f3f3f;
+    }
+    .x10-quick-icon {
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Submenu */
+    .x10-has-submenu {
+      position: relative;
+    }
+    .x10-submenu {
+      display: none;
+      position: absolute;
+      left: 100%;
+      top: 0;
+      background: #282828;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      min-width: 140px;
+      overflow: hidden;
+      z-index: 10;
+    }
+    .x10-has-submenu:hover .x10-submenu {
+      display: block;
+    }
+    .x10-submenu-item {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      color: #f1f1f1;
+      transition: background 0.15s;
+    }
+    .x10-submenu-item:hover {
+      background: #3f3f3f;
+    }
+
     /* Section label */
     .x10-section-label {
       padding: 12px 16px 8px;
@@ -507,6 +573,28 @@ function createDropdown() {
       <span class="x10-logo"><span class="x10-logo-x10">X10</span><span class="x10-logo-tube">Tube</span></span>
       <button class="x10-dropdown-close">&times;</button>
     </div>
+    <div class="x10-quick-actions">
+      <div class="x10-quick-item x10-has-submenu" id="x10-open-in">
+        <span class="x10-quick-icon">▸</span>
+        <span>Open in...</span>
+        <div class="x10-submenu">
+          <button class="x10-submenu-item" data-llm="claude">Claude</button>
+          <button class="x10-submenu-item" data-llm="chatgpt">ChatGPT</button>
+          <button class="x10-submenu-item" data-llm="gemini">Gemini</button>
+          <button class="x10-submenu-item" data-llm="perplexity">Perplexity</button>
+          <button class="x10-submenu-item" data-llm="grok">Grok</button>
+          <button class="x10-submenu-item" data-llm="copilot">Copilot</button>
+        </div>
+      </div>
+      <button class="x10-quick-item" id="x10-copy-link">
+        <span class="x10-quick-icon">🔗</span>
+        <span>Copy MD Link</span>
+      </button>
+      <button class="x10-quick-item" id="x10-copy-content">
+        <span class="x10-quick-icon">📋</span>
+        <span>Copy MD Content</span>
+      </button>
+    </div>
     <div class="x10-section-label">Add to...</div>
     <div class="x10-list" id="x10tube-list"></div>
     <div class="x10-footer">
@@ -518,6 +606,29 @@ function createDropdown() {
   dropdown.querySelector('#x10tube-dashboard').addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
+  });
+
+  // Quick action handlers
+  dropdown.querySelectorAll('.x10-submenu-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const llm = item.dataset.llm;
+      const videoId = dropdown.dataset.currentVideoId;
+      const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : dropdown.dataset.currentUrl;
+      handleOpenInLLM(url, llm);
+    });
+  });
+
+  dropdown.querySelector('#x10-copy-link').addEventListener('click', () => {
+    const videoId = dropdown.dataset.currentVideoId;
+    const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : dropdown.dataset.currentUrl;
+    handleCopyMDLink(url);
+  });
+
+  dropdown.querySelector('#x10-copy-content').addEventListener('click', () => {
+    const videoId = dropdown.dataset.currentVideoId;
+    const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : dropdown.dataset.currentUrl;
+    handleCopyMDContent(url);
   });
 
   dropdown.addEventListener('click', (e) => e.stopPropagation());
@@ -739,6 +850,105 @@ function showToast(message, type = '') {
   setTimeout(() => {
     toast.className = '';
   }, 3000);
+}
+
+// ============================================
+// Quick Actions (One-Click LLM)
+// ============================================
+
+const LLM_URLS = {
+  claude: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
+  chatgpt: (prompt) => `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,
+  gemini: (prompt) => `https://www.google.com/search?udm=50&aep=11&q=${encodeURIComponent(prompt)}`,
+  perplexity: (prompt) => `https://www.perplexity.ai/search/?q=${encodeURIComponent(prompt)}`,
+  grok: (prompt) => `https://x.com/i/grok?text=${encodeURIComponent(prompt)}`,
+  copilot: () => `https://copilot.microsoft.com/`
+};
+
+async function handleOpenInLLM(url, llmType) {
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
+  showToast('Creating x10...', '');
+  closeDropdown();
+
+  try {
+    const result = await api.createX10(url, true); // forceNew = true
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      return;
+    }
+
+    const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
+    const prompt = `Fetch ${mdUrl}`;
+    const llmUrl = LLM_URLS[llmType](prompt);
+
+    window.open(llmUrl, '_blank');
+    showToast(`Opened in ${llmType}`, 'success');
+  } catch (error) {
+    console.error('[X10Tube] handleOpenInLLM error:', error);
+    showToast(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function handleCopyMDLink(url) {
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
+  showToast('Creating x10...', '');
+  closeDropdown();
+
+  try {
+    const result = await api.createX10(url, true);
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      return;
+    }
+
+    const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
+    await navigator.clipboard.writeText(mdUrl);
+    showToast('MD link copied!', 'success');
+  } catch (error) {
+    console.error('[X10Tube] handleCopyMDLink error:', error);
+    showToast(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function handleCopyMDContent(url) {
+  if (!isExtensionContextValid()) {
+    showToast('Please reload the page', 'error');
+    return;
+  }
+
+  showToast('Creating x10...', '');
+  closeDropdown();
+
+  try {
+    const result = await api.createX10(url, true);
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      return;
+    }
+
+    const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
+    showToast('Fetching content...', '');
+
+    const response = await fetch(mdUrl);
+    const mdContent = await response.text();
+
+    await navigator.clipboard.writeText(mdContent);
+    showToast('MD content copied!', 'success');
+  } catch (error) {
+    console.error('[X10Tube] handleCopyMDContent error:', error);
+    showToast(`Error: ${error.message}`, 'error');
+  }
 }
 
 // ============================================

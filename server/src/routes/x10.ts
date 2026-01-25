@@ -5,6 +5,15 @@ import { getUserSettings, getDefaultPrePromptText } from '../services/settings.j
 
 export const x10Router = Router();
 
+// CORS middleware for .md endpoints (needed for extension "Copy MD Content")
+x10Router.use('/*.md', (req: Request, res: Response, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  next();
+});
+
 // X10 page (Markdown for LLM) - Must be before /:id to match first
 x10Router.get('/:id.md', (req: Request, res: Response) => {
   const id = req.params.id;

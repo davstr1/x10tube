@@ -15,6 +15,11 @@ const elements = {
   pageTitle: null,
   pageMeta: null,
   notSupported: null,
+  quickActions: null,
+  openInBtn: null,
+  llmSubmenu: null,
+  copyLinkBtn: null,
+  copyContentBtn: null,
   x10sSection: null,
   x10sList: null,
   emptyState: null,
@@ -24,6 +29,16 @@ const elements = {
   logoLink: null,
   toast: null,
   toastMessage: null
+};
+
+// LLM URLs
+const LLM_URLS = {
+  claude: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
+  chatgpt: (prompt) => `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,
+  gemini: (prompt) => `https://www.google.com/search?udm=50&aep=11&q=${encodeURIComponent(prompt)}`,
+  perplexity: (prompt) => `https://www.perplexity.ai/search/?q=${encodeURIComponent(prompt)}`,
+  grok: (prompt) => `https://x.com/i/grok?text=${encodeURIComponent(prompt)}`,
+  copilot: () => `https://copilot.microsoft.com/`
 };
 
 // Current page/video info
@@ -43,6 +58,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.pageTitle = document.getElementById('page-title');
   elements.pageMeta = document.getElementById('page-meta');
   elements.notSupported = document.getElementById('not-supported');
+  elements.quickActions = document.getElementById('quick-actions');
+  elements.openInBtn = document.getElementById('open-in-btn');
+  elements.llmSubmenu = document.getElementById('llm-submenu');
+  elements.copyLinkBtn = document.getElementById('copy-link-btn');
+  elements.copyContentBtn = document.getElementById('copy-content-btn');
   elements.x10sSection = document.getElementById('x10s-section');
   elements.x10sList = document.getElementById('x10s-list');
   elements.emptyState = document.getElementById('empty-state');
@@ -77,6 +97,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Set up create button
   elements.createBtn.addEventListener('click', handleCreateX10);
+
+  // Set up quick actions
+  elements.openInBtn.addEventListener('click', () => {
+    elements.llmSubmenu.classList.toggle('hidden');
+  });
+
+  document.querySelectorAll('.submenu-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (currentItem) {
+        handleOpenInLLM(currentItem.url, item.dataset.llm);
+      }
+    });
+  });
+
+  elements.copyLinkBtn.addEventListener('click', () => {
+    if (currentItem) {
+      handleCopyMDLink(currentItem.url);
+    }
+  });
+
+  elements.copyContentBtn.addEventListener('click', () => {
+    if (currentItem) {
+      handleCopyMDContent(currentItem.url);
+    }
+  });
 
   // Check current tab
   await checkCurrentTab();
@@ -162,6 +207,7 @@ function showNotSupported() {
   elements.loading.classList.add('hidden');
   elements.videoInfo.classList.add('hidden');
   elements.pageInfo.classList.add('hidden');
+  elements.quickActions.classList.add('hidden');
   elements.notSupported.classList.remove('hidden');
   elements.createBtn.disabled = true;
   elements.createBtn.textContent = 'Open a web page first';
@@ -172,6 +218,7 @@ function showVideoInfo() {
   elements.notSupported.classList.add('hidden');
   elements.pageInfo.classList.add('hidden');
   elements.videoInfo.classList.remove('hidden');
+  elements.quickActions.classList.remove('hidden');
 
   // Set thumbnail
   const thumbnailUrl = `https://img.youtube.com/vi/${currentItem.id}/mqdefault.jpg`;
@@ -195,6 +242,7 @@ function showPageInfo() {
   elements.notSupported.classList.add('hidden');
   elements.videoInfo.classList.add('hidden');
   elements.pageInfo.classList.remove('hidden');
+  elements.quickActions.classList.remove('hidden');
 
   // Set title and domain
   elements.pageTitle.textContent = currentItem.title || 'Untitled page';
@@ -324,4 +372,99 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// ============================================
+// Quick Actions (One-Click LLM)
+// ============================================
+
+async function handleOpenInLLM(url, llmType) {
+  showToast('Creating x10...', '');
+  disableQuickActions();
+
+  try {
+    const result = await api.createX10(url, true); // forceNew = true
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      enableQuickActions();
+      return;
+    }
+
+    const mdUrl = `${api.baseUrl}/s/${result.x10.x10Id}.md`;
+    const prompt = `Fetch ${mdUrl}`;
+    const llmUrl = LLM_URLS[llmType](prompt);
+
+    chrome.tabs.create({ url: llmUrl });
+    showToast(`Opened in ${llmType}`, 'success');
+  } catch (error) {
+    console.error('[X10Tube] handleOpenInLLM error:', error);
+    showToast(`Error: ${error.message}`, 'error');
+    enableQuickActions();
+  }
+}
+
+async function handleCopyMDLink(url) {
+  showToast('Creating x10...', '');
+  disableQuickActions();
+
+  try {
+    const result = await api.createX10(url, true); // forceNew = true
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      enableQuickActions();
+      return;
+    }
+
+    const mdUrl = `${api.baseUrl}/s/${result.x10.x10Id}.md`;
+    await navigator.clipboard.writeText(mdUrl);
+    showToast('MD link copied!', 'success');
+    enableQuickActions();
+  } catch (error) {
+    console.error('[X10Tube] handleCopyMDLink error:', error);
+    showToast(`Error: ${error.message}`, 'error');
+    enableQuickActions();
+  }
+}
+
+async function handleCopyMDContent(url) {
+  showToast('Creating x10...', '');
+  disableQuickActions();
+
+  try {
+    const result = await api.createX10(url, true); // forceNew = true
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      enableQuickActions();
+      return;
+    }
+
+    const mdUrl = `${api.baseUrl}/s/${result.x10.x10Id}.md`;
+    showToast('Fetching content...', '');
+
+    const response = await fetch(mdUrl);
+    const mdContent = await response.text();
+
+    await navigator.clipboard.writeText(mdContent);
+    showToast('MD content copied!', 'success');
+    enableQuickActions();
+  } catch (error) {
+    console.error('[X10Tube] handleCopyMDContent error:', error);
+    showToast(`Error: ${error.message}`, 'error');
+    enableQuickActions();
+  }
+}
+
+function disableQuickActions() {
+  elements.openInBtn.disabled = true;
+  elements.copyLinkBtn.disabled = true;
+  elements.copyContentBtn.disabled = true;
+}
+
+function enableQuickActions() {
+  elements.openInBtn.disabled = false;
+  elements.copyLinkBtn.disabled = false;
+  elements.copyContentBtn.disabled = false;
 }

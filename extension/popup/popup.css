@@ -126,6 +126,69 @@ body {
   color: #6b7280; /* gray-500 */
 }
 
+/* Quick actions */
+.quick-actions {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 0;
+}
+
+.quick-action-group {
+  position: relative;
+}
+
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1f2937;
+  transition: background 0.15s;
+}
+
+.quick-action-btn:hover {
+  background: #f9fafb;
+}
+
+.quick-icon {
+  width: 16px;
+  text-align: center;
+}
+
+.quick-submenu {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin: 0 8px 8px;
+  overflow: hidden;
+}
+
+.submenu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1f2937;
+  transition: background 0.15s;
+}
+
+.submenu-item:hover {
+  background: #f9fafb;
+}
+
 /* X10s section */
 .x10s-section {
   background: white;

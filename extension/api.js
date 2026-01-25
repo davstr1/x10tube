@@ -83,7 +83,7 @@ class X10TubeAPI {
   }
 
   // Create a new x10 with a single video
-  async createX10(videoUrl) {
+  async createX10(videoUrl, forceNew = false) {
     try {
       const response = await fetch(`${this.baseUrl}/api/x10/add`, {
         method: 'POST',
@@ -91,7 +91,8 @@ class X10TubeAPI {
         credentials: 'include',
         body: JSON.stringify({
           url: videoUrl,
-          userCode: this.userCode || undefined
+          userCode: this.userCode || undefined,
+          forceNew
         })
       });
 

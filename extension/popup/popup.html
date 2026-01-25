@@ -43,6 +43,29 @@
       <p>Loading...</p>
     </div>
 
+    <!-- Quick actions (one-click LLM) -->
+    <div id="quick-actions" class="quick-actions hidden">
+      <div class="quick-action-group">
+        <button class="quick-action-btn" id="open-in-btn">
+          <span class="quick-icon">▸</span> Open in...
+        </button>
+        <div class="quick-submenu hidden" id="llm-submenu">
+          <button class="submenu-item" data-llm="claude">Claude</button>
+          <button class="submenu-item" data-llm="chatgpt">ChatGPT</button>
+          <button class="submenu-item" data-llm="gemini">Gemini</button>
+          <button class="submenu-item" data-llm="perplexity">Perplexity</button>
+          <button class="submenu-item" data-llm="grok">Grok</button>
+          <button class="submenu-item" data-llm="copilot">Copilot</button>
+        </div>
+      </div>
+      <button class="quick-action-btn" id="copy-link-btn">
+        <span class="quick-icon">🔗</span> Copy MD Link
+      </button>
+      <button class="quick-action-btn" id="copy-content-btn">
+        <span class="quick-icon">📋</span> Copy MD Content
+      </button>
+    </div>
+
     <!-- X10s list -->
     <div id="x10s-section" class="x10s-section hidden">
       <p class="section-label">Add to...</p>

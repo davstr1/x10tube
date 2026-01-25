@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X10Tube",
-  "version": "2.1",
+  "version": "2.2",
   "description": "Add YouTube videos and web pages to X10Tube for AI analysis",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
