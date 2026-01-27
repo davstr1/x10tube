@@ -608,26 +608,37 @@ function createDropdown() {
     window.open(api.getDashboardUrl(), '_blank');
   });
 
-  // Quick action handlers
+  // Quick action handlers - use the videoId from dropdown state
   dropdown.querySelectorAll('.x10-submenu-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.stopPropagation();
-      const llm = item.dataset.llm;
       const videoId = dropdown.dataset.currentVideoId;
-      const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : dropdown.dataset.currentUrl;
-      handleOpenInLLM(url, llm);
+      if (!videoId) {
+        showToast('Please select a video first', 'error');
+        return;
+      }
+      const url = `https://www.youtube.com/watch?v=${videoId}`;
+      handleOpenInLLM(url, item.dataset.llm);
     });
   });
 
   dropdown.querySelector('#x10-copy-link').addEventListener('click', () => {
     const videoId = dropdown.dataset.currentVideoId;
-    const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : dropdown.dataset.currentUrl;
+    if (!videoId) {
+      showToast('Please select a video first', 'error');
+      return;
+    }
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
     handleCopyMDLink(url);
   });
 
   dropdown.querySelector('#x10-copy-content').addEventListener('click', () => {
     const videoId = dropdown.dataset.currentVideoId;
-    const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : dropdown.dataset.currentUrl;
+    if (!videoId) {
+      showToast('Please select a video first', 'error');
+      return;
+    }
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
     handleCopyMDContent(url);
   });
 
@@ -965,7 +976,11 @@ function createTitleButton(videoId) {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    showDropdownForVideo(videoId, btn);
+    // Read from dataset, not closure - avoids stale videoId issues
+    const vid = btn.dataset.videoId;
+    if (vid) {
+      showDropdownForVideo(vid, btn);
+    }
   });
 
   return btn;
@@ -1187,6 +1202,15 @@ function onUrlChange() {
 
   closeDropdown();
   videoInX10s = [];
+
+  // Remove ALL existing X10Tube buttons (they have stale videoIds in closures)
+  document.querySelectorAll('.x10tube-title-btn').forEach(btn => btn.remove());
+
+  // Reset dropdown state
+  const dropdown = document.getElementById('x10tube-dropdown');
+  if (dropdown) {
+    delete dropdown.dataset.currentVideoId;
+  }
 
   // Reset processed markers and re-inject
   document.querySelectorAll('[data-x10-processed]').forEach(el => {
