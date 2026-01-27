@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "X10Tube",
-  "version": "2.2",
-  "description": "Add YouTube videos and web pages to X10Tube for AI analysis",
+  "name": "giveittoyour.ai",
+  "version": "3.0",
+  "description": "Give any page or video to your AI assistant",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
     "<all_urls>"

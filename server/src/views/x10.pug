@@ -10,7 +10,7 @@ block content
           type="text"
           name="title"
           value=x10.title || 'Untitled'
-          placeholder="Give your x10 a title..."
+          placeholder="Give your collection a title..."
         )
     else
       h1.text-2xl.font-semibold.text-text-primary= x10.title || 'Untitled'
@@ -84,7 +84,7 @@ block content
               target="_blank"
             ) Grok
             a.block.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.no-underline(
-              href=`https://copilot.microsoft.com/`
+              href=`https://copilot.microsoft.com/?q=${claudePrompt}`
               target="_blank"
             ) Copilot
 
@@ -107,8 +107,8 @@ block content
             ) MD Content
             button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
               type="button"
-              onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='This X10 URL', 1500)`
-            ) This X10 URL
+              onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Share URL', 1500)`
+            ) Share URL
 
       //- Spacer to push delete to the right
       .flex-1
@@ -116,8 +116,8 @@ block content
         form.inline(action=`/x10/${x10.id}/delete` method="POST")
           button.w-8.h-8.flex.items-center.justify-center.text-text-muted.hover_text-red-500.hover_bg-red-500.hover_bg-opacity-10.rounded-full.transition-colors(
             type="submit"
-            title="Delete this x10"
-            onclick="return confirm('Delete this x10?')"
+            title="Delete this collection"
+            onclick="return confirm('Delete this collection?')"
           ) ×
 
   //- Items list (videos + web pages)
@@ -169,7 +169,7 @@ block content
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${itemPromptEncoded}` target="_blank") Gemini
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.perplexity.ai/search/?q=${itemPromptEncoded}` target="_blank") Perplexity
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://x.com/i/grok?text=${itemPromptEncoded}` target="_blank") Grok
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
+                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/?q=${itemPromptEncoded}` target="_blank") Copilot
 
                     //- Copy... dropdown
                     .dropdown.text-xs
@@ -208,7 +208,7 @@ block content
       h3.text-lg.font-semibold.text-text-primary.mb-4 Add content
 
       if x10.videos.length >= 10
-        p.text-sm.text-text-secondary Maximum 10 items reached
+        p.text-sm.text-text-secondary Maximum items reached
       else
         form.flex.gap-3(action=`/s/${x10.id}/add` method="POST")
           input.flex-1.px-4.py-3.border.border-border-strong.rounded-lg.text-sm.focus_outline-none.focus_ring-2.focus_ring-red-500.focus_border-transparent.font-mono.bg-surface.text-text-primary.placeholder-text-muted(
@@ -235,7 +235,7 @@ block content
       //- Prompt for this x10
       .bg-surface.border.border-border-strong.rounded-lg.p-4
         .flex.justify-between.items-center.mb-2
-          p.text-sm.text-text-secondary Prompt for this x10
+          p.text-sm.text-text-secondary Prompt for this collection
           button#save-preprompt.text-xs.text-red-600.hover_text-red-700.hidden(type="button") Save
         textarea#x10-preprompt.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-sm.focus_outline-none.focus_border-text-muted.resize-none.bg-surface.text-text-primary(
           rows="2"

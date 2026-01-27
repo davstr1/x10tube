@@ -266,17 +266,21 @@ function injectStyles() {
     #x10tube-master-toggle:hover {
       transform: scale(1.05);
     }
-    #x10tube-master-toggle .logo-x10 {
+    #x10tube-master-toggle .logo-giveit {
+      color: #888;
+    }
+    #x10tube-master-toggle .logo-toyour {
       color: #f1f1f1;
     }
-    #x10tube-master-toggle .logo-tube {
+    #x10tube-master-toggle .logo-ai {
       color: #dc2626;
     }
     #x10tube-master-toggle.disabled {
       opacity: 0.5;
     }
-    #x10tube-master-toggle.disabled .logo-x10,
-    #x10tube-master-toggle.disabled .logo-tube {
+    #x10tube-master-toggle.disabled .logo-giveit,
+    #x10tube-master-toggle.disabled .logo-toyour,
+    #x10tube-master-toggle.disabled .logo-ai {
       color: #888;
     }
 
@@ -348,10 +352,14 @@ function injectStyles() {
       font-size: 16px;
       font-weight: 700;
     }
-    .x10-dropdown-header .x10-logo-x10 {
+    .x10-dropdown-header .x10-logo-giveit {
+      color: #888;
+      font-weight: 400;
+    }
+    .x10-dropdown-header .x10-logo-toyour {
       color: #f1f1f1;
     }
-    .x10-dropdown-header .x10-logo-tube {
+    .x10-dropdown-header .x10-logo-ai {
       color: #dc2626;
     }
     .x10-dropdown-close {
@@ -560,7 +568,7 @@ function createDropdown() {
   dropdown.id = 'x10tube-dropdown';
   dropdown.innerHTML = `
     <div class="x10-dropdown-header">
-      <span class="x10-logo"><span class="x10-logo-x10">X10</span><span class="x10-logo-tube">Tube</span></span>
+      <span class="x10-logo"><span class="x10-logo-giveit">giveit</span><span class="x10-logo-toyour">toyour</span><span class="x10-logo-ai">.ai</span></span>
       <button class="x10-dropdown-close">&times;</button>
     </div>
     <div class="x10-quick-actions">
@@ -588,7 +596,7 @@ function createDropdown() {
     <div class="x10-section-label">Add to...</div>
     <div class="x10-list" id="x10tube-list"></div>
     <div class="x10-footer">
-      <a href="#" id="x10tube-dashboard">My x10s</a>
+      <a href="#" id="x10tube-dashboard">My collections</a>
     </div>
   `;
 
@@ -816,7 +824,7 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
   const result = await api.addVideoToX10(x10Id, videoUrl);
 
   if (result.success) {
-    showToast(`Added to ${x10Title || 'x10'}`, 'success');
+    showToast(`Added to ${x10Title || 'collection'}`, 'success');
     videoInX10s.push(x10Id);
     if (item) {
       item.classList.remove('adding');
@@ -868,7 +876,7 @@ const LLM_URLS = {
   gemini: (prompt) => `https://www.google.com/search?udm=50&aep=11&q=${encodeURIComponent(prompt)}`,
   perplexity: (prompt) => `https://www.perplexity.ai/search/?q=${encodeURIComponent(prompt)}`,
   grok: (prompt) => `https://x.com/i/grok?text=${encodeURIComponent(prompt)}`,
-  copilot: () => `https://copilot.microsoft.com/`
+  copilot: (prompt) => `https://copilot.microsoft.com/?q=${encodeURIComponent(prompt)}`
 };
 
 async function handleOpenInLLM(url, llmType) {
@@ -877,7 +885,7 @@ async function handleOpenInLLM(url, llmType) {
     return;
   }
 
-  showToast('Creating x10...', '');
+  showToast('Creating collection...', '');
   closeDropdown();
 
   try {
@@ -906,7 +914,7 @@ async function handleCopyMDLink(url) {
     return;
   }
 
-  showToast('Creating x10...', '');
+  showToast('Creating collection...', '');
   closeDropdown();
 
   try {
@@ -932,7 +940,7 @@ async function handleCopyMDContent(url) {
     return;
   }
 
-  showToast('Creating x10...', '');
+  showToast('Creating collection...', '');
   closeDropdown();
 
   try {
@@ -965,7 +973,7 @@ function createTitleButton(videoId) {
   const btn = document.createElement('button');
   btn.className = 'x10tube-title-btn';
   btn.textContent = '+';
-  btn.title = 'Add to X10Tube';
+  btn.title = 'Add to giveittoyour.ai';
   btn.dataset.videoId = videoId;
 
   btn.addEventListener('click', (e) => {
@@ -1141,14 +1149,14 @@ function createMasterToggle() {
   const myX10sLink = document.createElement('a');
   myX10sLink.href = api.getDashboardUrl();
   myX10sLink.target = '_blank';
-  myX10sLink.textContent = 'My X10s';
+  myX10sLink.textContent = 'My collections';
   menu.appendChild(myX10sLink);
 
   // Create toggle button
   const toggle = document.createElement('button');
   toggle.id = 'x10tube-master-toggle';
-  toggle.innerHTML = '<span class="logo-x10">X10</span><span class="logo-tube">Tube</span>';
-  toggle.title = 'Toggle X10Tube buttons';
+  toggle.innerHTML = '<span class="logo-giveit">giveit</span><span class="logo-toyour">toyour</span><span class="logo-ai">.ai</span>';
+  toggle.title = 'Toggle giveittoyour.ai buttons';
 
   // Load saved state
   chrome.storage.local.get(['x10TitleButtonsEnabled'], (data) => {
@@ -1174,7 +1182,7 @@ function createMasterToggle() {
     // Save state
     chrome.storage.local.set({ x10TitleButtonsEnabled: titleButtonsEnabled });
 
-    showToast(titleButtonsEnabled ? 'X10Tube buttons enabled' : 'X10Tube buttons hidden', 'success');
+    showToast(titleButtonsEnabled ? 'Buttons enabled' : 'Buttons hidden', 'success');
   });
 
   container.appendChild(menu);

@@ -38,7 +38,7 @@ const LLM_URLS = {
   gemini: (prompt) => `https://www.google.com/search?udm=50&aep=11&q=${encodeURIComponent(prompt)}`,
   perplexity: (prompt) => `https://www.perplexity.ai/search/?q=${encodeURIComponent(prompt)}`,
   grok: (prompt) => `https://x.com/i/grok?text=${encodeURIComponent(prompt)}`,
-  copilot: () => `https://copilot.microsoft.com/`
+  copilot: (prompt) => `https://copilot.microsoft.com/?q=${encodeURIComponent(prompt)}`
 };
 
 // Current page/video info
@@ -234,7 +234,7 @@ function showVideoInfo() {
   elements.videoMeta.textContent = metaParts.join(' · ') || 'YouTube video';
 
   elements.createBtn.disabled = false;
-  elements.createBtn.textContent = '+ Create a new x10';
+  elements.createBtn.textContent = '+ Create a new collection';
 }
 
 function showPageInfo() {
@@ -249,7 +249,7 @@ function showPageInfo() {
   elements.pageMeta.textContent = currentItem.domain;
 
   elements.createBtn.disabled = false;
-  elements.createBtn.textContent = '+ Create a new x10';
+  elements.createBtn.textContent = '+ Create a new collection';
 }
 
 async function loadX10sList() {
@@ -296,7 +296,7 @@ function renderX10sList(x10s) {
       item.addEventListener('click', () => handleAddToX10(x10.id, x10.title));
     } else if (isInX10) {
       item.style.cursor = 'default';
-      item.title = 'Already in this x10';
+      item.title = 'Already in this collection';
     } else {
       item.disabled = true;
     }
@@ -314,7 +314,7 @@ async function handleCreateX10() {
   const result = await api.createX10(currentItem.url);
 
   if (result.success) {
-    showToast(`Created new x10!`, 'success');
+    showToast(`Created new collection!`, 'success');
 
     // Open the new x10 page
     setTimeout(() => {
@@ -323,7 +323,7 @@ async function handleCreateX10() {
   } else {
     showToast(`Error: ${result.error}`, 'error');
     elements.createBtn.disabled = false;
-    elements.createBtn.textContent = '+ Create a new x10';
+    elements.createBtn.textContent = '+ Create a new collection';
   }
 }
 
@@ -339,7 +339,7 @@ async function handleAddToX10(x10Id, x10Title) {
   const result = await api.addVideoToX10(x10Id, currentItem.url);
 
   if (result.success) {
-    showToast(`Added to ${x10Title || 'x10'}`, 'success');
+    showToast(`Added to ${x10Title || 'collection'}`, 'success');
 
     // Update the check mark
     if (item) {
@@ -379,7 +379,7 @@ function escapeHtml(text) {
 // ============================================
 
 async function handleOpenInLLM(url, llmType) {
-  showToast('Creating x10...', '');
+  showToast('Creating collection...', '');
   disableQuickActions();
 
   try {
@@ -405,7 +405,7 @@ async function handleOpenInLLM(url, llmType) {
 }
 
 async function handleCopyMDLink(url) {
-  showToast('Creating x10...', '');
+  showToast('Creating collection...', '');
   disableQuickActions();
 
   try {
@@ -429,7 +429,7 @@ async function handleCopyMDLink(url) {
 }
 
 async function handleCopyMDContent(url) {
-  showToast('Creating x10...', '');
+  showToast('Creating collection...', '');
   disableQuickActions();
 
   try {

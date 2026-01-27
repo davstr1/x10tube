@@ -29,7 +29,7 @@ block content
     .dropdown:hover .dropdown-menu { display: block; }
 
   .flex.justify-between.items-center.mb-8
-    h1.text-2xl.font-semibold.text-text-primary My x10s
+    h1.text-2xl.font-semibold.text-text-primary My collections
     a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/") + New
 
   //- Main content: X10s list
@@ -86,7 +86,7 @@ block content
                       a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${encodedPrompt}` target="_blank") Gemini
                       a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.perplexity.ai/search/?q=${encodedPrompt}` target="_blank") Perplexity
                       a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://x.com/i/grok?text=${encodedPrompt}` target="_blank") Grok
-                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/` target="_blank") Copilot
+                      a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/?q=${encodedPrompt}` target="_blank") Copilot
 
                 //- Copy... dropdown
                 .dropdown
@@ -105,21 +105,21 @@ block content
                       ) MD Content
                       button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
                         type="button"
-                        onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='This X10 URL', 1500)`
-                      ) This X10 URL
+                        onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Share URL', 1500)`
+                      ) Share URL
 
                 //- Spacer to push delete to the right
                 .flex-1
 
                 //- Delete button (right-aligned)
                 form.inline(action=`/x10/${x10.id}/delete` method="POST" style="display:inline")
-                  button.w-6.h-6.flex.items-center.justify-center.text-text-muted.hover_text-red-500.hover_bg-red-500.hover_bg-opacity-10.rounded-full.transition-colors(type="submit" onclick="return confirm('Delete this x10?')") ×
+                  button.w-6.h-6.flex.items-center.justify-center.text-text-muted.hover_text-red-500.hover_bg-red-500.hover_bg-opacity-10.rounded-full.transition-colors(type="submit" onclick="return confirm('Delete this collection?')") ×
 
   else
     .text-center.py-16.mb-12
-      p.text-text-secondary.mb-6 You don't have any x10s yet
+      p.text-text-secondary.mb-6 You don't have any collections yet
       a.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-md.text-sm.font-medium.no-underline(href="/")
-        | Create my first x10
+        | Create my first collection
 
       p.mt-8.text-text-secondary or
 
@@ -196,7 +196,7 @@ block content
 
       var disconnectBtn = document.getElementById('disconnect-btn');
       disconnectBtn.addEventListener('click', function() {
-        var confirmed = confirm('Warning: Make sure you have saved your user code!\n\nThis is the only way to recover your x10s.\n\nAre you sure you want to disconnect?');
+        var confirmed = confirm('Warning: Make sure you have saved your user code!\n\nThis is the only way to recover your collections.\n\nAre you sure you want to disconnect?');
         if (confirmed) {
           window.location.href = '/disconnect';
         }

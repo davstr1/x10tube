@@ -162,7 +162,7 @@ class X10TubeAPI {
   }
 
   getDashboardUrl() {
-    return `${this.baseUrl}/myx10s`;
+    return `${this.baseUrl}/collections`;
   }
 
   getSyncUrl() {

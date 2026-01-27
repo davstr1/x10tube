@@ -1,4 +1,4 @@
-/* X10Tube Extension - Consistent with website styles */
+/* giveittoyour.ai Extension - Consistent with website styles */
 
 * {
   margin: 0;
@@ -39,11 +39,16 @@ body {
   letter-spacing: -0.025em;
 }
 
-.logo-x10 {
+.logo-giveit {
+  color: #9ca3af; /* gray-400 */
+  font-weight: 400;
+}
+
+.logo-toyour {
   color: #111827; /* gray-900 */
 }
 
-.logo-tube {
+.logo-ai {
   color: #dc2626; /* red-600 */
 }
 

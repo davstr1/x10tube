@@ -14,36 +14,72 @@ block content
       textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
         name="urls"
         rows="5"
-        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article\n(one URL per line, YouTube or any web page)"
+        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article\n(one URL per line)"
         required
       )
-      button.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
-        | Create a X10
+      button#submit-btn.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
+        | Extract &amp; Combine...
 
     p.mt-4.text-sm.text-text-secondary.text-center
-      | or install the #[a.text-red-600.underline(href="#extension") Chrome extension] to collect videos as you browse
+      | or install the #[a.text-red-600.underline(href="#extension") Chrome extension] to collect as you browse
+
+    //- Post-creation popup (hidden by default)
+    #creation-popup(style="display:none")
+      .mt-6.bg-surface.border.border-border-strong.rounded-lg.overflow-hidden
+        .flex.justify-between.items-center.px-4.py-3.border-b.border-border-default
+          div
+            h3#popup-title.font-semibold.text-text-primary
+            p#popup-meta.text-xs.text-text-muted.mt-1
+          button#popup-close.text-text-muted.hover_text-text-primary.text-lg(type="button") &times;
+        .p-2
+          //- Open in...
+          .relative
+            button#popup-open-in.w-full.flex.items-center.gap-2.px-3.py-2.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md(type="button")
+              span.text-text-muted ▸
+              | Open in...
+            #popup-llm-submenu(style="display:none")
+              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="claude") Claude
+              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="chatgpt") ChatGPT
+              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="gemini") Gemini
+              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="perplexity") Perplexity
+              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="grok") Grok
+              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="copilot") Copilot
+          //- Copy MD Link
+          button#popup-copy-link.w-full.flex.items-center.gap-2.px-3.py-2.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md(type="button")
+            span.text-text-muted 🔗
+            | Copy MD Link
+          //- Copy MD Content
+          button#popup-copy-content.w-full.flex.items-center.gap-2.px-3.py-2.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md(type="button")
+            span.text-text-muted 📋
+            | Copy MD Content
+        //- View collection link
+        .px-4.py-3.border-t.border-border-default.text-center
+          a#popup-view-link.text-sm.text-red-600.hover_text-red-700(href="#") View collection →
+        //- Failed URLs (if any)
+        #popup-failed(style="display:none")
+          .px-4.py-3.border-t.border-border-default.text-xs.text-red-400
+            p.font-medium Some URLs failed:
+            ul#popup-failed-list.list-disc.list-inside.mt-1
 
   section.py-8.border-t.border-border-strong
     p.text-lg.text-text-secondary.mb-2
-      | Summarize and discuss YouTube videos and web pages
-      br
-      | in Claude, ChatGPT, Gemini, Grok, or your favorite AI assistant.
+      | Pages. Videos. To your AI.
     p.text-text-muted
-      | 10 items. 10 minutes. Instead of 10 hours.
+      | Fast. Free. No signup.
 
   section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-4 Why X10Tube?
+    h2.text-xl.font-semibold.mb-4 Why?
     ul.space-y-2.text-text-secondary
-      li No built-in chat to pay for
-      li Your LLM already knows you
+      li No awkward integrated chat — just use your tools
+      li Works with any assistant
       li Easy to share
 
   section.py-8.border-t.border-border-strong
     h2.text-xl.font-semibold.mb-4 How it works
     ol.space-y-2.text-text-secondary.list-decimal.list-inside
-      li Paste your URLs (YouTube videos or web pages)
-      li Open the content compilation in your AI assistant
-      li Ask your questions
+      li Paste URLs (pages, videos, articles)
+      li Get a clean markdown compilation
+      li Open it in your AI
 
   section.py-8.border-t.border-border-strong
     h2.text-xl.font-semibold.mb-4 FAQ
@@ -60,8 +96,128 @@ block content
       div
         h3.font-medium How many items max?
         p.text-text-secondary
-          | We suggest 10, but it's a soft limit. The real limit depends on your LLM's capacity. Claude can read ~100K tokens. We show an estimate on each x10.
+          | As many as your AI can handle. Claude reads ~100K tokens. We show an estimate on each collection.
 
       div
         h3.font-medium Is my data stored?
-        p.text-text-secondary x10s are public. Log in to edit or delete.
+        p.text-text-secondary Collections are public. Log in to edit or delete.
+
+  script.
+    (function() {
+      var LLM_URLS = {
+        claude: function(p) { return 'https://claude.ai/new?q=' + encodeURIComponent(p); },
+        chatgpt: function(p) { return 'https://chat.openai.com/?q=' + encodeURIComponent(p); },
+        gemini: function(p) { return 'https://www.google.com/search?udm=50&aep=11&q=' + encodeURIComponent(p); },
+        perplexity: function(p) { return 'https://www.perplexity.ai/search/?q=' + encodeURIComponent(p); },
+        grok: function(p) { return 'https://x.com/i/grok?text=' + encodeURIComponent(p); },
+        copilot: function(p) { return 'https://copilot.microsoft.com/?q=' + encodeURIComponent(p); }
+      };
+
+      var form = document.querySelector('form[action="/create"]');
+      var submitBtn = document.getElementById('submit-btn');
+      var popup = document.getElementById('creation-popup');
+      var currentMdUrl = '';
+      var currentPrompt = '';
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Extracting...';
+        popup.style.display = 'none';
+
+        fetch('/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+          },
+          body: new URLSearchParams(new FormData(form))
+        })
+        .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+        .then(function(result) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Extract & Combine...';
+
+          if (!result.ok) {
+            alert(result.data.error || 'Something went wrong');
+            return;
+          }
+
+          var d = result.data;
+          currentMdUrl = d.mdUrl;
+          currentPrompt = 'Fetch ' + d.mdUrl;
+
+          document.getElementById('popup-title').textContent = d.title;
+          var tokens = d.tokenCount > 1000 ? Math.round(d.tokenCount / 1000) + 'K tokens' : d.tokenCount + ' tokens';
+          document.getElementById('popup-meta').textContent = d.itemCount + ' item' + (d.itemCount > 1 ? 's' : '') + ' · ~' + tokens;
+          document.getElementById('popup-view-link').href = d.pageUrl;
+
+          // LLM links
+          document.querySelectorAll('#popup-llm-submenu a').forEach(function(a) {
+            var llm = a.dataset.llm;
+            a.href = LLM_URLS[llm](currentPrompt);
+            a.target = '_blank';
+          });
+
+          // Failed URLs
+          var failedEl = document.getElementById('popup-failed');
+          if (d.failed && d.failed.length > 0) {
+            var list = document.getElementById('popup-failed-list');
+            list.innerHTML = '';
+            d.failed.forEach(function(f) {
+              var li = document.createElement('li');
+              li.textContent = f.url + ': ' + f.error;
+              list.appendChild(li);
+            });
+            failedEl.style.display = 'block';
+          } else {
+            failedEl.style.display = 'none';
+          }
+
+          popup.style.display = 'block';
+        })
+        .catch(function(err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Extract & Combine...';
+          alert('Error: ' + err.message);
+        });
+      });
+
+      // Close popup
+      document.getElementById('popup-close').addEventListener('click', function() {
+        popup.style.display = 'none';
+      });
+
+      // Toggle Open in... submenu
+      document.getElementById('popup-open-in').addEventListener('click', function() {
+        var sub = document.getElementById('popup-llm-submenu');
+        sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
+      });
+
+      // Copy MD Link
+      document.getElementById('popup-copy-link').addEventListener('click', function() {
+        var btn = this;
+        navigator.clipboard.writeText(currentMdUrl);
+        var original = btn.innerHTML;
+        btn.innerHTML = '<span class="text-text-muted">🔗</span> Copied!';
+        setTimeout(function() { btn.innerHTML = original; }, 1500);
+      });
+
+      // Copy MD Content
+      document.getElementById('popup-copy-content').addEventListener('click', function() {
+        var btn = this;
+        var original = btn.innerHTML;
+        btn.innerHTML = '<span class="text-text-muted">📋</span> Fetching...';
+        fetch(currentMdUrl)
+          .then(function(r) { return r.text(); })
+          .then(function(md) {
+            navigator.clipboard.writeText(md);
+            btn.innerHTML = '<span class="text-text-muted">📋</span> Copied!';
+            setTimeout(function() { btn.innerHTML = original; }, 1500);
+          })
+          .catch(function() {
+            btn.innerHTML = '<span class="text-text-muted">📋</span> Error';
+            setTimeout(function() { btn.innerHTML = original; }, 1500);
+          });
+      });
+    })();
