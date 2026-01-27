@@ -397,29 +397,19 @@ function injectStyles() {
       flex-shrink: 0;
     }
 
-    /* Submenu */
-    .x10-has-submenu {
-      position: relative;
-    }
-    .x10-submenu {
+    /* Inline submenu (toggle via JS click) */
+    .x10-submenu-inline {
       display: none;
-      position: absolute;
-      left: 100%;
-      top: 0;
-      background: #282828;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      min-width: 140px;
-      overflow: hidden;
-      z-index: 10;
+      background: #1f1f1f;
+      padding: 4px 0;
     }
-    .x10-has-submenu:hover .x10-submenu {
+    .x10-submenu-inline.open {
       display: block;
     }
     .x10-submenu-item {
       display: block;
       width: 100%;
-      padding: 10px 16px;
+      padding: 10px 16px 10px 42px;
       background: none;
       border: none;
       text-align: left;
@@ -574,17 +564,17 @@ function createDropdown() {
       <button class="x10-dropdown-close">&times;</button>
     </div>
     <div class="x10-quick-actions">
-      <div class="x10-quick-item x10-has-submenu" id="x10-open-in">
+      <button class="x10-quick-item" id="x10-open-in">
         <span class="x10-quick-icon">▸</span>
         <span>Open in...</span>
-        <div class="x10-submenu">
-          <button class="x10-submenu-item" data-llm="claude">Claude</button>
-          <button class="x10-submenu-item" data-llm="chatgpt">ChatGPT</button>
-          <button class="x10-submenu-item" data-llm="gemini">Gemini</button>
-          <button class="x10-submenu-item" data-llm="perplexity">Perplexity</button>
-          <button class="x10-submenu-item" data-llm="grok">Grok</button>
-          <button class="x10-submenu-item" data-llm="copilot">Copilot</button>
-        </div>
+      </button>
+      <div class="x10-submenu-inline" id="x10-llm-submenu">
+        <button class="x10-submenu-item" data-llm="claude">Claude</button>
+        <button class="x10-submenu-item" data-llm="chatgpt">ChatGPT</button>
+        <button class="x10-submenu-item" data-llm="gemini">Gemini</button>
+        <button class="x10-submenu-item" data-llm="perplexity">Perplexity</button>
+        <button class="x10-submenu-item" data-llm="grok">Grok</button>
+        <button class="x10-submenu-item" data-llm="copilot">Copilot</button>
       </div>
       <button class="x10-quick-item" id="x10-copy-link">
         <span class="x10-quick-icon">🔗</span>
@@ -606,6 +596,11 @@ function createDropdown() {
   dropdown.querySelector('#x10tube-dashboard').addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
+  });
+
+  // Toggle "Open in..." submenu on click
+  dropdown.querySelector('#x10-open-in').addEventListener('click', () => {
+    dropdown.querySelector('#x10-llm-submenu').classList.toggle('open');
   });
 
   // Quick action handlers - use the videoId from dropdown state
