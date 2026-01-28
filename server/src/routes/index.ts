@@ -27,8 +27,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
     const urlList = urls
       .split('\n')
       .map((u: string) => u.trim())
-      .filter((u: string) => u.length > 0)
-      .slice(0, 10); // Max 10 videos
+      .filter((u: string) => u.length > 0);
 
     if (urlList.length === 0) {
       return res.status(400).render('landing', {
