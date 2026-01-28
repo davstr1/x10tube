@@ -1,192 +1,70 @@
 extends layout
 
 block content
-  //- 1. Hero avec badge FREE + tagline
-  section.mb-8.text-center
-    span.inline-block.bg-green-600.text-white.text-xs.font-bold.px-2.py-1.rounded-full.mb-4
-      | 100% FREE
-
-    h1.text-2xl.md_text-3xl.font-bold.text-text-primary.mb-3
-      | Combine videos, pages, and articles.
-      br
-      | Send to your AI.
-
-    p.text-lg.text-text-secondary.mb-2
-      | Research faster. One document, one conversation.
-    p.text-sm.text-text-muted
-      | No quotas, no signup, no catch.
-
-  //- 2. CTA Extension proéminent
+  //- Hero minimal
   section.mb-6.text-center
-    a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-lg.text-base.font-medium(
-      href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx"
-      target="_blank"
-    )
-      svg.w-5.h-5(fill="currentColor" viewBox="0 0 24 24")
-        path(d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.182a9.818 9.818 0 110 19.636 9.818 9.818 0 010-19.636zm0 2.182a7.636 7.636 0 100 15.272 7.636 7.636 0 000-15.272zm0 3.272a4.364 4.364 0 110 8.728 4.364 4.364 0 010-8.728z")
-      | Install Chrome Extension
+    h1.text-xl.md_text-2xl.font-semibold.text-text-primary.mb-2
+      | Paste URLs. Get markdown. Send to your AI.
 
-    p.mt-2.text-xs.text-text-muted
-      | Works on YouTube, articles, web pages
+    p.text-sm.text-text-muted
+      | Extracts transcripts and content from YouTube videos and web pages.
 
-  //- 3. Séparateur
-  .flex.items-center.gap-4.my-6
-    .flex-1.border-t.border-border-default
-    span.text-sm.text-text-muted or paste URLs below
-    .flex-1.border-t.border-border-default
+  //- Formulaire
+  section.mb-6
+    form(action="/create" method="POST")
+      textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
+        name="urls"
+        rows="4"
+        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article"
+        required
+      )
+      button#submit-btn.mt-3.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
+        | Extract
 
-  //- 4. Formulaire
-  section.mb-8
     if error
-      .bg-red-900.dark_bg-red-950.border.border-red-700.rounded-md.p-4.mb-6.text-red-200.text-sm
+      .bg-red-900.border.border-red-700.rounded-md.p-3.mt-3.text-red-200.text-sm
         p= error
         if failedUrls && failedUrls.length > 0
           ul.mt-2.list-disc.list-inside
             each fail in failedUrls
               li #{fail.url}: #{fail.error}
 
-    form(action="/create" method="POST")
-      textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
-        name="urls"
-        rows="4"
-        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article\n(one URL per line)"
-        required
-      )
-      button#submit-btn.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
-        | Extract &amp; Combine...
+  //- LLMs supportés (simple)
+  p.text-center.text-xs.text-text-muted.mb-8
+    | Opens in Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot.
+    br
+    | Or copy the markdown.
 
-  //- 5. Logos LLMs
-  .text-center.mb-8
-    p.text-xs.text-text-muted.mb-2 Works with
-    .flex.justify-center.gap-4.flex-wrap.text-sm.text-text-secondary
-      span Claude
-      span ChatGPT
-      span Gemini
-      span Perplexity
-      span Grok
-      span Copilot
+  //- Extension
+  .text-center.mb-8.py-4.border-t.border-border-default
+    p.text-sm.text-text-secondary.mb-2
+      | There's also a
+      a.text-red-600.underline(href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx" target="_blank") Chrome extension
+      |  to collect pages as you browse.
 
-  //- 6. Use cases
-  section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-6 What can you do?
+  //- How it works (simple)
+  section.py-6.border-t.border-border-default
+    h2.text-base.font-medium.mb-3 How it works
+    ol.text-sm.text-text-secondary.list-decimal.list-inside.space-y-1
+      li Paste one or more URLs
+      li We extract the content into markdown
+      li Click "Open in Claude" (or any AI) — it fetches the markdown directly
 
-    .grid.grid-cols-1.md_grid-cols-2.gap-6
-      .flex.gap-3
-        span.text-2xl 📺
-        div
-          p.font-medium.text-text-primary Summarize a 2-hour podcast
-          p.text-sm.text-text-muted Get key points in 30 seconds
+  //- FAQ minimal
+  section.py-6.border-t.border-border-default
+    h2.text-base.font-medium.mb-3 FAQ
 
-      .flex.gap-3
-        span.text-2xl 🔬
-        div
-          p.font-medium.text-text-primary Research a topic
-          p.text-sm.text-text-muted Combine 5 videos into one briefing
-
-      .flex.gap-3
-        span.text-2xl 🛒
-        div
-          p.font-medium.text-text-primary Compare products
-          p.text-sm.text-text-muted Aggregate reviews before buying
-
-      .flex.gap-3
-        span.text-2xl 📝
-        div
-          p.font-medium.text-text-primary Turn recordings into notes
-          p.text-sm.text-text-muted Meeting summaries, actionable items
-
-  //- 7. Why toyour.ai?
-  section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-6 Why toyour.ai?
-
-    .space-y-4
-      .flex.gap-3
-        span.text-green-500.font-bold ✓
-        div
-          p.font-medium.text-text-primary Combine multiple sources into one document
-          p.text-sm.text-text-muted Others let you process one video at a time.
-
-      .flex.gap-3
-        span.text-green-500.font-bold ✓
-        div
-          p.font-medium.text-text-primary Opens directly in YOUR assistant
-          p.text-sm.text-text-muted No integrated chat. No copy-paste. Just Claude, ChatGPT, or any AI.
-
-      .flex.gap-3
-        span.text-green-500.font-bold ✓
-        div
-          p.font-medium.text-text-primary Works with any AI
-          p.text-sm.text-text-muted Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot — or copy anywhere.
-
-      .flex.gap-3
-        span.text-green-500.font-bold ✓
-        div
-          p.font-medium.text-text-primary 100% free, no quotas
-          p.text-sm.text-text-muted No "10 messages per day" limit. No monthly quota. No catch.
-
-      .flex.gap-3
-        span.text-green-500.font-bold ✓
-        div
-          p.font-medium.text-text-primary Shareable collections
-          p.text-sm.text-text-muted Send a link to share your research with anyone.
-
-  //- 8. How it works (2 colonnes)
-  section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-6 How it works
-
-    .grid.grid-cols-1.md_grid-cols-2.gap-8
+    .space-y-3.text-sm
       div
-        h3.font-medium.text-text-primary.mb-3
-          span.text-red-600 ●
-          |  With the extension
-          span.text-xs.ml-2.text-text-muted (recommended)
-        ol.space-y-2.text-text-secondary.list-decimal.list-inside
-          li Browse YouTube or any website
-          li Click the toyour.ai button
-          li Choose "Open in Claude" (or ChatGPT, Gemini...)
-        p.mt-3.text-sm.text-green-600 → Your AI receives the content instantly
+        p.text-text-primary Is it free?
+        p.text-text-muted Yes. No account needed.
 
       div
-        h3.font-medium.text-text-primary.mb-3
-          span.text-text-muted ●
-          |  From this page
-        ol.space-y-2.text-text-secondary.list-decimal.list-inside
-          li Paste URLs (videos, articles, pages)
-          li Click "Extract & Combine"
-          li Open the result in your favorite AI
-        p.mt-3.text-sm.text-green-600 → Research multiple sources in one conversation
+        p.text-text-primary Is my data private?
+        p.text-text-muted
+          | Collections are accessible via their URL. We don't store your AI conversations.
 
-  //- 9. FAQ révisée
-  section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-4 FAQ
-
-    .space-y-4
-      div
-        h3.font-medium Is it really free?
-        p.text-text-secondary
-          | Yes. No trial, no freemium, no "10 messages per day" limit. Just free.
-
-      div
-        h3.font-medium Does it work with my AI?
-        p.text-text-secondary
-          | Yes. Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot — or copy the content anywhere.
-
-      div
-        h3.font-medium Can I combine multiple videos?
-        p.text-text-secondary
-          | Yes! Combine as many videos, articles, or web pages as you need. That's what makes us different.
-
-      div
-        h3.font-medium Is my data private?
-        p.text-text-secondary
-          | Collections are accessible via their unique URL — only people with the link can see them. We don't store your AI conversations. Only you can edit or delete your collections.
-
-      div
-        h3.font-medium How does it work technically?
-        p.text-text-secondary
-          | We extract transcripts and content, combine them into clean markdown, and give you a URL. When you click "Open in Claude", your AI fetches that URL directly.
-
-  //- 10. Script popup (existant)
+  //- Script popup
   script.
     (function() {
       var LLM_URLS = {
@@ -206,7 +84,6 @@ block content
       var currentPrompt = '';
       var popup = null;
 
-      // Build popup DOM and append to body (so it's truly fixed-positioned)
       function buildPopup() {
         var overlay = document.createElement('div');
         overlay.id = 'creation-popup';
@@ -221,7 +98,6 @@ block content
         card.style.cssText = 'position:relative;width:100%;max-width:24rem;margin:0 1rem;background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:0.5rem;box-shadow:0 10px 25px rgba(0,0,0,0.3);overflow:hidden;';
         overlay.appendChild(card);
 
-        // Header
         var header = document.createElement('div');
         header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;border-bottom:1px solid var(--color-border-default);';
         var headerLeft = document.createElement('div');
@@ -242,11 +118,9 @@ block content
         header.appendChild(closeBtn);
         card.appendChild(header);
 
-        // Actions
         var actions = document.createElement('div');
         actions.style.cssText = 'padding:0.5rem;';
 
-        // Open in... button + submenu
         var openInWrap = document.createElement('div');
         openInWrap.style.cssText = 'position:relative;';
         var openInBtn = document.createElement('button');
@@ -271,24 +145,21 @@ block content
         openInWrap.appendChild(submenu);
         actions.appendChild(openInWrap);
 
-        // Copy MD Link
         var copyLinkBtn = document.createElement('button');
         copyLinkBtn.id = 'popup-copy-link';
         copyLinkBtn.type = 'button';
-        copyLinkBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copy MD Link';
+        copyLinkBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copy link';
         copyLinkBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
         actions.appendChild(copyLinkBtn);
 
-        // Copy MD Content
         var copyContentBtn = document.createElement('button');
         copyContentBtn.id = 'popup-copy-content';
         copyContentBtn.type = 'button';
-        copyContentBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copy MD Content';
+        copyContentBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copy markdown';
         copyContentBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
         actions.appendChild(copyContentBtn);
         card.appendChild(actions);
 
-        // View collection link
         var viewWrap = document.createElement('div');
         viewWrap.style.cssText = 'padding:0.75rem 1rem;border-top:1px solid var(--color-border-default);text-align:center;';
         var viewLink = document.createElement('a');
@@ -299,7 +170,6 @@ block content
         viewWrap.appendChild(viewLink);
         card.appendChild(viewWrap);
 
-        // Failed URLs section
         var failedWrap = document.createElement('div');
         failedWrap.id = 'popup-failed';
         failedWrap.style.display = 'none';
@@ -316,7 +186,6 @@ block content
         failedWrap.appendChild(failedInner);
         card.appendChild(failedWrap);
 
-        // Add hover effects via CSS
         var style = document.createElement('style');
         style.textContent = '#creation-popup button:hover, #popup-llm-submenu a:hover { background: var(--color-surface-hover); }';
         overlay.appendChild(style);
@@ -329,9 +198,7 @@ block content
         if (!popup) popup = buildPopup();
         popup.style.display = 'flex';
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Done \u2713';
-
-        // Bind events each time (popup is persistent once built)
+        submitBtn.textContent = 'Done';
         bindPopupEvents();
       }
 
@@ -352,7 +219,7 @@ block content
           var btn = this;
           navigator.clipboard.writeText(currentMdUrl);
           var original = btn.innerHTML;
-          btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copied!';
+          btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copied';
           setTimeout(function() { btn.innerHTML = original; }, 1500);
         });
 
@@ -364,7 +231,7 @@ block content
             .then(function(r) { return r.text(); })
             .then(function(md) {
               navigator.clipboard.writeText(md);
-              btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copied!';
+              btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copied';
               setTimeout(function() { btn.innerHTML = original; }, 1500);
             })
             .catch(function() {
@@ -381,7 +248,7 @@ block content
           if (sub) sub.style.display = 'none';
         }
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Extract & Combine...';
+        submitBtn.textContent = 'Extract';
       }
 
       form.addEventListener('submit', function(e) {
@@ -402,7 +269,7 @@ block content
         .then(function(result) {
           if (!result.ok) {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Extract & Combine...';
+            submitBtn.textContent = 'Extract';
             alert(result.data.error || 'Something went wrong');
             return;
           }
@@ -418,12 +285,10 @@ block content
           document.getElementById('popup-meta').textContent = d.itemCount + ' item' + (d.itemCount > 1 ? 's' : '') + ' \u00b7 ~' + tokens;
           document.getElementById('popup-view-link').href = d.pageUrl;
 
-          // LLM links
           document.querySelectorAll('#popup-llm-submenu a').forEach(function(a) {
             a.href = LLM_URLS[a.dataset.llm](currentPrompt);
           });
 
-          // Failed URLs
           var failedEl = document.getElementById('popup-failed');
           if (d.failed && d.failed.length > 0) {
             var list = document.getElementById('popup-failed-list');
@@ -440,7 +305,7 @@ block content
         })
         .catch(function(err) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Extract & Combine...';
+          submitBtn.textContent = 'Extract';
           alert('Error: ' + err.message);
         });
       });
