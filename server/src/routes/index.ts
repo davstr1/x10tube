@@ -7,7 +7,7 @@ export const indexRouter = Router();
 // Landing page
 indexRouter.get('/', (req: Request, res: Response) => {
   res.render('landing', {
-    title: 'toyour.ai - A page, a video, a document... to your AI'
+    title: 'toyour.ai - Combine videos, pages, articles. Send to your AI.'
   });
 });
 

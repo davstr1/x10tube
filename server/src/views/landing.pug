@@ -1,7 +1,42 @@
 extends layout
 
 block content
-  section.mb-12
+  //- 1. Hero avec badge FREE + tagline
+  section.mb-8.text-center
+    span.inline-block.bg-green-600.text-white.text-xs.font-bold.px-2.py-1.rounded-full.mb-4
+      | 100% FREE
+
+    h1.text-2xl.md_text-3xl.font-bold.text-text-primary.mb-3
+      | Combine videos, pages, and articles.
+      br
+      | Send to your AI.
+
+    p.text-lg.text-text-secondary.mb-2
+      | Research faster. One document, one conversation.
+    p.text-sm.text-text-muted
+      | No quotas, no signup, no catch.
+
+  //- 2. CTA Extension proéminent
+  section.mb-6.text-center
+    a.inline-flex.items-center.gap-2.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-lg.text-base.font-medium(
+      href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx"
+      target="_blank"
+    )
+      svg.w-5.h-5(fill="currentColor" viewBox="0 0 24 24")
+        path(d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.182a9.818 9.818 0 110 19.636 9.818 9.818 0 010-19.636zm0 2.182a7.636 7.636 0 100 15.272 7.636 7.636 0 000-15.272zm0 3.272a4.364 4.364 0 110 8.728 4.364 4.364 0 010-8.728z")
+      | Install Chrome Extension
+
+    p.mt-2.text-xs.text-text-muted
+      | Works on YouTube, articles, web pages
+
+  //- 3. Séparateur
+  .flex.items-center.gap-4.my-6
+    .flex-1.border-t.border-border-default
+    span.text-sm.text-text-muted or paste URLs below
+    .flex-1.border-t.border-border-default
+
+  //- 4. Formulaire
+  section.mb-8
     if error
       .bg-red-900.dark_bg-red-950.border.border-red-700.rounded-md.p-4.mb-6.text-red-200.text-sm
         p= error
@@ -13,57 +48,145 @@ block content
     form(action="/create" method="POST")
       textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
         name="urls"
-        rows="5"
-        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article\n(one URL per line)"
+        rows="4"
+        placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article\n(one URL per line, up to 10)"
         required
       )
       button#submit-btn.mt-4.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
         | Extract &amp; Combine...
 
-    p.mt-4.text-sm.text-text-secondary.text-center
-      | or install the #[a.text-red-600.underline(href="#extension") Chrome extension] to collect as you browse
+  //- 5. Logos LLMs
+  .text-center.mb-8
+    p.text-xs.text-text-muted.mb-2 Works with
+    .flex.justify-center.gap-4.flex-wrap.text-sm.text-text-secondary
+      span Claude
+      span ChatGPT
+      span Gemini
+      span Perplexity
+      span Grok
+      span Copilot
 
+  //- 6. Use cases
   section.py-8.border-t.border-border-strong
-    p.text-lg.text-text-secondary.mb-2
-      | A page, a video, a document... or dozens. In one click, to your AI.
-    p.text-text-muted
-      | Summarize, discuss, do your thing, in your favorite assistant.
+    h2.text-xl.font-semibold.mb-6 What can you do?
 
+    .grid.grid-cols-1.md_grid-cols-2.gap-6
+      .flex.gap-3
+        span.text-2xl 📺
+        div
+          p.font-medium.text-text-primary Summarize a 2-hour podcast
+          p.text-sm.text-text-muted Get key points in 30 seconds
+
+      .flex.gap-3
+        span.text-2xl 🔬
+        div
+          p.font-medium.text-text-primary Research a topic
+          p.text-sm.text-text-muted Combine 5 videos into one briefing
+
+      .flex.gap-3
+        span.text-2xl 🛒
+        div
+          p.font-medium.text-text-primary Compare products
+          p.text-sm.text-text-muted Aggregate reviews before buying
+
+      .flex.gap-3
+        span.text-2xl 📝
+        div
+          p.font-medium.text-text-primary Turn recordings into notes
+          p.text-sm.text-text-muted Meeting summaries, actionable items
+
+  //- 7. Why toyour.ai?
   section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-4 Why?
-    ul.space-y-2.text-text-secondary
-      li No awkward integrated chat — just use your tools
-      li Works with any assistant
-      li Easy to share
+    h2.text-xl.font-semibold.mb-6 Why toyour.ai?
 
+    .space-y-4
+      .flex.gap-3
+        span.text-green-500.font-bold ✓
+        div
+          p.font-medium.text-text-primary Combine up to 10 sources into one document
+          p.text-sm.text-text-muted Others let you process one video at a time.
+
+      .flex.gap-3
+        span.text-green-500.font-bold ✓
+        div
+          p.font-medium.text-text-primary Opens directly in YOUR assistant
+          p.text-sm.text-text-muted No integrated chat. No copy-paste. Just Claude, ChatGPT, or any AI.
+
+      .flex.gap-3
+        span.text-green-500.font-bold ✓
+        div
+          p.font-medium.text-text-primary Works with any AI
+          p.text-sm.text-text-muted Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot — or copy anywhere.
+
+      .flex.gap-3
+        span.text-green-500.font-bold ✓
+        div
+          p.font-medium.text-text-primary 100% free, no quotas
+          p.text-sm.text-text-muted No "10 messages per day" limit. No monthly quota. No catch.
+
+      .flex.gap-3
+        span.text-green-500.font-bold ✓
+        div
+          p.font-medium.text-text-primary Shareable collections
+          p.text-sm.text-text-muted Send a link to share your research with anyone.
+
+  //- 8. How it works (2 colonnes)
   section.py-8.border-t.border-border-strong
-    h2.text-xl.font-semibold.mb-4 How it works
-    ol.space-y-2.text-text-secondary.list-decimal.list-inside
-      li Paste URLs (pages, videos, articles)
-      li Get a clean markdown compilation
-      li Open it in your AI
+    h2.text-xl.font-semibold.mb-6 How it works
 
+    .grid.grid-cols-1.md_grid-cols-2.gap-8
+      div
+        h3.font-medium.text-text-primary.mb-3
+          span.text-red-600 ●
+          |  With the extension
+          span.text-xs.ml-2.text-text-muted (recommended)
+        ol.space-y-2.text-text-secondary.list-decimal.list-inside
+          li Browse YouTube or any website
+          li Click the toyour.ai button
+          li Choose "Open in Claude" (or ChatGPT, Gemini...)
+        p.mt-3.text-sm.text-green-600 → Your AI receives the content instantly
+
+      div
+        h3.font-medium.text-text-primary.mb-3
+          span.text-text-muted ●
+          |  From this page
+        ol.space-y-2.text-text-secondary.list-decimal.list-inside
+          li Paste up to 10 URLs (videos, articles, pages)
+          li Click "Extract & Combine"
+          li Open the result in your favorite AI
+        p.mt-3.text-sm.text-green-600 → Research multiple sources in one conversation
+
+  //- 9. FAQ révisée
   section.py-8.border-t.border-border-strong
     h2.text-xl.font-semibold.mb-4 FAQ
 
     .space-y-4
       div
-        h3.font-medium Is it free?
-        p.text-text-secondary Yes.
-
-      div
-        h3.font-medium Does it work with Claude/ChatGPT/...?
-        p.text-text-secondary Yes, and with any AI. Use "Open in..." or copy-paste the content.
-
-      div
-        h3.font-medium How many items max?
+        h3.font-medium Is it really free?
         p.text-text-secondary
-          | As many as your AI can handle. Claude reads ~100K tokens. We show an estimate on each collection.
+          | Yes. No trial, no freemium, no "10 messages per day" limit. Just free.
 
       div
-        h3.font-medium Is my data stored?
-        p.text-text-secondary Collections are public. Log in to edit or delete.
+        h3.font-medium Does it work with my AI?
+        p.text-text-secondary
+          | Yes. Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot — or copy the content anywhere.
 
+      div
+        h3.font-medium Can I combine multiple videos?
+        p.text-text-secondary
+          | Yes! Up to 10 videos, articles, or web pages in one document. That's what makes us different.
+
+      div
+        h3.font-medium Is my data private?
+        p.text-text-secondary
+          | Collections are accessible via their unique URL — only people with the link can see them. We don't store your AI conversations. Only you can edit or delete your collections.
+
+      div
+        h3.font-medium How does it work technically?
+        p.text-text-secondary
+          | We extract transcripts and content, combine them into clean markdown, and give you a URL. When you click "Open in Claude", your AI fetches that URL directly.
+
+  //- 10. Script popup (existant)
   script.
     (function() {
       var LLM_URLS = {
