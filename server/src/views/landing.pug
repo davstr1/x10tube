@@ -23,44 +23,6 @@ block content
     p.mt-4.text-sm.text-text-secondary.text-center
       | or install the #[a.text-red-600.underline(href="#extension") Chrome extension] to collect as you browse
 
-    //- Post-creation popup (hidden by default)
-    #creation-popup(style="display:none")
-      .mt-6.bg-surface.border.border-border-strong.rounded-lg.overflow-hidden
-        .flex.justify-between.items-center.px-4.py-3.border-b.border-border-default
-          div
-            h3#popup-title.font-semibold.text-text-primary
-            p#popup-meta.text-xs.text-text-muted.mt-1
-          button#popup-close.text-text-muted.hover_text-text-primary.text-lg(type="button") &times;
-        .p-2
-          //- Open in...
-          .relative
-            button#popup-open-in.w-full.flex.items-center.gap-2.px-3.py-2.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md(type="button")
-              span.text-text-muted ▸
-              | Open in...
-            #popup-llm-submenu(style="display:none")
-              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="claude") Claude
-              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="chatgpt") ChatGPT
-              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="gemini") Gemini
-              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="perplexity") Perplexity
-              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="grok") Grok
-              a.block.px-3.py-2.pl-8.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md.no-underline(href="#" data-llm="copilot") Copilot
-          //- Copy MD Link
-          button#popup-copy-link.w-full.flex.items-center.gap-2.px-3.py-2.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md(type="button")
-            span.text-text-muted 🔗
-            | Copy MD Link
-          //- Copy MD Content
-          button#popup-copy-content.w-full.flex.items-center.gap-2.px-3.py-2.text-sm.text-text-primary.hover_bg-surface-hover.rounded-md(type="button")
-            span.text-text-muted 📋
-            | Copy MD Content
-        //- View collection link
-        .px-4.py-3.border-t.border-border-default.text-center
-          a#popup-view-link.text-sm.text-red-600.hover_text-red-700(href="#") View collection →
-        //- Failed URLs (if any)
-        #popup-failed(style="display:none")
-          .px-4.py-3.border-t.border-border-default.text-xs.text-red-400
-            p.font-medium Some URLs failed:
-            ul#popup-failed-list.list-disc.list-inside.mt-1
-
   section.py-8.border-t.border-border-strong
     p.text-lg.text-text-secondary.mb-2
       | Pages. Videos. To your AI.
@@ -112,18 +74,198 @@ block content
         grok: function(p) { return 'https://x.com/i/grok?text=' + encodeURIComponent(p); },
         copilot: function(p) { return 'https://copilot.microsoft.com/?q=' + encodeURIComponent(p); }
       };
+      var LLMS = ['claude', 'chatgpt', 'gemini', 'perplexity', 'grok', 'copilot'];
+      var LLM_LABELS = { claude: 'Claude', chatgpt: 'ChatGPT', gemini: 'Gemini', perplexity: 'Perplexity', grok: 'Grok', copilot: 'Copilot' };
 
       var form = document.querySelector('form[action="/create"]');
       var submitBtn = document.getElementById('submit-btn');
-      var popup = document.getElementById('creation-popup');
       var currentMdUrl = '';
       var currentPrompt = '';
+      var popup = null;
+
+      // Build popup DOM and append to body (so it's truly fixed-positioned)
+      function buildPopup() {
+        var overlay = document.createElement('div');
+        overlay.id = 'creation-popup';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:6rem;';
+
+        var backdrop = document.createElement('div');
+        backdrop.id = 'popup-backdrop';
+        backdrop.style.cssText = 'position:absolute;inset:0;';
+        overlay.appendChild(backdrop);
+
+        var card = document.createElement('div');
+        card.style.cssText = 'position:relative;width:100%;max-width:24rem;margin:0 1rem;background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:0.5rem;box-shadow:0 10px 25px rgba(0,0,0,0.3);overflow:hidden;';
+        overlay.appendChild(card);
+
+        // Header
+        var header = document.createElement('div');
+        header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;border-bottom:1px solid var(--color-border-default);';
+        var headerLeft = document.createElement('div');
+        var title = document.createElement('h3');
+        title.id = 'popup-title';
+        title.style.cssText = 'font-weight:600;color:var(--color-text-primary);';
+        var meta = document.createElement('p');
+        meta.id = 'popup-meta';
+        meta.style.cssText = 'font-size:0.75rem;color:var(--color-text-muted);margin-top:0.25rem;';
+        headerLeft.appendChild(title);
+        headerLeft.appendChild(meta);
+        var closeBtn = document.createElement('button');
+        closeBtn.id = 'popup-close';
+        closeBtn.type = 'button';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.style.cssText = 'color:var(--color-text-muted);font-size:1.25rem;line-height:1;cursor:pointer;background:none;border:none;padding:0.25rem;';
+        header.appendChild(headerLeft);
+        header.appendChild(closeBtn);
+        card.appendChild(header);
+
+        // Actions
+        var actions = document.createElement('div');
+        actions.style.cssText = 'padding:0.5rem;';
+
+        // Open in... button + submenu
+        var openInWrap = document.createElement('div');
+        openInWrap.style.cssText = 'position:relative;';
+        var openInBtn = document.createElement('button');
+        openInBtn.id = 'popup-open-in';
+        openInBtn.type = 'button';
+        openInBtn.innerHTML = '<span style="color:var(--color-text-muted)">&#9656;</span> Open in...';
+        openInBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
+        openInWrap.appendChild(openInBtn);
+
+        var submenu = document.createElement('div');
+        submenu.id = 'popup-llm-submenu';
+        submenu.style.display = 'none';
+        LLMS.forEach(function(llm) {
+          var a = document.createElement('a');
+          a.dataset.llm = llm;
+          a.textContent = LLM_LABELS[llm];
+          a.href = '#';
+          a.target = '_blank';
+          a.style.cssText = 'display:block;padding:0.5rem 0.75rem 0.5rem 2rem;font-size:0.875rem;color:var(--color-text-primary);text-decoration:none;border-radius:0.375rem;';
+          submenu.appendChild(a);
+        });
+        openInWrap.appendChild(submenu);
+        actions.appendChild(openInWrap);
+
+        // Copy MD Link
+        var copyLinkBtn = document.createElement('button');
+        copyLinkBtn.id = 'popup-copy-link';
+        copyLinkBtn.type = 'button';
+        copyLinkBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copy MD Link';
+        copyLinkBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
+        actions.appendChild(copyLinkBtn);
+
+        // Copy MD Content
+        var copyContentBtn = document.createElement('button');
+        copyContentBtn.id = 'popup-copy-content';
+        copyContentBtn.type = 'button';
+        copyContentBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copy MD Content';
+        copyContentBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
+        actions.appendChild(copyContentBtn);
+        card.appendChild(actions);
+
+        // View collection link
+        var viewWrap = document.createElement('div');
+        viewWrap.style.cssText = 'padding:0.75rem 1rem;border-top:1px solid var(--color-border-default);text-align:center;';
+        var viewLink = document.createElement('a');
+        viewLink.id = 'popup-view-link';
+        viewLink.href = '#';
+        viewLink.textContent = 'View collection \u2192';
+        viewLink.style.cssText = 'font-size:0.875rem;color:var(--color-red-600, #dc2626);';
+        viewWrap.appendChild(viewLink);
+        card.appendChild(viewWrap);
+
+        // Failed URLs section
+        var failedWrap = document.createElement('div');
+        failedWrap.id = 'popup-failed';
+        failedWrap.style.display = 'none';
+        var failedInner = document.createElement('div');
+        failedInner.style.cssText = 'padding:0.75rem 1rem;border-top:1px solid var(--color-border-default);font-size:0.75rem;color:#f87171;';
+        var failedLabel = document.createElement('p');
+        failedLabel.style.fontWeight = '500';
+        failedLabel.textContent = 'Some URLs failed:';
+        var failedList = document.createElement('ul');
+        failedList.id = 'popup-failed-list';
+        failedList.style.cssText = 'list-style:disc inside;margin-top:0.25rem;';
+        failedInner.appendChild(failedLabel);
+        failedInner.appendChild(failedList);
+        failedWrap.appendChild(failedInner);
+        card.appendChild(failedWrap);
+
+        // Add hover effects via CSS
+        var style = document.createElement('style');
+        style.textContent = '#creation-popup button:hover, #popup-llm-submenu a:hover { background: var(--color-surface-hover); }';
+        overlay.appendChild(style);
+
+        document.body.appendChild(overlay);
+        return overlay;
+      }
+
+      function showPopup() {
+        if (!popup) popup = buildPopup();
+        popup.style.display = 'flex';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Done \u2713';
+
+        // Bind events each time (popup is persistent once built)
+        bindPopupEvents();
+      }
+
+      var eventsBound = false;
+      function bindPopupEvents() {
+        if (eventsBound) return;
+        eventsBound = true;
+
+        document.getElementById('popup-close').addEventListener('click', hidePopup);
+        document.getElementById('popup-backdrop').addEventListener('click', hidePopup);
+
+        document.getElementById('popup-open-in').addEventListener('click', function() {
+          var sub = document.getElementById('popup-llm-submenu');
+          sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('popup-copy-link').addEventListener('click', function() {
+          var btn = this;
+          navigator.clipboard.writeText(currentMdUrl);
+          var original = btn.innerHTML;
+          btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copied!';
+          setTimeout(function() { btn.innerHTML = original; }, 1500);
+        });
+
+        document.getElementById('popup-copy-content').addEventListener('click', function() {
+          var btn = this;
+          var original = btn.innerHTML;
+          btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Fetching...';
+          fetch(currentMdUrl)
+            .then(function(r) { return r.text(); })
+            .then(function(md) {
+              navigator.clipboard.writeText(md);
+              btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copied!';
+              setTimeout(function() { btn.innerHTML = original; }, 1500);
+            })
+            .catch(function() {
+              btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Error';
+              setTimeout(function() { btn.innerHTML = original; }, 1500);
+            });
+        });
+      }
+
+      function hidePopup() {
+        if (popup) {
+          popup.style.display = 'none';
+          var sub = document.getElementById('popup-llm-submenu');
+          if (sub) sub.style.display = 'none';
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Extract & Combine...';
+      }
 
       form.addEventListener('submit', function(e) {
         e.preventDefault();
         submitBtn.disabled = true;
         submitBtn.textContent = 'Extracting...';
-        popup.style.display = 'none';
+        hidePopup();
 
         fetch('/create', {
           method: 'POST',
@@ -135,10 +277,9 @@ block content
         })
         .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
         .then(function(result) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Extract & Combine...';
-
           if (!result.ok) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Extract & Combine...';
             alert(result.data.error || 'Something went wrong');
             return;
           }
@@ -147,16 +288,16 @@ block content
           currentMdUrl = d.mdUrl;
           currentPrompt = 'Fetch ' + d.mdUrl;
 
+          showPopup();
+
           document.getElementById('popup-title').textContent = d.title;
           var tokens = d.tokenCount > 1000 ? Math.round(d.tokenCount / 1000) + 'K tokens' : d.tokenCount + ' tokens';
-          document.getElementById('popup-meta').textContent = d.itemCount + ' item' + (d.itemCount > 1 ? 's' : '') + ' · ~' + tokens;
+          document.getElementById('popup-meta').textContent = d.itemCount + ' item' + (d.itemCount > 1 ? 's' : '') + ' \u00b7 ~' + tokens;
           document.getElementById('popup-view-link').href = d.pageUrl;
 
           // LLM links
           document.querySelectorAll('#popup-llm-submenu a').forEach(function(a) {
-            var llm = a.dataset.llm;
-            a.href = LLM_URLS[llm](currentPrompt);
-            a.target = '_blank';
+            a.href = LLM_URLS[a.dataset.llm](currentPrompt);
           });
 
           // Failed URLs
@@ -173,51 +314,11 @@ block content
           } else {
             failedEl.style.display = 'none';
           }
-
-          popup.style.display = 'block';
         })
         .catch(function(err) {
           submitBtn.disabled = false;
           submitBtn.textContent = 'Extract & Combine...';
           alert('Error: ' + err.message);
         });
-      });
-
-      // Close popup
-      document.getElementById('popup-close').addEventListener('click', function() {
-        popup.style.display = 'none';
-      });
-
-      // Toggle Open in... submenu
-      document.getElementById('popup-open-in').addEventListener('click', function() {
-        var sub = document.getElementById('popup-llm-submenu');
-        sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
-      });
-
-      // Copy MD Link
-      document.getElementById('popup-copy-link').addEventListener('click', function() {
-        var btn = this;
-        navigator.clipboard.writeText(currentMdUrl);
-        var original = btn.innerHTML;
-        btn.innerHTML = '<span class="text-text-muted">🔗</span> Copied!';
-        setTimeout(function() { btn.innerHTML = original; }, 1500);
-      });
-
-      // Copy MD Content
-      document.getElementById('popup-copy-content').addEventListener('click', function() {
-        var btn = this;
-        var original = btn.innerHTML;
-        btn.innerHTML = '<span class="text-text-muted">📋</span> Fetching...';
-        fetch(currentMdUrl)
-          .then(function(r) { return r.text(); })
-          .then(function(md) {
-            navigator.clipboard.writeText(md);
-            btn.innerHTML = '<span class="text-text-muted">📋</span> Copied!';
-            setTimeout(function() { btn.innerHTML = original; }, 1500);
-          })
-          .catch(function() {
-            btn.innerHTML = '<span class="text-text-muted">📋</span> Error';
-            setTimeout(function() { btn.innerHTML = original; }, 1500);
-          });
       });
     })();
