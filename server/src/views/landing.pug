@@ -4,10 +4,10 @@ block content
   //- Hero
   section.mb-6.text-center
     h1.text-xl.md_text-2xl.font-semibold.text-text-primary.mb-2
-      | Paste URLs. Get markdown. Send to your AI.
+      | Send any page(s) to your AI.
 
     p.text-sm.text-text-secondary
-      | Combine YouTube videos, articles, and web pages into one document.
+      | YouTube videos, articles, web pages — combine them and send to your favorite assistant.
 
   //- Formulaire
   section.mb-4
@@ -19,7 +19,7 @@ block content
         required
       )
       button#submit-btn.mt-3.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
-        | Extract
+        | Extract, Combine &amp; Send to...
 
     if error
       .bg-red-900.border.border-red-700.rounded-md.p-3.mt-3.text-red-200.text-sm
@@ -266,7 +266,7 @@ block content
           if (sub) sub.style.display = 'none';
         }
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Extract';
+        submitBtn.textContent = 'Extract, Combine & Send to...';
       }
 
       form.addEventListener('submit', function(e) {
@@ -287,7 +287,7 @@ block content
         .then(function(result) {
           if (!result.ok) {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Extract';
+            submitBtn.textContent = 'Extract, Combine & Send to...';
             alert(result.data.error || 'Something went wrong');
             return;
           }
@@ -323,7 +323,7 @@ block content
         })
         .catch(function(err) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Extract';
+          submitBtn.textContent = 'Extract, Combine & Send to...';
           alert('Error: ' + err.message);
         });
       });
