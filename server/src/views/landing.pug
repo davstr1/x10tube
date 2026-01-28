@@ -1,16 +1,16 @@
 extends layout
 
 block content
-  //- Hero minimal
+  //- Hero
   section.mb-6.text-center
     h1.text-xl.md_text-2xl.font-semibold.text-text-primary.mb-2
       | Paste URLs. Get markdown. Send to your AI.
 
-    p.text-sm.text-text-muted
-      | Extracts transcripts and content from YouTube videos and web pages.
+    p.text-sm.text-text-secondary
+      | Combine YouTube videos, articles, and web pages into one document.
 
   //- Formulaire
-  section.mb-6
+  section.mb-4
     form(action="/create" method="POST")
       textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
         name="urls"
@@ -29,28 +29,34 @@ block content
             each fail in failedUrls
               li #{fail.url}: #{fail.error}
 
-  //- LLMs supportés (simple)
+  //- Extension + LLMs
+  p.text-center.text-sm.text-text-muted.mb-2
+    | Or use the
+    a.text-red-600(href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx" target="_blank")  Chrome extension
+    |  to collect pages as you browse.
+
   p.text-center.text-xs.text-text-muted.mb-8
-    | Opens in Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot.
-    br
-    | Or copy the markdown.
+    | Opens in Claude, ChatGPT, Gemini, Perplexity, Grok, Copilot — or copy the markdown.
 
-  //- Extension
-  .text-center.mb-8.py-4.border-t.border-border-default
-    p.text-sm.text-text-secondary.mb-2
-      | There's also a
-      a.text-red-600.underline(href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx" target="_blank") Chrome extension
-      |  to collect pages as you browse.
+  //- Why
+  section.py-6.border-t.border-border-default
+    h2.text-base.font-medium.mb-4 Why this exists
 
-  //- How it works (simple)
+    ul.space-y-2.text-sm.text-text-secondary
+      li No integrated chat — you use your own AI
+      li Combine multiple sources in one go
+      li Free, no account needed
+
+  //- How it works
   section.py-6.border-t.border-border-default
     h2.text-base.font-medium.mb-3 How it works
+
     ol.text-sm.text-text-secondary.list-decimal.list-inside.space-y-1
       li Paste one or more URLs
       li We extract the content into markdown
       li Click "Open in Claude" (or any AI) — it fetches the markdown directly
 
-  //- FAQ minimal
+  //- FAQ
   section.py-6.border-t.border-border-default
     h2.text-base.font-medium.mb-3 FAQ
 
