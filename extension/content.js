@@ -266,9 +266,6 @@ function injectStyles() {
     #x10tube-master-toggle:hover {
       transform: scale(1.05);
     }
-    #x10tube-master-toggle .logo-giveit {
-      color: #888;
-    }
     #x10tube-master-toggle .logo-toyour {
       color: #f1f1f1;
     }
@@ -278,7 +275,6 @@ function injectStyles() {
     #x10tube-master-toggle.disabled {
       opacity: 0.5;
     }
-    #x10tube-master-toggle.disabled .logo-giveit,
     #x10tube-master-toggle.disabled .logo-toyour,
     #x10tube-master-toggle.disabled .logo-ai {
       color: #888;
@@ -351,10 +347,6 @@ function injectStyles() {
     .x10-dropdown-header .x10-logo {
       font-size: 16px;
       font-weight: 700;
-    }
-    .x10-dropdown-header .x10-logo-giveit {
-      color: #888;
-      font-weight: 400;
     }
     .x10-dropdown-header .x10-logo-toyour {
       color: #f1f1f1;
@@ -568,7 +560,7 @@ function createDropdown() {
   dropdown.id = 'x10tube-dropdown';
   dropdown.innerHTML = `
     <div class="x10-dropdown-header">
-      <span class="x10-logo"><span class="x10-logo-giveit">giveit</span><span class="x10-logo-toyour">toyour</span><span class="x10-logo-ai">.ai</span></span>
+      <span class="x10-logo"><span class="x10-logo-toyour">toyour</span><span class="x10-logo-ai">.ai</span></span>
       <button class="x10-dropdown-close">&times;</button>
     </div>
     <div class="x10-quick-actions">
@@ -973,7 +965,7 @@ function createTitleButton(videoId) {
   const btn = document.createElement('button');
   btn.className = 'x10tube-title-btn';
   btn.textContent = '+';
-  btn.title = 'Add to giveittoyour.ai';
+  btn.title = 'Add to toyour.ai';
   btn.dataset.videoId = videoId;
 
   btn.addEventListener('click', (e) => {
@@ -1155,8 +1147,8 @@ function createMasterToggle() {
   // Create toggle button
   const toggle = document.createElement('button');
   toggle.id = 'x10tube-master-toggle';
-  toggle.innerHTML = '<span class="logo-giveit">giveit</span><span class="logo-toyour">toyour</span><span class="logo-ai">.ai</span>';
-  toggle.title = 'Toggle giveittoyour.ai buttons';
+  toggle.innerHTML = '<span class="logo-toyour">toyour</span><span class="logo-ai">.ai</span>';
+  toggle.title = 'Toggle toyour.ai buttons';
 
   // Load saved state
   chrome.storage.local.get(['x10TitleButtonsEnabled'], (data) => {

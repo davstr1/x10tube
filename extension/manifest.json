@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "giveittoyour.ai",
-  "version": "3.0",
-  "description": "Give any page or video to your AI assistant",
+  "name": "toyour.ai",
+  "version": "3.1",
+  "description": "A page, a video, a document... to your AI",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
     "<all_urls>"

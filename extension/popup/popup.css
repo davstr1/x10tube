@@ -1,4 +1,4 @@
-/* giveittoyour.ai Extension - Consistent with website styles */
+/* toyour.ai Extension - Consistent with website styles */
 
 * {
   margin: 0;
@@ -37,11 +37,6 @@ body {
   font-weight: 700;
   text-decoration: none;
   letter-spacing: -0.025em;
-}
-
-.logo-giveit {
-  color: #9ca3af; /* gray-400 */
-  font-weight: 400;
 }
 
 .logo-toyour {
