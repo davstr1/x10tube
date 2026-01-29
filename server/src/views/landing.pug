@@ -137,6 +137,11 @@ block content
       var menu = document.getElementById('send-to-menu');
       var wrapper = document.getElementById('send-to-wrapper');
       var hideTimeout = null;
+      var showTimeout = null;
+
+      // Transition setup
+      menu.style.opacity = '0';
+      menu.style.transition = 'opacity 150ms ease';
 
       function syncMenuWidth() {
         menu.style.width = submitBtn.offsetWidth + 'px';
@@ -144,9 +149,15 @@ block content
       function showMenu() {
         syncMenuWidth();
         menu.classList.remove('hidden');
+        // Force reflow then fade in
+        menu.offsetHeight;
+        menu.style.opacity = '1';
       }
       function hideMenu() {
-        menu.classList.add('hidden');
+        menu.style.opacity = '0';
+        setTimeout(function() {
+          if (menu.style.opacity === '0') menu.classList.add('hidden');
+        }, 150);
       }
       window.addEventListener('resize', function() {
         if (!menu.classList.contains('hidden')) syncMenuWidth();
@@ -155,10 +166,12 @@ block content
       // Show/hide menu on hover
       wrapper.addEventListener('mouseenter', function() {
         clearTimeout(hideTimeout);
-        showMenu();
+        clearTimeout(showTimeout);
+        showTimeout = setTimeout(showMenu, 120);
       });
       wrapper.addEventListener('mouseleave', function() {
-        hideTimeout = setTimeout(hideMenu, 200);
+        clearTimeout(showTimeout);
+        hideTimeout = setTimeout(hideMenu, 1000);
       });
 
       // Toggle on click
