@@ -589,6 +589,8 @@ function createDropdown() {
     <div class="x10-list" id="stya-list"></div>
     <div class="x10-footer">
       <a href="#" id="stya-dashboard">My collections</a>
+      <span style="color:#555;">·</span>
+      <a href="#" id="stya-sync">Sync</a>
     </div>
   `;
 
@@ -596,6 +598,10 @@ function createDropdown() {
   dropdown.querySelector('#stya-dashboard').addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
+  });
+  dropdown.querySelector('#stya-sync').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.open(`${api.baseUrl}/sync`, '_blank');
   });
 
   // Toggle "Open in..." submenu on click
@@ -742,7 +748,7 @@ function renderX10List(videoId) {
   createItem.className = 'x10-item x10-item-create';
   createItem.innerHTML = `
     <span class="x10-item-check" style="font-weight: bold;">+</span>
-    <span class="x10-item-name">Create a new collection</span>
+    <span class="x10-item-name">A new collection</span>
     <span class="x10-item-count"></span>
   `;
   createItem.addEventListener('click', () => handleCreateWithVideo(videoId));
@@ -797,7 +803,7 @@ async function handleCreateWithVideo(videoId) {
     if (createItem) {
       createItem.classList.remove('adding');
       const nameSpan = createItem.querySelector('.x10-item-name');
-      if (nameSpan) nameSpan.textContent = 'Create a new collection';
+      if (nameSpan) nameSpan.textContent = 'A new collection';
     }
   }
 }

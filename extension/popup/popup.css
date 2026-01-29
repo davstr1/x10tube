@@ -1,4 +1,4 @@
-/* StraightToYourAI Extension - Consistent with website styles */
+/* StraightToYourAI Extension - Dark theme matching YouTube dropdown */
 
 * {
   margin: 0;
@@ -10,8 +10,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  color: #1f2937; /* gray-800 */
-  background: #f9fafb; /* gray-50 */
+  color: #f1f1f1;
+  background: #282828;
   width: 320px;
   min-height: 200px;
 }
@@ -28,8 +28,8 @@ body {
 /* Header */
 .header {
   padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #f3f4f6; /* gray-100 */
+  background: #212121;
+  border-bottom: 1px solid #3f3f3f;
 }
 
 .logo {
@@ -40,18 +40,18 @@ body {
 }
 
 .logo-main {
-  color: #111827; /* gray-900 */
+  color: #f1f1f1;
 }
 
 .logo-ai {
-  color: #dc2626; /* red-600 */
+  color: #dc2626;
 }
 
 /* Video info section */
 .video-info {
   padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  background: #282828;
+  border-bottom: 1px solid #3f3f3f;
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -60,7 +60,7 @@ body {
 .video-thumbnail {
   width: 80px;
   height: 45px;
-  background: #e5e7eb;
+  background: #3f3f3f;
   border-radius: 4px;
   flex-shrink: 0;
   background-size: cover;
@@ -70,7 +70,7 @@ body {
 .page-icon {
   width: 45px;
   height: 45px;
-  background: #f3f4f6;
+  background: #3f3f3f;
   border-radius: 8px;
   flex-shrink: 0;
   display: flex;
@@ -87,7 +87,7 @@ body {
 .video-title {
   font-size: 13px;
   font-weight: 500;
-  color: #111827; /* gray-900 */
+  color: #f1f1f1;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -98,7 +98,7 @@ body {
 
 .video-meta {
   font-size: 12px;
-  color: #6b7280; /* gray-500 */
+  color: #aaa;
   margin-top: 2px;
 }
 
@@ -106,30 +106,30 @@ body {
 .not-youtube {
   padding: 24px 16px;
   text-align: center;
-  background: white;
+  background: #282828;
 }
 
 .not-youtube p {
   font-size: 13px;
-  color: #6b7280; /* gray-500 */
+  color: #aaa;
 }
 
 /* Loading state */
 .loading {
   padding: 24px 16px;
   text-align: center;
-  background: white;
+  background: #282828;
 }
 
 .loading p {
   font-size: 13px;
-  color: #6b7280; /* gray-500 */
+  color: #aaa;
 }
 
 /* Quick actions */
 .quick-actions {
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: #282828;
+  border-bottom: 1px solid #3f3f3f;
   padding: 8px 0;
 }
 
@@ -149,12 +149,12 @@ body {
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
-  color: #1f2937;
+  color: #f1f1f1;
   transition: background 0.15s;
 }
 
 .quick-action-btn:hover {
-  background: #f9fafb;
+  background: #3f3f3f;
 }
 
 .quick-icon {
@@ -163,10 +163,10 @@ body {
 }
 
 .quick-submenu {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: #1f1f1f;
+  border: 1px solid #3f3f3f;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   margin: 0 8px 8px;
   overflow: hidden;
 }
@@ -181,24 +181,24 @@ body {
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
-  color: #1f2937;
+  color: #f1f1f1;
   transition: background 0.15s;
 }
 
 .submenu-item:hover {
-  background: #f9fafb;
+  background: #3f3f3f;
 }
 
 /* X10s section */
 .x10s-section {
-  background: white;
-  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  background: #282828;
+  border-bottom: 1px solid #3f3f3f;
 }
 
 .section-label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280; /* gray-500 */
+  color: #aaa;
   padding: 12px 16px 8px;
 }
 
@@ -224,7 +224,7 @@ body {
 }
 
 .x10-item:hover {
-  background: #f9fafb; /* gray-50 */
+  background: #3f3f3f;
 }
 
 .x10-item.adding {
@@ -235,13 +235,13 @@ body {
 .x10-check {
   width: 16px;
   flex-shrink: 0;
-  color: #10b981; /* green-500 */
+  color: #10b981;
   font-size: 14px;
 }
 
 .x10-name {
   flex: 1;
-  color: #1f2937; /* gray-800 */
+  color: #f1f1f1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -249,7 +249,7 @@ body {
 
 .x10-count {
   font-size: 12px;
-  color: #9ca3af; /* gray-400 */
+  color: #888;
   flex-shrink: 0;
 }
 
@@ -257,47 +257,35 @@ body {
 .empty-state {
   padding: 16px;
   text-align: center;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: #282828;
+  border-bottom: 1px solid #3f3f3f;
 }
 
 .empty-text {
   font-size: 13px;
-  color: #9ca3af; /* gray-400 */
+  color: #888;
 }
 
-/* Actions */
-.actions {
-  padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+/* Create section */
+.create-section {
+  background: #282828;
+  border-bottom: 1px solid #3f3f3f;
 }
 
-/* Buttons - consistent with website */
-.btn {
-  display: block;
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-  border: none;
-  font-family: inherit;
+.x10-item-create {
+  border-bottom: none;
 }
 
-.btn-primary {
-  background: #dc2626; /* red-600 */
-  color: white;
+.x10-item-create .x10-item-check {
+  color: #f1f1f1;
 }
 
-.btn-primary:hover {
-  background: #b91c1c; /* red-700 */
+.x10-item-create .x10-item-name {
+  color: #f1f1f1;
 }
 
-.btn-primary:disabled {
-  background: #9ca3af; /* gray-400 */
+.x10-item-create:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -307,22 +295,22 @@ body {
   display: flex;
   justify-content: center;
   gap: 8px;
-  background: white;
+  background: #282828;
 }
 
 .footer-link {
   font-size: 13px;
-  color: #6b7280; /* gray-500 */
+  color: #aaa;
   text-decoration: none;
   transition: color 0.15s;
 }
 
 .footer-link:hover {
-  color: #111827; /* gray-900 */
+  color: #fff;
 }
 
 .separator {
-  color: #d1d5db; /* gray-300 */
+  color: #555;
 }
 
 /* Toast notification */
@@ -331,7 +319,7 @@ body {
   bottom: 12px;
   left: 12px;
   right: 12px;
-  background: #111827; /* gray-900 */
+  background: #111;
   color: white;
   padding: 10px 16px;
   border-radius: 6px;
@@ -342,11 +330,11 @@ body {
 }
 
 .toast.success {
-  background: #059669; /* green-600 */
+  background: #16a34a;
 }
 
 .toast.error {
-  background: #dc2626; /* red-600 */
+  background: #dc2626;
 }
 
 @keyframes slideUp {
@@ -366,14 +354,14 @@ body {
 }
 
 .x10s-list::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: transparent;
 }
 
 .x10s-list::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #555;
   border-radius: 3px;
 }
 
 .x10s-list::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #888;
 }

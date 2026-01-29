@@ -210,7 +210,7 @@ function showNotSupported() {
   elements.quickActions.classList.add('hidden');
   elements.notSupported.classList.remove('hidden');
   elements.createBtn.disabled = true;
-  elements.createBtn.textContent = 'Open a web page first';
+  document.getElementById('create-btn-text').textContent = 'Open a web page first';
 }
 
 function showVideoInfo() {
@@ -234,7 +234,7 @@ function showVideoInfo() {
   elements.videoMeta.textContent = metaParts.join(' · ') || 'YouTube video';
 
   elements.createBtn.disabled = false;
-  elements.createBtn.textContent = '+ Create a new collection';
+  document.getElementById('create-btn-text').textContent = 'A new collection';
 }
 
 function showPageInfo() {
@@ -249,7 +249,7 @@ function showPageInfo() {
   elements.pageMeta.textContent = currentItem.domain;
 
   elements.createBtn.disabled = false;
-  elements.createBtn.textContent = '+ Create a new collection';
+  document.getElementById('create-btn-text').textContent = 'A new collection';
 }
 
 async function loadX10sList() {
@@ -309,7 +309,7 @@ async function handleCreateX10() {
   if (!currentItem) return;
 
   elements.createBtn.disabled = true;
-  elements.createBtn.textContent = 'Creating...';
+  document.getElementById('create-btn-text').textContent = 'Creating...';
 
   const result = await api.createX10(currentItem.url);
 
@@ -323,7 +323,7 @@ async function handleCreateX10() {
   } else {
     showToast(`Error: ${result.error}`, 'error');
     elements.createBtn.disabled = false;
-    elements.createBtn.textContent = '+ Create a new collection';
+    document.getElementById('create-btn-text').textContent = 'A new collection';
   }
 }
 
