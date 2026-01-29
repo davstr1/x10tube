@@ -2,6 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 
+import { config } from './config.js';
 import './db.js'; // Initialize database
 import { anonymousMiddleware } from './middleware/anonymous.js';
 import { indexRouter } from './routes/index.js';
@@ -9,7 +10,11 @@ import { x10Router } from './routes/x10.js';
 import { apiRouter } from './routes/api.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = config.port;
+
+// Make config available in Pug templates
+app.locals.baseUrl = config.baseUrl;
+app.locals.brandName = config.brandName;
 
 // Middleware
 app.use(express.json());
@@ -39,5 +44,5 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`X10Tube server running at http://localhost:${PORT}`);
+  console.log(`X10Tube server running at ${config.baseUrl}`);
 });

@@ -1,7 +1,7 @@
 // StraightToYourAI Content Script for YouTube
 // Injects button next to video titles
 
-const DEFAULT_BASE_URL = 'http://localhost:3000';
+const DEFAULT_BASE_URL = (typeof STYA_CONFIG !== 'undefined') ? STYA_CONFIG.DEFAULT_BASE_URL : 'http://localhost:3000';
 
 // ============================================
 // Utility Functions

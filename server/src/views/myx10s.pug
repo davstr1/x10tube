@@ -42,8 +42,8 @@ block content
         - const isFirstYouTube = firstItem && (firstItem.type === 'youtube' || firstItem.youtube_id)
         - const thumbnailUrl = isFirstYouTube ? `https://img.youtube.com/vi/${firstItem.youtube_id}/mqdefault.jpg` : null
         - const faviconUrl = firstItem && !isFirstYouTube ? `https://www.google.com/s2/favicons?domain=${firstItem.channel}&sz=128` : null
-        - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
-        - const x10Url = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}`
+        - const mdUrl = `${baseUrl}/s/${x10.id}.md`
+        - const x10Url = `${baseUrl}/s/${x10.id}`
         - const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || ''
         - const fullPrompt = 'Fetch ' + mdUrl + '\n\n' + effectivePrePrompt
         - const encodedPrompt = encodeURIComponent(fullPrompt)

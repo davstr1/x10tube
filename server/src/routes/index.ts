@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { createX10, getX10sForAnonymous, getX10sForUser, getX10ById, deleteX10 } from '../services/x10.js';
 import { getUserSettings } from '../services/settings.js';
+import { config } from '../config.js';
 
 export const indexRouter = Router();
 
@@ -8,7 +9,7 @@ export const indexRouter = Router();
 indexRouter.get('/', (req: Request, res: Response) => {
   const x10s = req.anonymousId ? getX10sForAnonymous(req.anonymousId) : [];
   res.render('landing', {
-    title: 'straighttoyour.ai',
+    title: config.brandName,
     x10s
   });
 });
@@ -20,7 +21,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
 
     if (!urls || typeof urls !== 'string') {
       return res.status(400).render('landing', {
-        title: 'straighttoyour.ai',
+        title: config.brandName,
         error: 'Please paste at least one YouTube URL'
       });
     }
@@ -33,7 +34,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
 
     if (urlList.length === 0) {
       return res.status(400).render('landing', {
-        title: 'straighttoyour.ai',
+        title: config.brandName,
         error: 'Please paste at least one YouTube URL'
       });
     }
@@ -52,14 +53,14 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
         });
       }
       return res.status(400).render('landing', {
-        title: 'straighttoyour.ai',
+        title: config.brandName,
         error: 'Could not extract transcripts from any of the provided URLs',
         failedUrls: failed
       });
     }
 
     if (wantsJson) {
-      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const baseUrl = config.baseUrl;
       return res.json({
         id: x10.id,
         title: x10.title || 'Untitled',
@@ -81,7 +82,7 @@ indexRouter.post('/create', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'An error occurred while creating your collection' });
     }
     res.status(500).render('landing', {
-      title: 'straighttoyour.ai',
+      title: config.brandName,
       error: 'An error occurred while creating your collection'
     });
   }
@@ -98,7 +99,7 @@ indexRouter.get('/disconnect', (req: Request, res: Response) => {
 // Sync page - paste user code from another device
 indexRouter.get('/sync', (req: Request, res: Response) => {
   res.render('sync', {
-    title: 'Sync - straighttoyour.ai',
+    title: `Sync - ${config.brandName}`,
     userCode: req.anonymousId
   });
 });
@@ -109,7 +110,7 @@ indexRouter.post('/sync', (req: Request, res: Response) => {
 
   if (!code || typeof code !== 'string' || code.trim().length === 0) {
     return res.status(400).render('sync', {
-      title: 'Sync - straighttoyour.ai',
+      title: `Sync - ${config.brandName}`,
       userCode: req.anonymousId,
       error: 'Please enter a valid user code'
     });
@@ -120,7 +121,7 @@ indexRouter.post('/sync', (req: Request, res: Response) => {
   // Validate code format (should be 16 chars alphanumeric from nanoid)
   if (!/^[A-Za-z0-9_-]{10,32}$/.test(trimmedCode)) {
     return res.status(400).render('sync', {
-      title: 'Sync - straighttoyour.ai',
+      title: `Sync - ${config.brandName}`,
       userCode: req.anonymousId,
       error: 'Invalid code format'
     });
@@ -147,7 +148,7 @@ indexRouter.get('/collections', (req: Request, res: Response) => {
   const settings = getUserSettings(anonymousId);
 
   res.render('myx10s', {
-    title: 'My collections - straighttoyour.ai',
+    title: `My collections - ${config.brandName}`,
     x10s,
     userCode: anonymousId,
     settings

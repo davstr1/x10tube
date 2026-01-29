@@ -2,7 +2,13 @@
 *.log
 node_modules/
 
+# Environment (contains URLs — .env.example is committed)
+.env
+
 # Server
 server/dist/
 server/x10tube.db
 server/public/styles.css
+
+# Extension builds
+dist-extension/

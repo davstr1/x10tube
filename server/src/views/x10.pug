@@ -24,7 +24,7 @@ block content
 
   //- Action buttons
   section.mb-10
-    - const mdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}.md`
+    - const mdUrl = `${baseUrl}/s/${x10.id}.md`
     - const fullPrompt = 'Fetch ' + mdUrl + '\n\n' + (effectivePrePrompt || '')
     - const claudePrompt = encodeURIComponent(fullPrompt)
     - const chatgptPrompt = encodeURIComponent(fullPrompt)
@@ -89,7 +89,7 @@ block content
             ) Copilot
 
       //- Copy dropdown
-      - const x10Url = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}`
+      - const x10Url = `${baseUrl}/s/${x10.id}`
       .inline-block.dropdown
         button.inline-flex.items-center.gap-2.bg-surface.hover_bg-surface-hover.text-text-primary.px-5.py-3.rounded-lg.text-sm.font-medium.border.border-border-strong.transition-colors(
           type="button"
@@ -138,7 +138,7 @@ block content
                   img.w-12.h-12(src=thumbnailUrl alt=item.channel)
 
             //- Item info
-            - const itemMdUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/s/${x10.id}/v/${itemId}.md`
+            - const itemMdUrl = `${baseUrl}/s/${x10.id}/v/${itemId}.md`
             - const itemPrompt = 'Fetch ' + itemMdUrl + '\n\n' + (effectivePrePrompt || '')
             - const itemPromptEncoded = encodeURIComponent(itemPrompt)
             .flex-1.min-w-0

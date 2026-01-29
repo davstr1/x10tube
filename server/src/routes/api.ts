@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { createX10, getX10sForUser, getX10sForAnonymous, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, checkVideoInAnonymousX10s, forkX10, deleteX10, updateX10PrePrompt } from '../services/x10.js';
 import { extractVideoId } from '../services/transcript.js';
 import { getUserSettings, updateDefaultPrePrompt } from '../services/settings.js';
+import { config } from '../config.js';
 
 export const apiRouter = Router();
 
@@ -13,8 +14,7 @@ apiRouter.use((req, res, next) => {
   // Allow these origins + any chrome-extension origin
   const isAllowed = origin && (
     origin.includes('youtube.com') ||
-    origin.includes('localhost:3000') ||
-    origin.includes('x10tube.com') ||
+    origin.includes(new URL(config.baseUrl).host) ||
     origin.startsWith('chrome-extension://') ||
     origin.startsWith('moz-extension://') // Firefox
   );

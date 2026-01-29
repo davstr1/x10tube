@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "ext:build": "bash scripts/build-extension.sh"
+  },
   "devDependencies": {
     "puppeteer": "^24.35.0"
   }

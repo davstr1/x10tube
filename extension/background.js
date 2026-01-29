@@ -1,7 +1,8 @@
 // StraightToYourAI Background Service Worker
 // Proxies API calls for the content script (avoids context invalidation)
 
-const DEFAULT_BASE_URL = 'http://localhost:3000';
+try { importScripts('config.js'); } catch(e) {}
+const DEFAULT_BASE_URL = (typeof STYA_CONFIG !== 'undefined') ? STYA_CONFIG.DEFAULT_BASE_URL : 'http://localhost:3000';
 
 console.log('[STYA] Background service worker loaded');
 
