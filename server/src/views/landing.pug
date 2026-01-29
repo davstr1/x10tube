@@ -29,12 +29,19 @@ block content
             button.send-to-item.text-sm.rounded-md.border.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="perplexity" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Perplexity
             button.send-to-item.text-sm.rounded-md.border.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="grok" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Grok
             button.send-to-item.text-sm.rounded-md.border.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="copilot" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copilot
-          .flex.justify-center.border-t.border-border-default(style="gap: 0.75rem; margin-top: 1rem; padding-top: 1rem;")
+          .flex.items-center(style="margin-top: 1rem;")
+            .flex-1.border-t.border-border-default
+            .text-xs.text-text-muted(style="padding: 0 0.75rem;") or
+            .flex-1.border-t.border-border-default
+          .flex.justify-center(style="gap: 0.75rem; margin-top: 1rem;")
             button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-link" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copy link
             button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-md" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copy markdown
           if x10s && x10s.length > 0
-            .border-t.border-border-default(style="margin-top: 1rem; padding-top: 0.75rem;")
-              .text-xs.text-text-muted.text-center(style="margin-bottom: 0.5rem;") Add to collection
+            .flex.items-center(style="margin-top: 1rem;")
+              .flex-1.border-t.border-border-default
+              .text-xs.text-text-muted(style="padding: 0 0.75rem;") or
+              .flex-1.border-t.border-border-default
+            .text-xs.text-text-muted.text-center(style="margin-top: 0.75rem; margin-bottom: 0.5rem;") Add to collection
               .flex.flex-col(style="gap: 0.5rem;")
                 each x10 in x10s
                   - var firstItem = x10.videos && x10.videos[0]
