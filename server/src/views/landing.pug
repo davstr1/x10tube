@@ -41,8 +41,8 @@ block content
               .flex-1.border-t.border-border-default
               .text-xs.text-text-muted(style="padding: 0 0.75rem;") or
               .flex-1.border-t.border-border-default
-            .text-xs.text-text-muted.text-center(style="margin-top: 0.75rem; margin-bottom: 0.5rem;") Add to collection
-              .flex.flex-col(style="gap: 0.5rem;")
+            .text-xs.text-text-muted.text-center(style="margin-top: 0.75rem;") Add to collection
+              .flex.flex-col(style="gap: 0.5rem; margin-top: 1rem;")
                 each x10 in x10s
                   - var firstItem = x10.videos && x10.videos[0]
                   - var isYT = firstItem && (firstItem.type === 'youtube' || firstItem.youtube_id)
