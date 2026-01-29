@@ -746,6 +746,7 @@ async function showDropdownForVideo(videoId, anchorElement) {
 
   // Reset submenu state (close it)
   dropdown.querySelector('#x10-llm-submenu').classList.remove('open');
+  dropdown.querySelector('#x10-open-in .x10-quick-icon').textContent = '▸';
 
   // Populate video info
   const thumbEl = dropdown.querySelector('#x10-video-thumb');
