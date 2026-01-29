@@ -21,16 +21,17 @@ block content
       .relative.mt-3#send-to-wrapper
         button#submit-btn.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="button")
           | Extract, Combine &amp; Send to...
-        #send-to-menu.hidden.absolute.left-0.right-0.mt-1.bg-surface.border.border-border-strong.rounded-md.shadow-lg.overflow-hidden(style="z-index:50")
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="claude") Claude
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="chatgpt") ChatGPT
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="gemini") Gemini
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="perplexity") Perplexity
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="grok") Grok
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="copilot") Copilot
-          .border-t.border-border-default
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-muted.hover_bg-surface-hover(type="button" data-action="copy-link") Copy link
-          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-muted.hover_bg-surface-hover(type="button" data-action="copy-md") Copy markdown
+        #send-to-menu.hidden.absolute.left-0.bg-surface.border-l.border-r.border-b.border-border-strong.rounded-b-md(style="z-index:50; padding: 1.25rem 1.5rem; box-sizing: border-box;")
+          .flex.flex-wrap.justify-center(style="gap: 0.75rem;")
+            button.send-to-item.text-sm.rounded-md.border.border-border-strong.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="claude" style="padding: 0.5rem 1rem;") Claude
+            button.send-to-item.text-sm.rounded-md.border.border-border-strong.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="chatgpt" style="padding: 0.5rem 1rem;") ChatGPT
+            button.send-to-item.text-sm.rounded-md.border.border-border-strong.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="gemini" style="padding: 0.5rem 1rem;") Gemini
+            button.send-to-item.text-sm.rounded-md.border.border-border-strong.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="perplexity" style="padding: 0.5rem 1rem;") Perplexity
+            button.send-to-item.text-sm.rounded-md.border.border-border-strong.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="grok" style="padding: 0.5rem 1rem;") Grok
+            button.send-to-item.text-sm.rounded-md.border.border-border-strong.bg-surface.text-text-primary.hover_bg-surface-hover(type="button" data-llm="copilot" style="padding: 0.5rem 1rem;") Copilot
+          .flex.justify-center.border-t.border-border-default(style="gap: 0.75rem; margin-top: 1rem; padding-top: 1rem;")
+            button.send-to-item.text-xs.rounded-md.border.border-border-strong.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-link" style="padding: 0.5rem 1rem;") Copy link
+            button.send-to-item.text-xs.rounded-md.border.border-border-strong.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-md" style="padding: 0.5rem 1rem;") Copy markdown
 
     if error
       .bg-red-900.border.border-red-700.rounded-md.p-3.mt-3.text-red-200.text-sm
@@ -111,24 +112,42 @@ block content
       var wrapper = document.getElementById('send-to-wrapper');
       var hideTimeout = null;
 
+      function syncMenuWidth() {
+        menu.style.width = submitBtn.offsetWidth + 'px';
+      }
+      function showMenu() {
+        syncMenuWidth();
+        menu.classList.remove('hidden');
+        submitBtn.classList.remove('rounded-md');
+        submitBtn.classList.add('rounded-t-md');
+      }
+      function hideMenu() {
+        menu.classList.add('hidden');
+        submitBtn.classList.remove('rounded-t-md');
+        submitBtn.classList.add('rounded-md');
+      }
+      window.addEventListener('resize', function() {
+        if (!menu.classList.contains('hidden')) syncMenuWidth();
+      });
+
       // Show/hide menu on hover
       wrapper.addEventListener('mouseenter', function() {
         clearTimeout(hideTimeout);
-        menu.classList.remove('hidden');
+        showMenu();
       });
       wrapper.addEventListener('mouseleave', function() {
-        hideTimeout = setTimeout(function() { menu.classList.add('hidden'); }, 200);
+        hideTimeout = setTimeout(hideMenu, 200);
       });
 
       // Toggle on click
       submitBtn.addEventListener('click', function() {
-        menu.classList.toggle('hidden');
+        if (menu.classList.contains('hidden')) { showMenu(); } else { hideMenu(); }
       });
 
       // Close menu on outside click
       document.addEventListener('click', function(e) {
         if (!wrapper.contains(e.target)) {
-          menu.classList.add('hidden');
+          hideMenu();
         }
       });
 
@@ -137,7 +156,7 @@ block content
         item.addEventListener('click', function() {
           var llm = this.dataset.llm;
           var action = this.dataset.action;
-          menu.classList.add('hidden');
+          hideMenu();
 
           // Validate textarea
           var textarea = form.querySelector('textarea');
@@ -169,7 +188,6 @@ block content
             var prompt = 'Fetch ' + mdUrl;
 
             if (llm) {
-              // Open in LLM
               window.open(LLM_URLS[llm](prompt), '_blank');
             } else if (action === 'copy-link') {
               navigator.clipboard.writeText(mdUrl);
