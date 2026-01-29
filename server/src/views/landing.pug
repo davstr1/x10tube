@@ -147,13 +147,9 @@ block content
       function showMenu() {
         syncMenuWidth();
         menu.classList.remove('hidden');
-        submitBtn.classList.remove('rounded-md');
-        submitBtn.classList.add('rounded-t-md');
       }
       function hideMenu() {
         menu.classList.add('hidden');
-        submitBtn.classList.remove('rounded-t-md');
-        submitBtn.classList.add('rounded-md');
       }
       window.addEventListener('resize', function() {
         if (!menu.classList.contains('hidden')) syncMenuWidth();
