@@ -11,7 +11,8 @@ block content
 
   //- Formulaire
   section.mb-4
-    form(action="/create" method="POST")
+    form.relative(action="/create" method="POST")
+      #empty-error.absolute.left-0.right-0.text-center.text-sm.text-red-400(style="top: -1.5rem; opacity: 0; transition: opacity 300ms ease; pointer-events: none;")
       textarea.w-full.px-3.py-2.border.border-border-strong.rounded-md.text-base.focus_outline-none.focus_border-text-muted.resize-none.font-mono.text-sm.bg-surface.text-text-primary(
         name="urls"
         rows="4"
@@ -197,6 +198,10 @@ block content
           var textarea = form.querySelector('textarea');
           if (!textarea.value.trim()) {
             textarea.focus();
+            var errEl = document.getElementById('empty-error');
+            errEl.textContent = 'Paste at least one URL above.';
+            errEl.style.opacity = '1';
+            setTimeout(function() { errEl.style.opacity = '0'; }, 3000);
             return;
           }
 
