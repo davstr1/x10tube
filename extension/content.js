@@ -609,6 +609,10 @@ function createDropdown() {
       </div>
     </div>
     <div class="x10-quick-actions">
+      <button class="x10-quick-item" id="x10-open-direct" style="display:none;">
+        <span class="x10-quick-icon"></span>
+        <span id="x10-open-direct-label">Open in</span>
+      </button>
       <button class="x10-quick-item" id="x10-open-in">
         <span class="x10-quick-icon">▸</span>
         <span>Open in...</span>
@@ -649,9 +653,22 @@ function createDropdown() {
     window.open(`${api.baseUrl}/sync`, '_blank');
   });
 
+  // Direct open button
+  dropdown.querySelector('#x10-open-direct').addEventListener('click', async () => {
+    const videoId = dropdown.dataset.currentVideoId;
+    if (!videoId) { showToast('Please select a video first', 'error'); return; }
+    const data = await chrome.storage.local.get(['styaLastLLM']);
+    if (!data.styaLastLLM) return;
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
+    handleOpenInLLM(url, data.styaLastLLM);
+  });
+
   // Toggle "Open in..." submenu on click
   dropdown.querySelector('#x10-open-in').addEventListener('click', () => {
-    dropdown.querySelector('#x10-llm-submenu').classList.toggle('open');
+    const submenu = dropdown.querySelector('#x10-llm-submenu');
+    submenu.classList.toggle('open');
+    const arrow = dropdown.querySelector('#x10-open-in .x10-quick-icon');
+    arrow.textContent = submenu.classList.contains('open') ? '▾' : '▸';
   });
 
   // Quick action handlers - use the videoId from dropdown state
@@ -663,8 +680,12 @@ function createDropdown() {
         showToast('Please select a video first', 'error');
         return;
       }
+      const llm = item.dataset.llm;
+      // Save preference
+      chrome.storage.local.set({ styaLastLLM: llm });
+      updateDirectButton(dropdown, llm);
       const url = `https://www.youtube.com/watch?v=${videoId}`;
-      handleOpenInLLM(url, item.dataset.llm);
+      handleOpenInLLM(url, llm);
     });
   });
 
@@ -693,6 +714,15 @@ function createDropdown() {
   return dropdown;
 }
 
+function updateDirectButton(dropdown, llmKey) {
+  const btn = dropdown.querySelector('#x10-open-direct');
+  const label = dropdown.querySelector('#x10-open-direct-label');
+  if (btn && label && llmKey && LLM_NAMES[llmKey]) {
+    label.textContent = `Open in ${LLM_NAMES[llmKey]}`;
+    btn.style.display = '';
+  }
+}
+
 function closeDropdown() {
   const dropdown = document.getElementById('stya-dropdown');
   if (dropdown) {
@@ -713,6 +743,9 @@ async function showDropdownForVideo(videoId, anchorElement) {
   }
 
   dropdown.dataset.currentVideoId = videoId;
+
+  // Reset submenu state (close it)
+  dropdown.querySelector('#x10-llm-submenu').classList.remove('open');
 
   // Populate video info
   const thumbEl = dropdown.querySelector('#x10-video-thumb');
@@ -745,6 +778,16 @@ async function showDropdownForVideo(videoId, anchorElement) {
 
   dropdown.style.top = top + 'px';
   dropdown.style.left = left + 'px';
+
+  // Load last LLM preference and show direct button if set
+  try {
+    const data = await chrome.storage.local.get(['styaLastLLM']);
+    if (data.styaLastLLM) {
+      updateDirectButton(dropdown, data.styaLastLLM);
+    }
+  } catch (e) {
+    console.log('[STYA] Could not load last LLM preference:', e);
+  }
 
   dropdown.classList.add('open');
   dropdown.style.display = 'block';
@@ -921,6 +964,15 @@ function showToast(message, type = '') {
 // ============================================
 // Quick Actions (One-Click LLM)
 // ============================================
+
+const LLM_NAMES = {
+  claude: 'Claude',
+  chatgpt: 'ChatGPT',
+  gemini: 'Gemini',
+  perplexity: 'Perplexity',
+  grok: 'Grok',
+  copilot: 'Copilot'
+};
 
 const LLM_URLS = {
   claude: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,

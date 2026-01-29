@@ -16,6 +16,8 @@ const elements = {
   pageMeta: null,
   notSupported: null,
   quickActions: null,
+  openDirectBtn: null,
+  openDirectLabel: null,
   openInBtn: null,
   llmSubmenu: null,
   copyLinkBtn: null,
@@ -29,6 +31,16 @@ const elements = {
   logoLink: null,
   toast: null,
   toastMessage: null
+};
+
+// LLM display names
+const LLM_NAMES = {
+  claude: 'Claude',
+  chatgpt: 'ChatGPT',
+  gemini: 'Gemini',
+  perplexity: 'Perplexity',
+  grok: 'Grok',
+  copilot: 'Copilot'
 };
 
 // LLM URLs
@@ -59,6 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.pageMeta = document.getElementById('page-meta');
   elements.notSupported = document.getElementById('not-supported');
   elements.quickActions = document.getElementById('quick-actions');
+  elements.openDirectBtn = document.getElementById('open-direct-btn');
+  elements.openDirectLabel = document.getElementById('open-direct-label');
   elements.openInBtn = document.getElementById('open-in-btn');
   elements.llmSubmenu = document.getElementById('llm-submenu');
   elements.copyLinkBtn = document.getElementById('copy-link-btn');
@@ -101,15 +115,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set up quick actions
   elements.openInBtn.addEventListener('click', () => {
     elements.llmSubmenu.classList.toggle('hidden');
+    const arrow = elements.openInBtn.querySelector('.quick-icon');
+    arrow.textContent = elements.llmSubmenu.classList.contains('hidden') ? '▸' : '▾';
   });
 
   document.querySelectorAll('.submenu-item').forEach(item => {
     item.addEventListener('click', () => {
       if (currentItem) {
-        handleOpenInLLM(currentItem.url, item.dataset.llm);
+        const llm = item.dataset.llm;
+        // Save preference
+        chrome.storage.local.set({ styaLastLLM: llm });
+        updateDirectButton(llm);
+        handleOpenInLLM(currentItem.url, llm);
       }
     });
   });
+
+  // Direct open button
+  elements.openDirectBtn.addEventListener('click', async () => {
+    if (!currentItem) return;
+    const data = await chrome.storage.local.get(['styaLastLLM']);
+    if (!data.styaLastLLM) return;
+    handleOpenInLLM(currentItem.url, data.styaLastLLM);
+  });
+
+  // Load last LLM preference
+  try {
+    const data = await chrome.storage.local.get(['styaLastLLM']);
+    if (data.styaLastLLM) {
+      updateDirectButton(data.styaLastLLM);
+    }
+  } catch (e) {
+    console.log('[STYA] Could not load last LLM preference:', e);
+  }
 
   elements.copyLinkBtn.addEventListener('click', () => {
     if (currentItem) {
@@ -457,13 +495,22 @@ async function handleCopyMDContent(url) {
   }
 }
 
+function updateDirectButton(llmKey) {
+  if (llmKey && LLM_NAMES[llmKey]) {
+    elements.openDirectLabel.textContent = `Open in ${LLM_NAMES[llmKey]}`;
+    elements.openDirectBtn.classList.remove('hidden');
+  }
+}
+
 function disableQuickActions() {
+  elements.openDirectBtn.disabled = true;
   elements.openInBtn.disabled = true;
   elements.copyLinkBtn.disabled = true;
   elements.copyContentBtn.disabled = true;
 }
 
 function enableQuickActions() {
+  elements.openDirectBtn.disabled = false;
   elements.openInBtn.disabled = false;
   elements.copyLinkBtn.disabled = false;
   elements.copyContentBtn.disabled = false;
