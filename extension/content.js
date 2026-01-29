@@ -58,53 +58,75 @@ class X10API {
     this.userCode = null;
   }
 
-  async init() {
-    if (!isExtensionContextValid()) {
-      console.log('[STYA] Extension context invalidated');
-      return false;
-    }
-
+  // Proxy fetch via background script (avoids context invalidation)
+  async _fetch(endpoint, options = {}) {
     try {
-      const data = await chrome.storage.local.get(['styaBackendUrl']);
-      if (data.styaBackendUrl) this.baseUrl = data.styaBackendUrl;
+      const response = await chrome.runtime.sendMessage({
+        action: 'apiFetch',
+        endpoint,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+        body: options.body || null,
+        responseType: options.responseType || 'json',
+      });
 
-      await this.syncFromServer();
-      console.log('[STYA] Initialized with userCode:', this.userCode);
-      return true;
+      if (!response) {
+        throw new Error('No response from background script');
+      }
+      if (response._error) {
+        throw new Error(response.message);
+      }
+      return response;
     } catch (error) {
-      console.log('[STYA] Init error:', error.message);
-      return false;
+      console.error('[STYA] _fetch error:', error.message);
+      throw error;
     }
+  }
+
+  async init() {
+    // Already initialized in memory
+    if (this.userCode) return true;
+
+    // Try cache first
+    try {
+      const cached = await chrome.storage.local.get(['styaUserCode', 'styaBackendUrl']);
+      if (cached.styaBackendUrl) this.baseUrl = cached.styaBackendUrl;
+      if (cached.styaUserCode) {
+        this.userCode = cached.styaUserCode;
+        console.log('[STYA] Init from cache:', this.userCode);
+        // Sync in background (non-blocking)
+        this.syncFromServer().catch(() => {});
+        return true;
+      }
+    } catch (e) {
+      console.log('[STYA] Cache read failed:', e.message);
+    }
+
+    // No cache — must sync from server
+    return this.syncFromServer();
   }
 
   async syncFromServer() {
     try {
-      console.log('[STYA] Syncing from server:', this.baseUrl);
-      const response = await fetch(`${this.baseUrl}/api/whoami`, {
-        credentials: 'include'
-      });
+      console.log('[STYA] Syncing from server...');
+      const data = await this._fetch('/api/whoami');
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!data._ok) {
+        throw new Error(`HTTP ${data._status}`);
+      }
 
-      const data = await response.json();
-      console.log('[STYA] Server response:', data);
       if (data.userCode) {
         this.userCode = data.userCode;
-        if (isExtensionContextValid()) {
+        try {
           await chrome.storage.local.set({ styaUserCode: data.userCode });
+        } catch (e) {
+          console.log('[STYA] Could not cache userCode:', e.message);
         }
       }
+      console.log('[STYA] Synced, userCode:', this.userCode);
       return true;
     } catch (error) {
-      console.error('[STYA] Could not reach server:', error.message, error);
-      if (isExtensionContextValid()) {
-        const cached = await chrome.storage.local.get(['styaUserCode']);
-        if (cached.styaUserCode) {
-          console.log('[STYA] Using cached userCode');
-          this.userCode = cached.styaUserCode;
-          return true;
-        }
-      }
+      console.error('[STYA] syncFromServer failed:', error.message);
       return false;
     }
   }
@@ -112,9 +134,9 @@ class X10API {
   async getMyX10s() {
     if (!this.userCode) return { x10s: [] };
     try {
-      const response = await fetch(`${this.baseUrl}/api/x10s/by-code/${this.userCode}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
+      const data = await this._fetch(`/api/x10s/by-code/${this.userCode}`);
+      if (!data._ok) throw new Error(`HTTP ${data._status}`);
+      return data;
     } catch (error) {
       console.error('[STYA] getMyX10s error:', error);
       return { x10s: [] };
@@ -123,18 +145,16 @@ class X10API {
 
   async createX10(videoUrl, forceNew = false) {
     try {
-      const response = await fetch(`${this.baseUrl}/api/x10/add`, {
+      const data = await this._fetch('/api/x10/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ url: videoUrl, userCode: this.userCode || undefined, forceNew })
+        body: { url: videoUrl, userCode: this.userCode || undefined, forceNew },
       });
-      const data = await response.json();
+
       if (data.success && data.userCode) {
         this.userCode = data.userCode;
-        if (isExtensionContextValid()) {
+        try {
           await chrome.storage.local.set({ styaUserCode: data.userCode });
-        }
+        } catch {}
       }
       return data;
     } catch (error) {
@@ -145,13 +165,10 @@ class X10API {
 
   async addVideoToX10(x10Id, videoUrl) {
     try {
-      const response = await fetch(`${this.baseUrl}/api/x10/${x10Id}/add`, {
+      return await this._fetch(`/api/x10/${x10Id}/add`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ url: videoUrl, userCode: this.userCode })
+        body: { url: videoUrl, userCode: this.userCode },
       });
-      return await response.json();
     } catch (error) {
       console.error('[STYA] addVideoToX10 error:', error);
       return { success: false, error: error.message };
@@ -161,9 +178,9 @@ class X10API {
   async checkVideoInX10s(youtubeId) {
     if (!this.userCode) return { inX10s: [] };
     try {
-      const response = await fetch(`${this.baseUrl}/api/check-video?videoId=${youtubeId}&userCode=${this.userCode}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
+      const data = await this._fetch(`/api/check-video?videoId=${youtubeId}&userCode=${this.userCode}`);
+      if (!data._ok) throw new Error(`HTTP ${data._status}`);
+      return data;
     } catch (error) {
       console.error('[STYA] checkVideoInX10s error:', error);
       return { inX10s: [] };
@@ -815,9 +832,14 @@ async function loadX10sForDropdown(videoId) {
   listEl.innerHTML = '<div class="x10-empty">Loading...</div>';
 
   try {
-    const initOk = await api.init();
+    let initOk = await api.init();
     if (!initOk) {
-      console.error('[STYA] Init failed, no cached userCode');
+      // Retry once after 500ms (lets the service worker wake up)
+      await new Promise(r => setTimeout(r, 500));
+      initOk = await api.init();
+    }
+    if (!initOk) {
+      console.error('[STYA] Init failed after retry');
       listEl.innerHTML = `<div class="x10-empty">Could not connect to server<br><small style="color:#888">${api.baseUrl}</small></div>`;
       return;
     }
