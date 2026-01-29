@@ -171,7 +171,7 @@ class X10API {
   }
 
   getDashboardUrl() {
-    return `${this.baseUrl}/myx10s`;
+    return `${this.baseUrl}/collections`;
   }
 }
 
@@ -207,17 +207,17 @@ function injectStyles() {
       min-width: 20px;
       min-height: 20px;
       margin-right: 8px;
-      background: #dc2626;
-      color: white;
+      background: none;
       border: none;
-      border-radius: 50%;
-      font-size: 14px;
-      font-weight: bold;
       cursor: pointer;
       vertical-align: middle;
       flex-shrink: 0;
-      transition: background 0.15s, transform 0.15s;
+      transition: transform 0.15s, opacity 0.15s;
       line-height: 1;
+      padding: 0;
+      opacity: 0.8;
+      outline: none;
+      background: transparent;
     }
 
     /* Make h3 container flex for inline button alignment */
@@ -230,11 +230,11 @@ function injectStyles() {
       flex: 1;
     }
     .stya-title-btn:hover {
-      background: #b91c1c;
-      transform: scale(1.1);
+      opacity: 1;
+      transform: scale(1.15);
     }
-    .stya-title-btn.added {
-      background: #22c55e;
+    .stya-title-btn.added svg path {
+      fill: #22c55e;
     }
     .stya-title-btn.adding {
       opacity: 0.5;
@@ -560,7 +560,7 @@ function createDropdown() {
   dropdown.id = 'stya-dropdown';
   dropdown.innerHTML = `
     <div class="x10-dropdown-header">
-      <span class="x10-logo"><span class="x10-logo-main">StraightToYour</span><span class="x10-logo-ai">AI</span></span>
+      <span class="x10-logo"><svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg><span class="x10-logo-main">StraightToYour</span><span class="x10-logo-ai">AI</span></span>
       <button class="x10-dropdown-close">&times;</button>
     </div>
     <div class="x10-quick-actions">
@@ -791,7 +791,6 @@ async function handleCreateWithVideo(videoId) {
     const btn = document.querySelector(`.stya-title-btn[data-video-id="${videoId}"]`);
     if (btn) {
       btn.classList.add('added');
-      btn.textContent = '✓';
     }
   } else {
     showToast(`Error: ${result.error}`, 'error');
@@ -829,7 +828,6 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
     const btn = document.querySelector(`.stya-title-btn[data-video-id="${videoId}"]`);
     if (btn) {
       btn.classList.add('added');
-      btn.textContent = '✓';
     }
   } else {
     showToast(`Error: ${result.error}`, 'error');
@@ -964,7 +962,7 @@ async function handleCopyMDContent(url) {
 function createTitleButton(videoId) {
   const btn = document.createElement('button');
   btn.className = 'stya-title-btn';
-  btn.textContent = '+';
+  btn.innerHTML = '<svg viewBox="0 0 100 100" style="width:14px;height:14px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg>';
   btn.title = 'Add to StraightToYourAI';
   btn.dataset.videoId = videoId;
 
@@ -1147,7 +1145,7 @@ function createMasterToggle() {
   // Create toggle button
   const toggle = document.createElement('button');
   toggle.id = 'stya-master-toggle';
-  toggle.innerHTML = '<span class="logo-main">StraightToYour</span><span class="logo-ai">AI</span>';
+  toggle.innerHTML = '<svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg><span class="logo-main">StraightToYour</span><span class="logo-ai">AI</span>';
   toggle.title = 'Toggle StraightToYourAI buttons';
 
   // Load saved state
