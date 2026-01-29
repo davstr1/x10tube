@@ -1,4 +1,4 @@
-// X10Tube Content Script for YouTube
+// StraightToYourAI Content Script for YouTube
 // Injects button next to video titles
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
@@ -60,26 +60,26 @@ class X10API {
 
   async init() {
     if (!isExtensionContextValid()) {
-      console.log('[X10Tube] Extension context invalidated');
+      console.log('[STYA] Extension context invalidated');
       return false;
     }
 
     try {
-      const data = await chrome.storage.local.get(['x10BackendUrl']);
-      if (data.x10BackendUrl) this.baseUrl = data.x10BackendUrl;
+      const data = await chrome.storage.local.get(['styaBackendUrl']);
+      if (data.styaBackendUrl) this.baseUrl = data.styaBackendUrl;
 
       await this.syncFromServer();
-      console.log('[X10Tube] Initialized with userCode:', this.userCode);
+      console.log('[STYA] Initialized with userCode:', this.userCode);
       return true;
     } catch (error) {
-      console.log('[X10Tube] Init error:', error.message);
+      console.log('[STYA] Init error:', error.message);
       return false;
     }
   }
 
   async syncFromServer() {
     try {
-      console.log('[X10Tube] Syncing from server:', this.baseUrl);
+      console.log('[STYA] Syncing from server:', this.baseUrl);
       const response = await fetch(`${this.baseUrl}/api/whoami`, {
         credentials: 'include'
       });
@@ -87,21 +87,21 @@ class X10API {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
-      console.log('[X10Tube] Server response:', data);
+      console.log('[STYA] Server response:', data);
       if (data.userCode) {
         this.userCode = data.userCode;
         if (isExtensionContextValid()) {
-          await chrome.storage.local.set({ x10UserCode: data.userCode });
+          await chrome.storage.local.set({ styaUserCode: data.userCode });
         }
       }
       return true;
     } catch (error) {
-      console.error('[X10Tube] Could not reach server:', error.message, error);
+      console.error('[STYA] Could not reach server:', error.message, error);
       if (isExtensionContextValid()) {
-        const cached = await chrome.storage.local.get(['x10UserCode']);
-        if (cached.x10UserCode) {
-          console.log('[X10Tube] Using cached userCode');
-          this.userCode = cached.x10UserCode;
+        const cached = await chrome.storage.local.get(['styaUserCode']);
+        if (cached.styaUserCode) {
+          console.log('[STYA] Using cached userCode');
+          this.userCode = cached.styaUserCode;
           return true;
         }
       }
@@ -116,7 +116,7 @@ class X10API {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('[X10Tube] getMyX10s error:', error);
+      console.error('[STYA] getMyX10s error:', error);
       return { x10s: [] };
     }
   }
@@ -133,12 +133,12 @@ class X10API {
       if (data.success && data.userCode) {
         this.userCode = data.userCode;
         if (isExtensionContextValid()) {
-          await chrome.storage.local.set({ x10UserCode: data.userCode });
+          await chrome.storage.local.set({ styaUserCode: data.userCode });
         }
       }
       return data;
     } catch (error) {
-      console.error('[X10Tube] createX10 error:', error);
+      console.error('[STYA] createX10 error:', error);
       return { success: false, error: error.message };
     }
   }
@@ -153,7 +153,7 @@ class X10API {
       });
       return await response.json();
     } catch (error) {
-      console.error('[X10Tube] addVideoToX10 error:', error);
+      console.error('[STYA] addVideoToX10 error:', error);
       return { success: false, error: error.message };
     }
   }
@@ -165,7 +165,7 @@ class X10API {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('[X10Tube] checkVideoInX10s error:', error);
+      console.error('[STYA] checkVideoInX10s error:', error);
       return { inX10s: [] };
     }
   }
@@ -192,13 +192,13 @@ let titleButtonInterval = null;
 // ============================================
 
 function injectStyles() {
-  if (document.getElementById('x10tube-styles')) return;
+  if (document.getElementById('stya-styles')) return;
 
   const styles = document.createElement('style');
-  styles.id = 'x10tube-styles';
+  styles.id = 'stya-styles';
   styles.textContent = `
     /* Title button - next to video titles */
-    .x10tube-title-btn {
+    .stya-title-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -221,33 +221,33 @@ function injectStyles() {
     }
 
     /* Make h3 container flex for inline button alignment */
-    h3.yt-lockup-metadata-view-model__heading-reset:has(.x10tube-title-btn) {
+    h3.yt-lockup-metadata-view-model__heading-reset:has(.stya-title-btn) {
       display: flex !important;
       align-items: flex-start !important;
       flex-direction: row !important;
     }
-    h3.yt-lockup-metadata-view-model__heading-reset:has(.x10tube-title-btn) > a {
+    h3.yt-lockup-metadata-view-model__heading-reset:has(.stya-title-btn) > a {
       flex: 1;
     }
-    .x10tube-title-btn:hover {
+    .stya-title-btn:hover {
       background: #b91c1c;
       transform: scale(1.1);
     }
-    .x10tube-title-btn.added {
+    .stya-title-btn.added {
       background: #22c55e;
     }
-    .x10tube-title-btn.adding {
+    .stya-title-btn.adding {
       opacity: 0.5;
       pointer-events: none;
     }
 
     /* Hide title buttons when disabled */
-    body.x10tube-buttons-hidden .x10tube-title-btn {
+    body.stya-buttons-hidden .stya-title-btn {
       display: none !important;
     }
 
     /* Master toggle button */
-    #x10tube-master-toggle {
+    #stya-master-toggle {
       height: 36px;
       padding: 0 12px;
       background: #212121;
@@ -263,31 +263,31 @@ function injectStyles() {
       font-size: 14px;
       font-weight: 700;
     }
-    #x10tube-master-toggle:hover {
+    #stya-master-toggle:hover {
       transform: scale(1.05);
     }
-    #x10tube-master-toggle .logo-toyour {
+    #stya-master-toggle .logo-main {
       color: #f1f1f1;
     }
-    #x10tube-master-toggle .logo-ai {
+    #stya-master-toggle .logo-ai {
       color: #dc2626;
     }
-    #x10tube-master-toggle.disabled {
+    #stya-master-toggle.disabled {
       opacity: 0.5;
     }
-    #x10tube-master-toggle.disabled .logo-toyour,
-    #x10tube-master-toggle.disabled .logo-ai {
+    #stya-master-toggle.disabled .logo-main,
+    #stya-master-toggle.disabled .logo-ai {
       color: #888;
     }
 
     /* Master toggle container with hover menu */
-    #x10tube-toggle-container {
+    #stya-toggle-container {
       position: fixed;
       bottom: 20px;
       right: 20px;
       z-index: 9999;
     }
-    #x10tube-toggle-menu {
+    #stya-toggle-menu {
       position: absolute;
       bottom: 100%;
       right: 0;
@@ -302,12 +302,12 @@ function injectStyles() {
       white-space: nowrap;
       overflow: hidden;
     }
-    #x10tube-toggle-container:hover #x10tube-toggle-menu {
+    #stya-toggle-container:hover #stya-toggle-menu {
       opacity: 1;
       visibility: visible;
       transform: translateY(0);
     }
-    #x10tube-toggle-menu a {
+    #stya-toggle-menu a {
       display: block;
       padding: 10px 16px;
       color: #f1f1f1;
@@ -316,12 +316,12 @@ function injectStyles() {
       font-size: 13px;
       transition: background 0.1s;
     }
-    #x10tube-toggle-menu a:hover {
+    #stya-toggle-menu a:hover {
       background: #3a3a3a;
     }
 
     /* Dropdown */
-    #x10tube-dropdown {
+    #stya-dropdown {
       position: fixed;
       width: 280px;
       background: #282828;
@@ -332,7 +332,7 @@ function injectStyles() {
       display: none;
       font-family: 'Roboto', 'Arial', sans-serif;
     }
-    #x10tube-dropdown.open {
+    #stya-dropdown.open {
       display: block !important;
     }
 
@@ -348,7 +348,7 @@ function injectStyles() {
       font-size: 16px;
       font-weight: 700;
     }
-    .x10-dropdown-header .x10-logo-toyour {
+    .x10-dropdown-header .x10-logo-main {
       color: #f1f1f1;
     }
     .x10-dropdown-header .x10-logo-ai {
@@ -519,7 +519,7 @@ function injectStyles() {
     }
 
     /* Toast */
-    #x10tube-toast {
+    #stya-toast {
       position: fixed;
       bottom: 80px;
       left: 50%;
@@ -534,13 +534,13 @@ function injectStyles() {
       display: none;
       animation: x10-toast-in 0.2s ease-out;
     }
-    #x10tube-toast.show {
+    #stya-toast.show {
       display: block;
     }
-    #x10tube-toast.success {
+    #stya-toast.success {
       background: #16a34a;
     }
-    #x10tube-toast.error {
+    #stya-toast.error {
       background: #dc2626;
     }
     @keyframes x10-toast-in {
@@ -557,10 +557,10 @@ function injectStyles() {
 
 function createDropdown() {
   const dropdown = document.createElement('div');
-  dropdown.id = 'x10tube-dropdown';
+  dropdown.id = 'stya-dropdown';
   dropdown.innerHTML = `
     <div class="x10-dropdown-header">
-      <span class="x10-logo"><span class="x10-logo-toyour">toyour</span><span class="x10-logo-ai">.ai</span></span>
+      <span class="x10-logo"><span class="x10-logo-main">StraightToYour</span><span class="x10-logo-ai">AI</span></span>
       <button class="x10-dropdown-close">&times;</button>
     </div>
     <div class="x10-quick-actions">
@@ -586,14 +586,14 @@ function createDropdown() {
       </button>
     </div>
     <div class="x10-section-label">Add to...</div>
-    <div class="x10-list" id="x10tube-list"></div>
+    <div class="x10-list" id="stya-list"></div>
     <div class="x10-footer">
-      <a href="#" id="x10tube-dashboard">My collections</a>
+      <a href="#" id="stya-dashboard">My collections</a>
     </div>
   `;
 
   dropdown.querySelector('.x10-dropdown-close').addEventListener('click', closeDropdown);
-  dropdown.querySelector('#x10tube-dashboard').addEventListener('click', (e) => {
+  dropdown.querySelector('#stya-dashboard').addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
   });
@@ -643,7 +643,7 @@ function createDropdown() {
 }
 
 function closeDropdown() {
-  const dropdown = document.getElementById('x10tube-dropdown');
+  const dropdown = document.getElementById('stya-dropdown');
   if (dropdown) {
     dropdown.classList.remove('open');
     dropdown.style.display = 'none';
@@ -655,7 +655,7 @@ async function showDropdownForVideo(videoId, anchorElement) {
   injectStyles();
   createToast();
 
-  let dropdown = document.getElementById('x10tube-dropdown');
+  let dropdown = document.getElementById('stya-dropdown');
   if (!dropdown) {
     dropdown = createDropdown();
     document.body.appendChild(dropdown);
@@ -693,7 +693,7 @@ async function showDropdownForVideo(videoId, anchorElement) {
   // Close on outside click
   setTimeout(() => {
     const closeHandler = (e) => {
-      if (!e.target.closest('#x10tube-dropdown') && !e.target.closest('.x10tube-title-btn')) {
+      if (!e.target.closest('#stya-dropdown') && !e.target.closest('.stya-title-btn')) {
         closeDropdown();
         document.removeEventListener('click', closeHandler);
       }
@@ -703,7 +703,7 @@ async function showDropdownForVideo(videoId, anchorElement) {
 }
 
 async function loadX10sForDropdown(videoId) {
-  const listEl = document.getElementById('x10tube-list');
+  const listEl = document.getElementById('stya-list');
   if (!listEl) return;
 
   listEl.innerHTML = '<div class="x10-empty">Loading...</div>';
@@ -711,7 +711,7 @@ async function loadX10sForDropdown(videoId) {
   try {
     const initOk = await api.init();
     if (!initOk) {
-      console.error('[X10Tube] Init failed, no cached userCode');
+      console.error('[STYA] Init failed, no cached userCode');
       listEl.innerHTML = `<div class="x10-empty">Could not connect to server<br><small style="color:#888">${api.baseUrl}</small></div>`;
       return;
     }
@@ -726,13 +726,13 @@ async function loadX10sForDropdown(videoId) {
 
     renderX10List(videoId);
   } catch (error) {
-    console.error('[X10Tube] loadX10sForDropdown error:', error);
+    console.error('[STYA] loadX10sForDropdown error:', error);
     listEl.innerHTML = `<div class="x10-empty">Error: ${error.message}</div>`;
   }
 }
 
 function renderX10List(videoId) {
-  const listEl = document.getElementById('x10tube-list');
+  const listEl = document.getElementById('stya-list');
   if (!listEl) return;
 
   listEl.innerHTML = '';
@@ -742,7 +742,7 @@ function renderX10List(videoId) {
   createItem.className = 'x10-item x10-item-create';
   createItem.innerHTML = `
     <span class="x10-item-check" style="font-weight: bold;">+</span>
-    <span class="x10-item-name">Create a new X10</span>
+    <span class="x10-item-name">Create a new collection</span>
     <span class="x10-item-count"></span>
   `;
   createItem.addEventListener('click', () => handleCreateWithVideo(videoId));
@@ -785,10 +785,10 @@ async function handleCreateWithVideo(videoId) {
   const result = await api.createX10(videoUrl, true);
 
   if (result.success) {
-    showToast('Video added to new X10!', 'success');
+    showToast('Video added to new collection!', 'success');
     closeDropdown();
     // Mark the button as added
-    const btn = document.querySelector(`.x10tube-title-btn[data-video-id="${videoId}"]`);
+    const btn = document.querySelector(`.stya-title-btn[data-video-id="${videoId}"]`);
     if (btn) {
       btn.classList.add('added');
       btn.textContent = '✓';
@@ -798,7 +798,7 @@ async function handleCreateWithVideo(videoId) {
     if (createItem) {
       createItem.classList.remove('adding');
       const nameSpan = createItem.querySelector('.x10-item-name');
-      if (nameSpan) nameSpan.textContent = 'Create a new X10';
+      if (nameSpan) nameSpan.textContent = 'Create a new collection';
     }
   }
 }
@@ -826,7 +826,7 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
     }
     closeDropdown();
     // Mark the button as added
-    const btn = document.querySelector(`.x10tube-title-btn[data-video-id="${videoId}"]`);
+    const btn = document.querySelector(`.stya-title-btn[data-video-id="${videoId}"]`);
     if (btn) {
       btn.classList.add('added');
       btn.textContent = '✓';
@@ -842,14 +842,14 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
 // ============================================
 
 function createToast() {
-  if (document.getElementById('x10tube-toast')) return;
+  if (document.getElementById('stya-toast')) return;
   const toast = document.createElement('div');
-  toast.id = 'x10tube-toast';
+  toast.id = 'stya-toast';
   document.body.appendChild(toast);
 }
 
 function showToast(message, type = '') {
-  const toast = document.getElementById('x10tube-toast');
+  const toast = document.getElementById('stya-toast');
   if (!toast) return;
   toast.textContent = message;
   toast.className = 'show' + (type ? ` ${type}` : '');
@@ -895,7 +895,7 @@ async function handleOpenInLLM(url, llmType) {
     window.open(llmUrl, '_blank');
     showToast(`Opened in ${llmType}`, 'success');
   } catch (error) {
-    console.error('[X10Tube] handleOpenInLLM error:', error);
+    console.error('[STYA] handleOpenInLLM error:', error);
     showToast(`Error: ${error.message}`, 'error');
   }
 }
@@ -921,7 +921,7 @@ async function handleCopyMDLink(url) {
     await navigator.clipboard.writeText(mdUrl);
     showToast('MD link copied!', 'success');
   } catch (error) {
-    console.error('[X10Tube] handleCopyMDLink error:', error);
+    console.error('[STYA] handleCopyMDLink error:', error);
     showToast(`Error: ${error.message}`, 'error');
   }
 }
@@ -952,7 +952,7 @@ async function handleCopyMDContent(url) {
     await navigator.clipboard.writeText(mdContent);
     showToast('MD content copied!', 'success');
   } catch (error) {
-    console.error('[X10Tube] handleCopyMDContent error:', error);
+    console.error('[STYA] handleCopyMDContent error:', error);
     showToast(`Error: ${error.message}`, 'error');
   }
 }
@@ -963,9 +963,9 @@ async function handleCopyMDContent(url) {
 
 function createTitleButton(videoId) {
   const btn = document.createElement('button');
-  btn.className = 'x10tube-title-btn';
+  btn.className = 'stya-title-btn';
   btn.textContent = '+';
-  btn.title = 'Add to toyour.ai';
+  btn.title = 'Add to StraightToYourAI';
   btn.dataset.videoId = videoId;
 
   btn.addEventListener('click', (e) => {
@@ -1001,13 +1001,13 @@ function injectTitleButtons() {
         if (!videoId) return;
 
         const h3 = titleLink.closest('h3');
-        if (!h3 || h3.querySelector('.x10tube-title-btn')) return;
+        if (!h3 || h3.querySelector('.stya-title-btn')) return;
 
         const btn = createTitleButton(videoId);
         h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
-        console.log('[X10Tube] Error injecting classic button:', e.message);
+        console.log('[STYA] Error injecting classic button:', e.message);
       }
     });
 
@@ -1043,13 +1043,13 @@ function injectTitleButtons() {
         if (!videoId) return;
 
         // Check if already has button
-        if (h3.querySelector('.x10tube-title-btn')) return;
+        if (h3.querySelector('.stya-title-btn')) return;
 
         const btn = createTitleButton(videoId);
         h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
-        console.log('[X10Tube] Error injecting new format button:', e.message);
+        console.log('[STYA] Error injecting new format button:', e.message);
       }
     });
 
@@ -1067,13 +1067,13 @@ function injectTitleButtons() {
         if (!videoId) return;
 
         const titleContainer = titleLink.closest('#details, #meta');
-        if (!titleContainer || titleContainer.querySelector('.x10tube-title-btn')) return;
+        if (!titleContainer || titleContainer.querySelector('.stya-title-btn')) return;
 
         const btn = createTitleButton(videoId);
         titleContainer.insertBefore(btn, titleContainer.firstChild);
         count++;
       } catch (e) {
-        console.log('[X10Tube] Error injecting rich item button:', e.message);
+        console.log('[STYA] Error injecting rich item button:', e.message);
       }
     });
     // Format 4: Main video on watch page (ytd-watch-metadata)
@@ -1089,23 +1089,23 @@ function injectTitleButtons() {
         if (videoId) {
           // Find the title container (h1 with the video title)
           const titleContainer = watchPage.querySelector('#title h1, h1.ytd-watch-metadata');
-          if (titleContainer && !titleContainer.querySelector('.x10tube-title-btn')) {
+          if (titleContainer && !titleContainer.querySelector('.stya-title-btn')) {
             const btn = createTitleButton(videoId);
             titleContainer.insertBefore(btn, titleContainer.firstChild);
             count++;
           }
         }
       } catch (e) {
-        console.log('[X10Tube] Error injecting watch page button:', e.message);
+        console.log('[STYA] Error injecting watch page button:', e.message);
       }
     }
 
   } catch (e) {
-    console.error('[X10Tube] Error in injectTitleButtons:', e);
+    console.error('[STYA] Error in injectTitleButtons:', e);
   }
 
   if (count > 0) {
-    console.log('[X10Tube] Title buttons injected:', count);
+    console.log('[STYA] Title buttons injected:', count);
   }
 }
 
@@ -1129,15 +1129,15 @@ function stopTitleButtonInjection() {
 // ============================================
 
 function createMasterToggle() {
-  if (document.getElementById('x10tube-toggle-container')) return;
+  if (document.getElementById('stya-toggle-container')) return;
 
   // Create container
   const container = document.createElement('div');
-  container.id = 'x10tube-toggle-container';
+  container.id = 'stya-toggle-container';
 
   // Create hover menu
   const menu = document.createElement('div');
-  menu.id = 'x10tube-toggle-menu';
+  menu.id = 'stya-toggle-menu';
   const myX10sLink = document.createElement('a');
   myX10sLink.href = api.getDashboardUrl();
   myX10sLink.target = '_blank';
@@ -1146,16 +1146,16 @@ function createMasterToggle() {
 
   // Create toggle button
   const toggle = document.createElement('button');
-  toggle.id = 'x10tube-master-toggle';
-  toggle.innerHTML = '<span class="logo-toyour">toyour</span><span class="logo-ai">.ai</span>';
-  toggle.title = 'Toggle toyour.ai buttons';
+  toggle.id = 'stya-master-toggle';
+  toggle.innerHTML = '<span class="logo-main">StraightToYour</span><span class="logo-ai">AI</span>';
+  toggle.title = 'Toggle StraightToYourAI buttons';
 
   // Load saved state
-  chrome.storage.local.get(['x10TitleButtonsEnabled'], (data) => {
-    if (data.x10TitleButtonsEnabled === false) {
+  chrome.storage.local.get(['styaTitleButtonsEnabled'], (data) => {
+    if (data.styaTitleButtonsEnabled === false) {
       titleButtonsEnabled = false;
       toggle.classList.add('disabled');
-      document.body.classList.add('x10tube-buttons-hidden');
+      document.body.classList.add('stya-buttons-hidden');
     }
   });
 
@@ -1164,15 +1164,15 @@ function createMasterToggle() {
 
     if (titleButtonsEnabled) {
       toggle.classList.remove('disabled');
-      document.body.classList.remove('x10tube-buttons-hidden');
+      document.body.classList.remove('stya-buttons-hidden');
       injectTitleButtons();
     } else {
       toggle.classList.add('disabled');
-      document.body.classList.add('x10tube-buttons-hidden');
+      document.body.classList.add('stya-buttons-hidden');
     }
 
     // Save state
-    chrome.storage.local.set({ x10TitleButtonsEnabled: titleButtonsEnabled });
+    chrome.storage.local.set({ styaTitleButtonsEnabled: titleButtonsEnabled });
 
     showToast(titleButtonsEnabled ? 'Buttons enabled' : 'Buttons hidden', 'success');
   });
@@ -1193,16 +1193,16 @@ function onUrlChange() {
   if (newUrl === lastUrl) return;
 
   lastUrl = newUrl;
-  console.log('[X10Tube] URL changed:', newUrl);
+  console.log('[STYA] URL changed:', newUrl);
 
   closeDropdown();
   videoInX10s = [];
 
-  // Remove ALL existing X10Tube buttons (they have stale videoIds in closures)
-  document.querySelectorAll('.x10tube-title-btn').forEach(btn => btn.remove());
+  // Remove ALL existing STYA buttons (they have stale videoIds in closures)
+  document.querySelectorAll('.stya-title-btn').forEach(btn => btn.remove());
 
   // Reset dropdown state
-  const dropdown = document.getElementById('x10tube-dropdown');
+  const dropdown = document.getElementById('stya-dropdown');
   if (dropdown) {
     delete dropdown.dataset.currentVideoId;
   }
@@ -1225,7 +1225,7 @@ const urlObserver = new MutationObserver(() => {
 // ============================================
 
 function init() {
-  console.log('[X10Tube] Initializing...');
+  console.log('[STYA] Initializing...');
 
   injectStyles();
   createToast();
@@ -1238,7 +1238,7 @@ function init() {
   urlObserver.observe(document.body, { subtree: true, childList: true });
   window.addEventListener('popstate', onUrlChange);
 
-  console.log('[X10Tube] Initialized');
+  console.log('[STYA] Initialized');
 }
 
 // Run initialization

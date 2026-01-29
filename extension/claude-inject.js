@@ -13,7 +13,7 @@
   // Clear the pending message
   await chrome.storage.local.remove(['pendingClaudeMessage']);
 
-  console.log('[YT Captions] Found pending message for Claude, waiting for page load...');
+  console.log('[STYA] Found pending message for Claude, waiting for page load...');
 
   // Wait for the page to be fully loaded and the input to be available
   const waitForElement = (selector, maxWait = 10000) => {
@@ -62,14 +62,14 @@
     }
 
     if (!inputEl) {
-      console.error('[YT Captions] Could not find Claude input field');
+      console.error('[STYA] Could not find Claude input field');
       // Fallback: copy to clipboard and alert user
       await navigator.clipboard.writeText(message);
       alert('Le message a été copié dans le presse-papiers. Collez-le (Ctrl+V) dans la zone de texte.');
       return;
     }
 
-    console.log('[YT Captions] Found input element:', inputEl.tagName);
+    console.log('[STYA] Found input element:', inputEl.tagName);
 
     // Focus the input
     inputEl.focus();
@@ -90,7 +90,7 @@
       }
     }
 
-    console.log('[YT Captions] Message inserted, waiting before sending...');
+    console.log('[STYA] Message inserted, waiting before sending...');
 
     // Wait a moment for the UI to update
     await new Promise(r => setTimeout(r, 500));
@@ -132,21 +132,21 @@
     }
 
     if (sendBtn && !sendBtn.disabled) {
-      console.log('[YT Captions] Clicking send button...');
+      console.log('[STYA] Clicking send button...');
       sendBtn.click();
     } else {
-      console.log('[YT Captions] Send button not found or disabled, user needs to send manually');
+      console.log('[STYA] Send button not found or disabled, user needs to send manually');
       // Message is already in the input, user can send manually
     }
 
   } catch (error) {
-    console.error('[YT Captions] Error:', error);
+    console.error('[STYA] Error:', error);
     // Fallback: copy to clipboard
     try {
       await navigator.clipboard.writeText(message);
       alert('Le message a été copié dans le presse-papiers. Collez-le (Ctrl+V) dans la zone de texte.');
     } catch (e) {
-      console.error('[YT Captions] Clipboard fallback failed:', e);
+      console.error('[STYA] Clipboard fallback failed:', e);
     }
   }
 })();

@@ -1,4 +1,4 @@
-// X10Tube Extension Popup
+// StraightToYourAI Extension Popup
 
 // Import API (will be injected via manifest)
 let api;
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.toastMessage = document.getElementById('toast-message');
 
   // Initialize API
-  api = new X10TubeAPI();
+  api = new StyaAPI();
   await api.init();
 
   // Set up links
@@ -197,7 +197,7 @@ async function checkCurrentTab() {
     await loadX10sList();
 
   } catch (error) {
-    console.error('[X10Tube Popup] Error:', error);
+    console.error('[STYA] Error:', error);
     showNotSupported();
     await loadX10sList();
   }
@@ -398,7 +398,7 @@ async function handleOpenInLLM(url, llmType) {
     chrome.tabs.create({ url: llmUrl });
     showToast(`Opened in ${llmType}`, 'success');
   } catch (error) {
-    console.error('[X10Tube] handleOpenInLLM error:', error);
+    console.error('[STYA] handleOpenInLLM error:', error);
     showToast(`Error: ${error.message}`, 'error');
     enableQuickActions();
   }
@@ -422,7 +422,7 @@ async function handleCopyMDLink(url) {
     showToast('MD link copied!', 'success');
     enableQuickActions();
   } catch (error) {
-    console.error('[X10Tube] handleCopyMDLink error:', error);
+    console.error('[STYA] handleCopyMDLink error:', error);
     showToast(`Error: ${error.message}`, 'error');
     enableQuickActions();
   }
@@ -451,7 +451,7 @@ async function handleCopyMDContent(url) {
     showToast('MD content copied!', 'success');
     enableQuickActions();
   } catch (error) {
-    console.error('[X10Tube] handleCopyMDContent error:', error);
+    console.error('[STYA] handleCopyMDContent error:', error);
     showToast(`Error: ${error.message}`, 'error');
     enableQuickActions();
   }

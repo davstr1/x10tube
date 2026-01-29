@@ -1,4 +1,4 @@
-/* toyour.ai Extension - Consistent with website styles */
+/* StraightToYourAI Extension - Consistent with website styles */
 
 * {
   margin: 0;
@@ -39,7 +39,7 @@ body {
   letter-spacing: -0.025em;
 }
 
-.logo-toyour {
+.logo-main {
   color: #111827; /* gray-900 */
 }
 
