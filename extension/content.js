@@ -367,6 +367,44 @@ function injectStyles() {
       color: #fff;
     }
 
+    /* Video info in dropdown */
+    .x10-video-info {
+      padding: 12px 16px;
+      border-bottom: 1px solid #3f3f3f;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .x10-video-thumb {
+      width: 80px;
+      height: 45px;
+      background: #3f3f3f;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+    }
+    .x10-video-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .x10-video-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #f1f1f1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.3;
+    }
+    .x10-video-meta {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
     /* Quick actions */
     .x10-quick-actions {
       border-bottom: 1px solid #3f3f3f;
@@ -563,6 +601,13 @@ function createDropdown() {
       <span class="x10-logo"><svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg><span class="x10-logo-main">StraightToYour</span><span class="x10-logo-ai">AI</span></span>
       <button class="x10-dropdown-close">&times;</button>
     </div>
+    <div class="x10-video-info" id="x10-video-info">
+      <div class="x10-video-thumb" id="x10-video-thumb"></div>
+      <div class="x10-video-details">
+        <div class="x10-video-title" id="x10-video-title"></div>
+        <div class="x10-video-meta" id="x10-video-meta"></div>
+      </div>
+    </div>
     <div class="x10-quick-actions">
       <button class="x10-quick-item" id="x10-open-in">
         <span class="x10-quick-icon">▸</span>
@@ -668,6 +713,17 @@ async function showDropdownForVideo(videoId, anchorElement) {
   }
 
   dropdown.dataset.currentVideoId = videoId;
+
+  // Populate video info
+  const thumbEl = dropdown.querySelector('#x10-video-thumb');
+  const titleEl = dropdown.querySelector('#x10-video-title');
+  const metaEl = dropdown.querySelector('#x10-video-meta');
+  thumbEl.style.backgroundImage = `url(https://img.youtube.com/vi/${videoId}/mqdefault.jpg)`;
+  // Get title from the anchor element's context
+  const titleText = anchorElement.closest('h3, #title')?.textContent?.trim()
+    || document.title.replace(' - YouTube', '');
+  titleEl.textContent = titleText;
+  metaEl.textContent = 'YouTube video';
 
   // Position near the button
   const rect = anchorElement.getBoundingClientRect();
