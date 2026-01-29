@@ -1106,7 +1106,11 @@ function createTitleButton(videoId) {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Read from dataset, not closure - avoids stale videoId issues
+    // If dropdown is already open for this button, close it
+    if (isDropdownOpen) {
+      closeDropdown();
+      return;
+    }
     const vid = btn.dataset.videoId;
     if (vid) {
       showDropdownForVideo(vid, btn);
