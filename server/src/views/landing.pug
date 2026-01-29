@@ -33,9 +33,27 @@ block content
             button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-link" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copy link
             button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-md" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copy markdown
           if x10s && x10s.length > 0
-            .flex.flex-wrap.justify-center.border-t.border-border-default(style="gap: 0.75rem; margin-top: 1rem; padding-top: 1rem;")
-              each x10 in x10s
-                button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="add-to-collection" data-collection-id=x10.id data-original-text=(x10.title || 'Untitled') style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);")= x10.title || 'Untitled'
+            .border-t.border-border-default(style="margin-top: 1rem; padding-top: 0.75rem;")
+              .text-xs.text-text-muted.text-center(style="margin-bottom: 0.5rem;") Add to collection
+              .flex.flex-col(style="gap: 0.5rem;")
+                each x10 in x10s
+                  - var firstItem = x10.videos && x10.videos[0]
+                  - var isYT = firstItem && (firstItem.type === 'youtube' || firstItem.youtube_id)
+                  - var thumb = isYT ? 'https://img.youtube.com/vi/' + firstItem.youtube_id + '/default.jpg' : null
+                  - var favicon = firstItem && !isYT ? 'https://www.google.com/s2/favicons?domain=' + firstItem.channel + '&sz=32' : null
+                  - var itemCount = x10.videos ? x10.videos.length : 0
+                  - var tokenDisplay = x10.tokenCount > 1000 ? Math.round(x10.tokenCount / 1000) + 'K tokens' : x10.tokenCount + ' tokens'
+                  button.send-to-item.flex.items-center.rounded-md.border.bg-surface.text-text-primary.hover_bg-surface-hover.text-left(type="button" data-action="add-to-collection" data-collection-id=x10.id data-original-text=(x10.title || 'Untitled') style="padding: 0.4rem 0.75rem; border-color: rgba(220,38,38,0.35); gap: 0.6rem;")
+                    if thumb
+                      img(src=thumb style="width: 40px; height: 24px; object-fit: cover; border-radius: 3px; flex-shrink: 0;")
+                    else if favicon
+                      .flex.items-center.justify-center(style="width: 40px; height: 24px; flex-shrink: 0;")
+                        img(src=favicon style="width: 16px; height: 16px;")
+                    else
+                      .bg-surface-alt.rounded(style="width: 40px; height: 24px; flex-shrink: 0;")
+                    .min-w-0.flex-1
+                      .text-xs.truncate= x10.title || 'Untitled'
+                      .text-text-muted(style="font-size: 0.65rem;") #{itemCount} item#{itemCount > 1 ? 's' : ''} · #{tokenDisplay}
 
     if error
       .bg-red-900.border.border-red-700.rounded-md.p-3.mt-3.text-red-200.text-sm
