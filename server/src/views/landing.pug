@@ -18,8 +18,19 @@ block content
         placeholder="https://youtube.com/watch?v=...\nhttps://example.com/article"
         required
       )
-      button#submit-btn.mt-3.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="submit")
-        | Extract, Combine &amp; Send to...
+      .relative.mt-3#send-to-wrapper
+        button#submit-btn.w-full.bg-red-600.hover_bg-red-700.text-white.px-4.py-3.rounded-md.text-sm.font-medium(type="button")
+          | Extract, Combine &amp; Send to...
+        #send-to-menu.hidden.absolute.left-0.right-0.mt-1.bg-surface.border.border-border-strong.rounded-md.shadow-lg.overflow-hidden(style="z-index:50")
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="claude") Claude
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="chatgpt") ChatGPT
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="gemini") Gemini
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="perplexity") Perplexity
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="grok") Grok
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(type="button" data-llm="copilot") Copilot
+          .border-t.border-border-default
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-muted.hover_bg-surface-hover(type="button" data-action="copy-link") Copy link
+          button.send-to-item.w-full.text-left.px-4.py-2.text-sm.text-text-muted.hover_bg-surface-hover(type="button" data-action="copy-md") Copy markdown
 
     if error
       .bg-red-900.border.border-red-700.rounded-md.p-3.mt-3.text-red-200.text-sm
@@ -82,7 +93,7 @@ block content
         p.text-text-muted
           | Your AI conversations take place in your own assistant. Markdown pages which contain compiled online content can be one-click deleted by you at anytime.
 
-  //- Script popup
+  //- Script
   script.
     (function() {
       var LLM_URLS = {
@@ -93,238 +104,96 @@ block content
         grok: function(p) { return 'https://x.com/i/grok?text=' + encodeURIComponent(p); },
         copilot: function(p) { return 'https://copilot.microsoft.com/?q=' + encodeURIComponent(p); }
       };
-      var LLMS = ['claude', 'chatgpt', 'gemini', 'perplexity', 'grok', 'copilot'];
-      var LLM_LABELS = { claude: 'Claude', chatgpt: 'ChatGPT', gemini: 'Gemini', perplexity: 'Perplexity', grok: 'Grok', copilot: 'Copilot' };
 
       var form = document.querySelector('form[action="/create"]');
       var submitBtn = document.getElementById('submit-btn');
-      var currentMdUrl = '';
-      var currentPrompt = '';
-      var popup = null;
+      var menu = document.getElementById('send-to-menu');
+      var wrapper = document.getElementById('send-to-wrapper');
+      var hideTimeout = null;
 
-      function buildPopup() {
-        var overlay = document.createElement('div');
-        overlay.id = 'creation-popup';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:6rem;';
+      // Show/hide menu on hover
+      wrapper.addEventListener('mouseenter', function() {
+        clearTimeout(hideTimeout);
+        menu.classList.remove('hidden');
+      });
+      wrapper.addEventListener('mouseleave', function() {
+        hideTimeout = setTimeout(function() { menu.classList.add('hidden'); }, 200);
+      });
 
-        var backdrop = document.createElement('div');
-        backdrop.id = 'popup-backdrop';
-        backdrop.style.cssText = 'position:absolute;inset:0;';
-        overlay.appendChild(backdrop);
+      // Toggle on click
+      submitBtn.addEventListener('click', function() {
+        menu.classList.toggle('hidden');
+      });
 
-        var card = document.createElement('div');
-        card.style.cssText = 'position:relative;width:100%;max-width:24rem;margin:0 1rem;background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:0.5rem;box-shadow:0 10px 25px rgba(0,0,0,0.3);overflow:hidden;';
-        overlay.appendChild(card);
-
-        var header = document.createElement('div');
-        header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;border-bottom:1px solid var(--color-border-default);';
-        var headerLeft = document.createElement('div');
-        var title = document.createElement('h3');
-        title.id = 'popup-title';
-        title.style.cssText = 'font-weight:600;color:var(--color-text-primary);';
-        var meta = document.createElement('p');
-        meta.id = 'popup-meta';
-        meta.style.cssText = 'font-size:0.75rem;color:var(--color-text-muted);margin-top:0.25rem;';
-        headerLeft.appendChild(title);
-        headerLeft.appendChild(meta);
-        var closeBtn = document.createElement('button');
-        closeBtn.id = 'popup-close';
-        closeBtn.type = 'button';
-        closeBtn.innerHTML = '&times;';
-        closeBtn.style.cssText = 'color:var(--color-text-muted);font-size:1.25rem;line-height:1;cursor:pointer;background:none;border:none;padding:0.25rem;';
-        header.appendChild(headerLeft);
-        header.appendChild(closeBtn);
-        card.appendChild(header);
-
-        var actions = document.createElement('div');
-        actions.style.cssText = 'padding:0.5rem;';
-
-        var openInWrap = document.createElement('div');
-        openInWrap.style.cssText = 'position:relative;';
-        var openInBtn = document.createElement('button');
-        openInBtn.id = 'popup-open-in';
-        openInBtn.type = 'button';
-        openInBtn.innerHTML = '<span style="color:var(--color-text-muted)">&#9656;</span> Open in...';
-        openInBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
-        openInWrap.appendChild(openInBtn);
-
-        var submenu = document.createElement('div');
-        submenu.id = 'popup-llm-submenu';
-        submenu.style.display = 'none';
-        LLMS.forEach(function(llm) {
-          var a = document.createElement('a');
-          a.dataset.llm = llm;
-          a.textContent = LLM_LABELS[llm];
-          a.href = '#';
-          a.target = '_blank';
-          a.style.cssText = 'display:block;padding:0.5rem 0.75rem 0.5rem 2rem;font-size:0.875rem;color:var(--color-text-primary);text-decoration:none;border-radius:0.375rem;';
-          submenu.appendChild(a);
-        });
-        openInWrap.appendChild(submenu);
-        actions.appendChild(openInWrap);
-
-        var copyLinkBtn = document.createElement('button');
-        copyLinkBtn.id = 'popup-copy-link';
-        copyLinkBtn.type = 'button';
-        copyLinkBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copy link';
-        copyLinkBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
-        actions.appendChild(copyLinkBtn);
-
-        var copyContentBtn = document.createElement('button');
-        copyContentBtn.id = 'popup-copy-content';
-        copyContentBtn.type = 'button';
-        copyContentBtn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copy markdown';
-        copyContentBtn.style.cssText = 'width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--color-text-primary);background:none;border:none;border-radius:0.375rem;cursor:pointer;text-align:left;';
-        actions.appendChild(copyContentBtn);
-        card.appendChild(actions);
-
-        var viewWrap = document.createElement('div');
-        viewWrap.style.cssText = 'padding:0.75rem 1rem;border-top:1px solid var(--color-border-default);text-align:center;';
-        var viewLink = document.createElement('a');
-        viewLink.id = 'popup-view-link';
-        viewLink.href = '#';
-        viewLink.textContent = 'View collection \u2192';
-        viewLink.style.cssText = 'font-size:0.875rem;color:var(--color-red-600, #dc2626);';
-        viewWrap.appendChild(viewLink);
-        card.appendChild(viewWrap);
-
-        var failedWrap = document.createElement('div');
-        failedWrap.id = 'popup-failed';
-        failedWrap.style.display = 'none';
-        var failedInner = document.createElement('div');
-        failedInner.style.cssText = 'padding:0.75rem 1rem;border-top:1px solid var(--color-border-default);font-size:0.75rem;color:#f87171;';
-        var failedLabel = document.createElement('p');
-        failedLabel.style.fontWeight = '500';
-        failedLabel.textContent = 'Some URLs failed:';
-        var failedList = document.createElement('ul');
-        failedList.id = 'popup-failed-list';
-        failedList.style.cssText = 'list-style:disc inside;margin-top:0.25rem;';
-        failedInner.appendChild(failedLabel);
-        failedInner.appendChild(failedList);
-        failedWrap.appendChild(failedInner);
-        card.appendChild(failedWrap);
-
-        var style = document.createElement('style');
-        style.textContent = '#creation-popup button:hover, #popup-llm-submenu a:hover { background: var(--color-surface-hover); }';
-        overlay.appendChild(style);
-
-        document.body.appendChild(overlay);
-        return overlay;
-      }
-
-      function showPopup() {
-        if (!popup) popup = buildPopup();
-        popup.style.display = 'flex';
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Done';
-        bindPopupEvents();
-      }
-
-      var eventsBound = false;
-      function bindPopupEvents() {
-        if (eventsBound) return;
-        eventsBound = true;
-
-        document.getElementById('popup-close').addEventListener('click', hidePopup);
-        document.getElementById('popup-backdrop').addEventListener('click', hidePopup);
-
-        document.getElementById('popup-open-in').addEventListener('click', function() {
-          var sub = document.getElementById('popup-llm-submenu');
-          sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
-        });
-
-        document.getElementById('popup-copy-link').addEventListener('click', function() {
-          var btn = this;
-          navigator.clipboard.writeText(currentMdUrl);
-          var original = btn.innerHTML;
-          btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDD17</span> Copied';
-          setTimeout(function() { btn.innerHTML = original; }, 1500);
-        });
-
-        document.getElementById('popup-copy-content').addEventListener('click', function() {
-          var btn = this;
-          var original = btn.innerHTML;
-          btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Fetching...';
-          fetch(currentMdUrl)
-            .then(function(r) { return r.text(); })
-            .then(function(md) {
-              navigator.clipboard.writeText(md);
-              btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Copied';
-              setTimeout(function() { btn.innerHTML = original; }, 1500);
-            })
-            .catch(function() {
-              btn.innerHTML = '<span style="color:var(--color-text-muted)">\uD83D\uDCCB</span> Error';
-              setTimeout(function() { btn.innerHTML = original; }, 1500);
-            });
-        });
-      }
-
-      function hidePopup() {
-        if (popup) {
-          popup.style.display = 'none';
-          var sub = document.getElementById('popup-llm-submenu');
-          if (sub) sub.style.display = 'none';
+      // Close menu on outside click
+      document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+          menu.classList.add('hidden');
         }
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Extract, Combine & Send to...';
-      }
+      });
 
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Extracting...';
-        hidePopup();
+      // Handle menu item clicks
+      document.querySelectorAll('.send-to-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var llm = this.dataset.llm;
+          var action = this.dataset.action;
+          menu.classList.add('hidden');
 
-        fetch('/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
-          },
-          body: new URLSearchParams(new FormData(form))
-        })
-        .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
-        .then(function(result) {
-          if (!result.ok) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Extract, Combine & Send to...';
-            alert(result.data.error || 'Something went wrong');
+          // Validate textarea
+          var textarea = form.querySelector('textarea');
+          if (!textarea.value.trim()) {
+            textarea.focus();
             return;
           }
 
-          var d = result.data;
-          currentMdUrl = d.mdUrl;
-          currentPrompt = 'Fetch ' + d.mdUrl;
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Extracting...';
 
-          showPopup();
+          fetch('/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/json'
+            },
+            body: new URLSearchParams(new FormData(form))
+          })
+          .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+          .then(function(result) {
+            if (!result.ok) {
+              alert(result.data.error || 'Something went wrong');
+              return;
+            }
 
-          document.getElementById('popup-title').textContent = d.title;
-          var tokens = d.tokenCount > 1000 ? Math.round(d.tokenCount / 1000) + 'K tokens' : d.tokenCount + ' tokens';
-          document.getElementById('popup-meta').textContent = d.itemCount + ' item' + (d.itemCount > 1 ? 's' : '') + ' \u00b7 ~' + tokens;
-          document.getElementById('popup-view-link').href = d.pageUrl;
+            var d = result.data;
+            var mdUrl = d.mdUrl;
+            var prompt = 'Fetch ' + mdUrl;
 
-          document.querySelectorAll('#popup-llm-submenu a').forEach(function(a) {
-            a.href = LLM_URLS[a.dataset.llm](currentPrompt);
+            if (llm) {
+              // Open in LLM
+              window.open(LLM_URLS[llm](prompt), '_blank');
+            } else if (action === 'copy-link') {
+              navigator.clipboard.writeText(mdUrl);
+            } else if (action === 'copy-md') {
+              fetch(mdUrl)
+                .then(function(r) { return r.text(); })
+                .then(function(md) { navigator.clipboard.writeText(md); });
+            }
+
+            submitBtn.textContent = 'Done';
+            setTimeout(function() {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Extract, Combine & Send to...';
+            }, 2000);
+          })
+          .catch(function(err) {
+            alert('Error: ' + err.message);
+          })
+          .finally(function() {
+            if (submitBtn.textContent === 'Extracting...') {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Extract, Combine & Send to...';
+            }
           });
-
-          var failedEl = document.getElementById('popup-failed');
-          if (d.failed && d.failed.length > 0) {
-            var list = document.getElementById('popup-failed-list');
-            list.innerHTML = '';
-            d.failed.forEach(function(f) {
-              var li = document.createElement('li');
-              li.textContent = f.url + ': ' + f.error;
-              list.appendChild(li);
-            });
-            failedEl.style.display = 'block';
-          } else {
-            failedEl.style.display = 'none';
-          }
-        })
-        .catch(function(err) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Extract, Combine & Send to...';
-          alert('Error: ' + err.message);
         });
       });
     })();
