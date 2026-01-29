@@ -226,6 +226,10 @@ x10Router.post('/:id/add', async (req: Request, res: Response) => {
 
   try {
     const item = await addVideoToX10(id, url);
+    const wantsJson = req.headers.accept?.includes('application/json');
+    if (wantsJson) {
+      return res.json({ success: true, item: { id: item.id, title: item.title } });
+    }
     res.redirect(`/s/${id}`);
   } catch (error) {
     res.status(400).json({

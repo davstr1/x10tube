@@ -6,8 +6,10 @@ export const indexRouter = Router();
 
 // Landing page
 indexRouter.get('/', (req: Request, res: Response) => {
+  const x10s = req.anonymousId ? getX10sForAnonymous(req.anonymousId) : [];
   res.render('landing', {
-    title: 'toyour.ai'
+    title: 'toyour.ai',
+    x10s
   });
 });
 

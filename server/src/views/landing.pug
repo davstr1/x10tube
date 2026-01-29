@@ -32,6 +32,10 @@ block content
           .flex.justify-center.border-t.border-border-default(style="gap: 0.75rem; margin-top: 1rem; padding-top: 1rem;")
             button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-link" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copy link
             button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="copy-md" style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);") Copy markdown
+          if x10s && x10s.length > 0
+            .flex.flex-wrap.justify-center.border-t.border-border-default(style="gap: 0.75rem; margin-top: 1rem; padding-top: 1rem;")
+              each x10 in x10s
+                button.send-to-item.text-xs.rounded-md.border.bg-surface.text-text-muted.hover_text-text-primary.hover_bg-surface-hover(type="button" data-action="add-to-collection" data-collection-id=x10.id data-original-text=(x10.title || 'Untitled') style="padding: 0.5rem 1rem; border-color: rgba(220,38,38,0.35);")= x10.title || 'Untitled'
 
     if error
       .bg-red-900.border.border-red-700.rounded-md.p-3.mt-3.text-red-200.text-sm
@@ -162,6 +166,34 @@ block content
           var textarea = form.querySelector('textarea');
           if (!textarea.value.trim()) {
             textarea.focus();
+            return;
+          }
+
+          // Add to existing collection: different flow
+          if (action === 'add-to-collection') {
+            var collectionId = this.dataset.collectionId;
+            var urls = textarea.value.trim().split('\n').filter(function(u) { return u.trim(); });
+            var clickedBtn = this;
+            clickedBtn.textContent = 'Adding...';
+            submitBtn.disabled = true;
+
+            var addNext = function(i) {
+              if (i >= urls.length) {
+                clickedBtn.textContent = 'Added!';
+                submitBtn.disabled = false;
+                setTimeout(function() { clickedBtn.textContent = clickedBtn.getAttribute('data-original-text'); }, 2000);
+                return;
+              }
+              fetch('/s/' + collectionId + '/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                body: 'url=' + encodeURIComponent(urls[i].trim())
+              })
+              .then(function(res) { return res.json(); })
+              .then(function() { addNext(i + 1); })
+              .catch(function() { addNext(i + 1); });
+            };
+            addNext(0);
             return;
           }
 
