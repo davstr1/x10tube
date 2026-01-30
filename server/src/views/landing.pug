@@ -199,7 +199,7 @@ block content
           if (!textarea.value.trim()) {
             textarea.focus();
             var errEl = document.getElementById('empty-error');
-            errEl.textContent = 'Paste at least one URL above.';
+            errEl.textContent = 'Paste at least one URL below.';
             errEl.style.opacity = '1';
             setTimeout(function() { errEl.style.opacity = '0'; }, 3000);
             return;
