@@ -1,19 +1,21 @@
 // StraightToYourAI Content Script for YouTube
 // Injects button next to video titles
 
-const DEFAULT_BASE_URL = (typeof STYA_CONFIG !== 'undefined') ? STYA_CONFIG.DEFAULT_BASE_URL : 'http://localhost:3000';
+import { config } from './lib/config';
+import type { ApiFetchMessage, ApiFetchResponse, AddContentPayload } from './lib/types';
+import { getTranscript, extractVideoId as extractYoutubeId } from './lib/innertube';
 
 // ============================================
 // Utility Functions
 // ============================================
 
-function extractVideoIdFromUrl(url) {
+function extractVideoIdFromUrl(url: string | null): string | null {
   if (!url) return null;
   const match = url.match(/[?&]v=([^&]+)/) || url.match(/\/shorts\/([^?&]+)/);
   return match ? match[1] : null;
 }
 
-function isExtensionContextValid() {
+function isExtensionContextValid(): boolean {
   try {
     return !!chrome.runtime?.id;
   } catch {
@@ -21,14 +23,14 @@ function isExtensionContextValid() {
   }
 }
 
-function escapeHtml(text) {
+function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (!isExtensionContextValid()) return;
 
   if (request.action === 'getVideoInfo') {
@@ -46,44 +48,61 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   }
+  return false;
 });
 
 // ============================================
-// API Client
+// API Client (proxies through background script)
 // ============================================
 
+interface X10Collection {
+  id: string;
+  title: string;
+  videoCount: number;
+}
+
 class X10API {
+  baseUrl: string;
+  userCode: string | null;
+
   constructor() {
-    this.baseUrl = DEFAULT_BASE_URL;
+    this.baseUrl = config.baseUrl;
     this.userCode = null;
   }
 
   // Proxy fetch via background script (avoids context invalidation)
-  async _fetch(endpoint, options = {}) {
+  async _fetch(endpoint: string, options: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+    responseType?: 'json' | 'text';
+  } = {}): Promise<ApiFetchResponse> {
     try {
-      const response = await chrome.runtime.sendMessage({
+      const message: ApiFetchMessage = {
         action: 'apiFetch',
         endpoint,
-        method: options.method || 'GET',
+        method: (options.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE',
         headers: options.headers || {},
-        body: options.body || null,
+        body: options.body || undefined,
         responseType: options.responseType || 'json',
-      });
+      };
+      const response = await chrome.runtime.sendMessage(message) as ApiFetchResponse;
 
       if (!response) {
         throw new Error('No response from background script');
       }
       if (response._error) {
-        throw new Error(response.message);
+        throw new Error(response.message || 'Unknown error');
       }
       return response;
     } catch (error) {
-      console.error('[STYA] _fetch error:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[STYA] _fetch error:', errorMessage);
       throw error;
     }
   }
 
-  async init() {
+  async init(): Promise<boolean> {
     // Already initialized in memory
     if (this.userCode) return true;
 
@@ -99,14 +118,15 @@ class X10API {
         return true;
       }
     } catch (e) {
-      console.log('[STYA] Cache read failed:', e.message);
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      console.log('[STYA] Cache read failed:', errorMessage);
     }
 
     // No cache — must sync from server
     return this.syncFromServer();
   }
 
-  async syncFromServer() {
+  async syncFromServer(): Promise<boolean> {
     try {
       console.log('[STYA] Syncing from server...');
       const data = await this._fetch('/api/whoami');
@@ -116,34 +136,36 @@ class X10API {
       }
 
       if (data.userCode) {
-        this.userCode = data.userCode;
+        this.userCode = data.userCode as string;
         try {
           await chrome.storage.local.set({ styaUserCode: data.userCode });
         } catch (e) {
-          console.log('[STYA] Could not cache userCode:', e.message);
+          const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+          console.log('[STYA] Could not cache userCode:', errorMessage);
         }
       }
       console.log('[STYA] Synced, userCode:', this.userCode);
       return true;
     } catch (error) {
-      console.error('[STYA] syncFromServer failed:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[STYA] syncFromServer failed:', errorMessage);
       return false;
     }
   }
 
-  async getMyX10s() {
+  async getMyX10s(): Promise<{ x10s: X10Collection[] }> {
     if (!this.userCode) return { x10s: [] };
     try {
       const data = await this._fetch(`/api/x10s/by-code/${this.userCode}`);
       if (!data._ok) throw new Error(`HTTP ${data._status}`);
-      return data;
+      return { x10s: (data.x10s as X10Collection[]) || [] };
     } catch (error) {
       console.error('[STYA] getMyX10s error:', error);
       return { x10s: [] };
     }
   }
 
-  async createX10(videoUrl, forceNew = false) {
+  async createX10(videoUrl: string, forceNew = false): Promise<{ success: boolean; x10Id?: string; userCode?: string; error?: string }> {
     try {
       const data = await this._fetch('/api/x10/add', {
         method: 'POST',
@@ -151,43 +173,149 @@ class X10API {
       });
 
       if (data.success && data.userCode) {
-        this.userCode = data.userCode;
+        this.userCode = data.userCode as string;
         try {
           await chrome.storage.local.set({ styaUserCode: data.userCode });
-        } catch {}
+        } catch { /* ignore */ }
       }
-      return data;
+      return {
+        success: !!data.success,
+        x10Id: data.x10Id as string | undefined,
+        userCode: data.userCode as string | undefined,
+        error: data.error as string | undefined
+      };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('[STYA] createX10 error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     }
   }
 
-  async addVideoToX10(x10Id, videoUrl) {
+  async addVideoToX10(x10Id: string, videoUrl: string): Promise<{ success: boolean; error?: string }> {
     try {
-      return await this._fetch(`/api/x10/${x10Id}/add`, {
+      const data = await this._fetch(`/api/x10/${x10Id}/add`, {
         method: 'POST',
         body: { url: videoUrl, userCode: this.userCode },
       });
+      return { success: data._ok || !!data.success, error: data.error as string | undefined };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('[STYA] addVideoToX10 error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     }
   }
 
-  async checkVideoInX10s(youtubeId) {
+  async checkVideoInX10s(youtubeId: string): Promise<{ inX10s: string[] }> {
     if (!this.userCode) return { inX10s: [] };
     try {
       const data = await this._fetch(`/api/check-video?videoId=${youtubeId}&userCode=${this.userCode}`);
       if (!data._ok) throw new Error(`HTTP ${data._status}`);
-      return data;
+      return { inX10s: (data.inX10s as string[]) || [] };
     } catch (error) {
       console.error('[STYA] checkVideoInX10s error:', error);
       return { inX10s: [] };
     }
   }
 
-  getDashboardUrl() {
+  // NEW: Extract transcript locally and send to server (frontend extraction)
+  async createX10WithExtraction(
+    videoUrl: string,
+    forceNew = false
+  ): Promise<{ success: boolean; x10Id?: string; userCode?: string; error?: string }> {
+    try {
+      // Extract video ID
+      const videoId = extractYoutubeId(videoUrl);
+      if (!videoId) {
+        throw new Error('Invalid YouTube URL');
+      }
+
+      console.log('[STYA] Extracting transcript for:', videoId);
+
+      // Extract transcript locally (runs in user's browser = user's IP)
+      const result = await getTranscript(videoId);
+
+      console.log('[STYA] Got transcript, sending to server...');
+
+      // Build payload
+      const payload: AddContentPayload = {
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        title: result.title,
+        type: 'youtube',
+        content: result.transcript,
+        youtube_id: videoId,
+        channel: result.channel,
+        duration: result.duration,
+        forceNew
+      };
+
+      // Send pre-extracted content to server
+      const data = await this._fetch('/api/x10/add-content', {
+        method: 'POST',
+        body: { ...payload, userCode: this.userCode || undefined },
+      });
+
+      if (data.success && data.userCode) {
+        this.userCode = data.userCode as string;
+        try {
+          await chrome.storage.local.set({ styaUserCode: data.userCode });
+        } catch { /* ignore */ }
+      }
+
+      return {
+        success: !!data.success,
+        x10Id: data.collectionId as string | undefined,
+        userCode: data.userCode as string | undefined,
+        error: data.error as string | undefined
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[STYA] createX10WithExtraction error:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  // NEW: Add video to existing collection with frontend extraction
+  async addVideoToX10WithExtraction(
+    x10Id: string,
+    videoUrl: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const videoId = extractYoutubeId(videoUrl);
+      if (!videoId) {
+        throw new Error('Invalid YouTube URL');
+      }
+
+      console.log('[STYA] Extracting transcript for:', videoId);
+      const result = await getTranscript(videoId);
+
+      const payload: AddContentPayload = {
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        title: result.title,
+        type: 'youtube',
+        content: result.transcript,
+        youtube_id: videoId,
+        channel: result.channel,
+        duration: result.duration,
+        collectionId: x10Id
+      };
+
+      const data = await this._fetch('/api/x10/add-content', {
+        method: 'POST',
+        body: { ...payload, userCode: this.userCode || undefined },
+      });
+
+      return {
+        success: data._ok || !!data.success,
+        error: data.error as string | undefined
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[STYA] addVideoToX10WithExtraction error:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  getDashboardUrl(): string {
     return `${this.baseUrl}/collections`;
   }
 }
@@ -199,16 +327,16 @@ const api = new X10API();
 // ============================================
 
 let isDropdownOpen = false;
-let currentX10s = [];
-let videoInX10s = [];
+let currentX10s: X10Collection[] = [];
+let videoInX10s: string[] = [];
 let titleButtonsEnabled = true;
-let titleButtonInterval = null;
+let titleButtonInterval: ReturnType<typeof setInterval> | null = null;
 
 // ============================================
 // Styles
 // ============================================
 
-function injectStyles() {
+function injectStyles(): void {
   if (document.getElementById('stya-styles')) return;
 
   const styles = document.createElement('style');
@@ -610,7 +738,7 @@ function injectStyles() {
 // Dropdown
 // ============================================
 
-function createDropdown() {
+function createDropdown(): HTMLDivElement {
   const dropdown = document.createElement('div');
   dropdown.id = 'stya-dropdown';
   dropdown.innerHTML = `
@@ -660,18 +788,18 @@ function createDropdown() {
     </div>
   `;
 
-  dropdown.querySelector('.x10-dropdown-close').addEventListener('click', closeDropdown);
-  dropdown.querySelector('#stya-dashboard').addEventListener('click', (e) => {
+  dropdown.querySelector('.x10-dropdown-close')?.addEventListener('click', closeDropdown);
+  dropdown.querySelector('#stya-dashboard')?.addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
   });
-  dropdown.querySelector('#stya-sync').addEventListener('click', (e) => {
+  dropdown.querySelector('#stya-sync')?.addEventListener('click', (e) => {
     e.preventDefault();
     window.open(`${api.baseUrl}/sync`, '_blank');
   });
 
   // Direct open button
-  dropdown.querySelector('#x10-open-direct').addEventListener('click', async () => {
+  dropdown.querySelector('#x10-open-direct')?.addEventListener('click', async () => {
     const videoId = dropdown.dataset.currentVideoId;
     if (!videoId) { showToast('Please select a video first', 'error'); return; }
     const data = await chrome.storage.local.get(['styaLastLLM']);
@@ -681,11 +809,11 @@ function createDropdown() {
   });
 
   // Toggle "Open in..." submenu on click
-  dropdown.querySelector('#x10-open-in').addEventListener('click', () => {
+  dropdown.querySelector('#x10-open-in')?.addEventListener('click', () => {
     const submenu = dropdown.querySelector('#x10-llm-submenu');
-    submenu.classList.toggle('open');
+    submenu?.classList.toggle('open');
     const arrow = dropdown.querySelector('#x10-open-in .x10-quick-icon');
-    arrow.textContent = submenu.classList.contains('open') ? '▾' : '▸';
+    if (arrow) arrow.textContent = submenu?.classList.contains('open') ? '▾' : '▸';
   });
 
   // Quick action handlers - use the videoId from dropdown state
@@ -697,7 +825,8 @@ function createDropdown() {
         showToast('Please select a video first', 'error');
         return;
       }
-      const llm = item.dataset.llm;
+      const llm = (item as HTMLElement).dataset.llm;
+      if (!llm) return;
       // Save preference
       chrome.storage.local.set({ styaLastLLM: llm });
       updateDirectButton(dropdown, llm);
@@ -706,7 +835,7 @@ function createDropdown() {
     });
   });
 
-  dropdown.querySelector('#x10-copy-link').addEventListener('click', () => {
+  dropdown.querySelector('#x10-copy-link')?.addEventListener('click', () => {
     const videoId = dropdown.dataset.currentVideoId;
     if (!videoId) {
       showToast('Please select a video first', 'error');
@@ -716,7 +845,7 @@ function createDropdown() {
     handleCopyMDLink(url);
   });
 
-  dropdown.querySelector('#x10-copy-content').addEventListener('click', () => {
+  dropdown.querySelector('#x10-copy-content')?.addEventListener('click', () => {
     const videoId = dropdown.dataset.currentVideoId;
     if (!videoId) {
       showToast('Please select a video first', 'error');
@@ -731,8 +860,17 @@ function createDropdown() {
   return dropdown;
 }
 
-function updateDirectButton(dropdown, llmKey) {
-  const btn = dropdown.querySelector('#x10-open-direct');
+const LLM_NAMES: Record<string, string> = {
+  claude: 'Claude',
+  chatgpt: 'ChatGPT',
+  gemini: 'Gemini',
+  perplexity: 'Perplexity',
+  grok: 'Grok',
+  copilot: 'Copilot'
+};
+
+function updateDirectButton(dropdown: HTMLElement, llmKey: string): void {
+  const btn = dropdown.querySelector('#x10-open-direct') as HTMLElement | null;
   const label = dropdown.querySelector('#x10-open-direct-label');
   if (btn && label && llmKey && LLM_NAMES[llmKey]) {
     label.textContent = `Open in ${LLM_NAMES[llmKey]}`;
@@ -740,7 +878,7 @@ function updateDirectButton(dropdown, llmKey) {
   }
 }
 
-function closeDropdown() {
+function closeDropdown(): void {
   const dropdown = document.getElementById('stya-dropdown');
   if (dropdown) {
     dropdown.classList.remove('open');
@@ -749,11 +887,11 @@ function closeDropdown() {
   isDropdownOpen = false;
 }
 
-async function showDropdownForVideo(videoId, anchorElement) {
+async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement): Promise<void> {
   injectStyles();
   createToast();
 
-  let dropdown = document.getElementById('stya-dropdown');
+  let dropdown = document.getElementById('stya-dropdown') as HTMLDivElement | null;
   if (!dropdown) {
     dropdown = createDropdown();
     document.body.appendChild(dropdown);
@@ -762,19 +900,20 @@ async function showDropdownForVideo(videoId, anchorElement) {
   dropdown.dataset.currentVideoId = videoId;
 
   // Reset submenu state (close it)
-  dropdown.querySelector('#x10-llm-submenu').classList.remove('open');
-  dropdown.querySelector('#x10-open-in .x10-quick-icon').textContent = '▸';
+  dropdown.querySelector('#x10-llm-submenu')?.classList.remove('open');
+  const openInIcon = dropdown.querySelector('#x10-open-in .x10-quick-icon');
+  if (openInIcon) openInIcon.textContent = '▸';
 
   // Populate video info
-  const thumbEl = dropdown.querySelector('#x10-video-thumb');
+  const thumbEl = dropdown.querySelector('#x10-video-thumb') as HTMLElement | null;
   const titleEl = dropdown.querySelector('#x10-video-title');
   const metaEl = dropdown.querySelector('#x10-video-meta');
-  thumbEl.style.backgroundImage = `url(https://img.youtube.com/vi/${videoId}/mqdefault.jpg)`;
+  if (thumbEl) thumbEl.style.backgroundImage = `url(https://img.youtube.com/vi/${videoId}/mqdefault.jpg)`;
   // Get title from the anchor element's context
   const titleText = anchorElement.closest('h3, #title')?.textContent?.trim()
     || document.title.replace(' - YouTube', '');
-  titleEl.textContent = titleText;
-  metaEl.textContent = 'YouTube video';
+  if (titleEl) titleEl.textContent = titleText;
+  if (metaEl) metaEl.textContent = 'YouTube video';
 
   // Position near the button
   const rect = anchorElement.getBoundingClientRect();
@@ -815,8 +954,8 @@ async function showDropdownForVideo(videoId, anchorElement) {
 
   // Close on outside click
   setTimeout(() => {
-    const closeHandler = (e) => {
-      if (!e.target.closest('#stya-dropdown') && !e.target.closest('.stya-title-btn')) {
+    const closeHandler = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('#stya-dropdown') && !(e.target as Element).closest('.stya-title-btn')) {
         closeDropdown();
         document.removeEventListener('click', closeHandler);
       }
@@ -825,7 +964,7 @@ async function showDropdownForVideo(videoId, anchorElement) {
   }, 100);
 }
 
-async function loadX10sForDropdown(videoId) {
+async function loadX10sForDropdown(videoId: string): Promise<void> {
   const listEl = document.getElementById('stya-list');
   if (!listEl) return;
 
@@ -854,12 +993,13 @@ async function loadX10sForDropdown(videoId) {
 
     renderX10List(videoId);
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] loadX10sForDropdown error:', error);
-    listEl.innerHTML = `<div class="x10-empty">Error: ${error.message}</div>`;
+    listEl.innerHTML = `<div class="x10-empty">Error: ${errorMessage}</div>`;
   }
 }
 
-function renderX10List(videoId) {
+function renderX10List(videoId: string): void {
   const listEl = document.getElementById('stya-list');
   if (!listEl) return;
 
@@ -896,7 +1036,7 @@ function renderX10List(videoId) {
   });
 }
 
-async function handleCreateWithVideo(videoId) {
+async function handleCreateWithVideo(videoId: string): Promise<void> {
   if (!isExtensionContextValid()) {
     showToast('Please reload the page', 'error');
     return;
@@ -910,7 +1050,7 @@ async function handleCreateWithVideo(videoId) {
     if (nameSpan) nameSpan.textContent = 'Creating...';
   }
 
-  const result = await api.createX10(videoUrl, true);
+  const result = await api.createX10WithExtraction(videoUrl, true);
 
   if (result.success) {
     showToast('Video added to new collection!', 'success');
@@ -930,7 +1070,7 @@ async function handleCreateWithVideo(videoId) {
   }
 }
 
-async function handleAddVideoToX10(x10Id, x10Title, videoId) {
+async function handleAddVideoToX10(x10Id: string, x10Title: string, videoId: string): Promise<void> {
   if (!isExtensionContextValid()) {
     showToast('Please reload the page', 'error');
     return;
@@ -940,7 +1080,7 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
   const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
   if (item) item.classList.add('adding');
 
-  const result = await api.addVideoToX10(x10Id, videoUrl);
+  const result = await api.addVideoToX10WithExtraction(x10Id, videoUrl);
 
   if (result.success) {
     showToast(`Added to ${x10Title || 'collection'}`, 'success');
@@ -949,7 +1089,7 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
       item.classList.remove('adding');
       const check = item.querySelector('.x10-item-check');
       if (check) check.textContent = '✓';
-      item.style.cursor = 'default';
+      (item as HTMLElement).style.cursor = 'default';
     }
     closeDropdown();
     // Mark the button as added
@@ -967,14 +1107,14 @@ async function handleAddVideoToX10(x10Id, x10Title, videoId) {
 // Toast
 // ============================================
 
-function createToast() {
+function createToast(): void {
   if (document.getElementById('stya-toast')) return;
   const toast = document.createElement('div');
   toast.id = 'stya-toast';
   document.body.appendChild(toast);
 }
 
-function showToast(message, type = '') {
+function showToast(message: string, type = ''): void {
   const toast = document.getElementById('stya-toast');
   if (!toast) return;
   toast.textContent = message;
@@ -988,16 +1128,7 @@ function showToast(message, type = '') {
 // Quick Actions (One-Click LLM)
 // ============================================
 
-const LLM_NAMES = {
-  claude: 'Claude',
-  chatgpt: 'ChatGPT',
-  gemini: 'Gemini',
-  perplexity: 'Perplexity',
-  grok: 'Grok',
-  copilot: 'Copilot'
-};
-
-const LLM_URLS = {
+const LLM_URLS: Record<string, (prompt: string) => string> = {
   claude: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   chatgpt: (prompt) => `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,
   gemini: (prompt) => `https://www.google.com/search?udm=50&aep=11&q=${encodeURIComponent(prompt)}`,
@@ -1006,7 +1137,7 @@ const LLM_URLS = {
   copilot: (prompt) => `https://copilot.microsoft.com/?q=${encodeURIComponent(prompt)}`
 };
 
-async function handleOpenInLLM(url, llmType) {
+async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
   if (!isExtensionContextValid()) {
     showToast('Please reload the page', 'error');
     return;
@@ -1016,7 +1147,7 @@ async function handleOpenInLLM(url, llmType) {
   closeDropdown();
 
   try {
-    const result = await api.createX10(url, true); // forceNew = true
+    const result = await api.createX10WithExtraction(url, true); // forceNew = true
 
     if (!result.success) {
       showToast(`Error: ${result.error}`, 'error');
@@ -1030,12 +1161,13 @@ async function handleOpenInLLM(url, llmType) {
     window.open(llmUrl, '_blank');
     showToast(`Opened in ${llmType}`, 'success');
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleOpenInLLM error:', error);
-    showToast(`Error: ${error.message}`, 'error');
+    showToast(`Error: ${errorMessage}`, 'error');
   }
 }
 
-async function handleCopyMDLink(url) {
+async function handleCopyMDLink(url: string): Promise<void> {
   if (!isExtensionContextValid()) {
     showToast('Please reload the page', 'error');
     return;
@@ -1045,7 +1177,7 @@ async function handleCopyMDLink(url) {
   closeDropdown();
 
   try {
-    const result = await api.createX10(url, true);
+    const result = await api.createX10WithExtraction(url, true);
 
     if (!result.success) {
       showToast(`Error: ${result.error}`, 'error');
@@ -1056,12 +1188,13 @@ async function handleCopyMDLink(url) {
     await navigator.clipboard.writeText(mdUrl);
     showToast('MD link copied!', 'success');
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDLink error:', error);
-    showToast(`Error: ${error.message}`, 'error');
+    showToast(`Error: ${errorMessage}`, 'error');
   }
 }
 
-async function handleCopyMDContent(url) {
+async function handleCopyMDContent(url: string): Promise<void> {
   if (!isExtensionContextValid()) {
     showToast('Please reload the page', 'error');
     return;
@@ -1071,7 +1204,7 @@ async function handleCopyMDContent(url) {
   closeDropdown();
 
   try {
-    const result = await api.createX10(url, true);
+    const result = await api.createX10WithExtraction(url, true);
 
     if (!result.success) {
       showToast(`Error: ${result.error}`, 'error');
@@ -1087,8 +1220,9 @@ async function handleCopyMDContent(url) {
     await navigator.clipboard.writeText(mdContent);
     showToast('MD content copied!', 'success');
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDContent error:', error);
-    showToast(`Error: ${error.message}`, 'error');
+    showToast(`Error: ${errorMessage}`, 'error');
   }
 }
 
@@ -1096,7 +1230,7 @@ async function handleCopyMDContent(url) {
 // Title Button Injection
 // ============================================
 
-function createTitleButton(videoId) {
+function createTitleButton(videoId: string): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = 'stya-title-btn';
   btn.innerHTML = '<svg viewBox="0 0 100 100" style="width:14px;height:14px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg>';
@@ -1120,7 +1254,7 @@ function createTitleButton(videoId) {
   return btn;
 }
 
-function injectTitleButtons() {
+function injectTitleButtons(): void {
   if (!titleButtonsEnabled) return;
 
   let count = 0;
@@ -1136,7 +1270,7 @@ function injectTitleButtons() {
 
         renderer.setAttribute('data-x10-processed', 'true');
 
-        const videoId = extractVideoIdFromUrl(titleLink.href);
+        const videoId = extractVideoIdFromUrl((titleLink as HTMLAnchorElement).href);
         if (!videoId) return;
 
         const h3 = titleLink.closest('h3');
@@ -1146,12 +1280,12 @@ function injectTitleButtons() {
         h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
-        console.log('[STYA] Error injecting classic button:', e.message);
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        console.log('[STYA] Error injecting classic button:', errorMessage);
       }
     });
 
     // Format 2: New format (yt-lockup-metadata-view-model) - Homepage, Sidebar 2024+
-    // Target the h3 directly to insert the button before the title link
     const newFormatHeadings = document.querySelectorAll('yt-lockup-metadata-view-model:not([data-x10-processed]) h3.yt-lockup-metadata-view-model__heading-reset');
 
     newFormatHeadings.forEach(h3 => {
@@ -1161,34 +1295,31 @@ function injectTitleButtons() {
 
         metadata.setAttribute('data-x10-processed', 'true');
 
-        // Find the title link inside the h3
-        const titleLink = h3.querySelector('a.yt-lockup-metadata-view-model__title');
+        const titleLink = h3.querySelector('a.yt-lockup-metadata-view-model__title') as HTMLAnchorElement | null;
         if (!titleLink) return;
 
         let videoId = extractVideoIdFromUrl(titleLink.href);
 
         if (!videoId) {
-          // Try to get from content-id class on a parent container
           const lockup = metadata.closest('yt-lockup-view-model');
           if (lockup) {
             const container = lockup.querySelector('[class*="content-id-"]');
             if (container) {
-              const contentClass = [...container.classList].find(c => c.startsWith('content-id-'));
-              videoId = contentClass?.replace('content-id-', '');
+              const contentClass = Array.from(container.classList).find(c => c.startsWith('content-id-'));
+              videoId = contentClass?.replace('content-id-', '') || null;
             }
           }
         }
 
         if (!videoId) return;
-
-        // Check if already has button
         if (h3.querySelector('.stya-title-btn')) return;
 
         const btn = createTitleButton(videoId);
         h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
-        console.log('[STYA] Error injecting new format button:', e.message);
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        console.log('[STYA] Error injecting new format button:', errorMessage);
       }
     });
 
@@ -1202,7 +1333,7 @@ function injectTitleButtons() {
 
         renderer.setAttribute('data-x10-processed', 'true');
 
-        const videoId = extractVideoIdFromUrl(titleLink.href);
+        const videoId = extractVideoIdFromUrl((titleLink as HTMLAnchorElement).href);
         if (!videoId) return;
 
         const titleContainer = titleLink.closest('#details, #meta');
@@ -1212,21 +1343,21 @@ function injectTitleButtons() {
         titleContainer.insertBefore(btn, titleContainer.firstChild);
         count++;
       } catch (e) {
-        console.log('[STYA] Error injecting rich item button:', e.message);
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        console.log('[STYA] Error injecting rich item button:', errorMessage);
       }
     });
+
     // Format 4: Main video on watch page (ytd-watch-metadata)
     const watchPage = document.querySelector('ytd-watch-metadata:not([data-x10-processed])');
     if (watchPage) {
       try {
         watchPage.setAttribute('data-x10-processed', 'true');
 
-        // Get videoId from URL
         const urlParams = new URLSearchParams(window.location.search);
         const videoId = urlParams.get('v');
 
         if (videoId) {
-          // Find the title container (h1 with the video title)
           const titleContainer = watchPage.querySelector('#title h1, h1.ytd-watch-metadata');
           if (titleContainer && !titleContainer.querySelector('.stya-title-btn')) {
             const btn = createTitleButton(videoId);
@@ -1235,7 +1366,8 @@ function injectTitleButtons() {
           }
         }
       } catch (e) {
-        console.log('[STYA] Error injecting watch page button:', e.message);
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        console.log('[STYA] Error injecting watch page button:', errorMessage);
       }
     }
 
@@ -1248,15 +1380,14 @@ function injectTitleButtons() {
   }
 }
 
-function startTitleButtonInjection() {
+function startTitleButtonInjection(): void {
   injectTitleButtons();
   if (!titleButtonInterval) {
-    // Check every 2 seconds for new videos (YouTube loads dynamically)
     titleButtonInterval = setInterval(injectTitleButtons, 2000);
   }
 }
 
-function stopTitleButtonInjection() {
+function stopTitleButtonInjection(): void {
   if (titleButtonInterval) {
     clearInterval(titleButtonInterval);
     titleButtonInterval = null;
@@ -1267,14 +1398,12 @@ function stopTitleButtonInjection() {
 // Master Toggle Button
 // ============================================
 
-function createMasterToggle() {
+function createMasterToggle(): void {
   if (document.getElementById('stya-toggle-container')) return;
 
-  // Create container
   const container = document.createElement('div');
   container.id = 'stya-toggle-container';
 
-  // Create hover menu
   const menu = document.createElement('div');
   menu.id = 'stya-toggle-menu';
   const myX10sLink = document.createElement('a');
@@ -1283,7 +1412,6 @@ function createMasterToggle() {
   myX10sLink.textContent = 'My collections';
   menu.appendChild(myX10sLink);
 
-  // Create toggle button
   const toggle = document.createElement('button');
   toggle.id = 'stya-master-toggle';
   toggle.innerHTML = '<svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg><span class="logo-main">StraightToYour</span><span class="logo-ai">AI</span>';
@@ -1310,9 +1438,7 @@ function createMasterToggle() {
       document.body.classList.add('stya-buttons-hidden');
     }
 
-    // Save state
     chrome.storage.local.set({ styaTitleButtonsEnabled: titleButtonsEnabled });
-
     showToast(titleButtonsEnabled ? 'Buttons enabled' : 'Buttons hidden', 'success');
   });
 
@@ -1327,7 +1453,7 @@ function createMasterToggle() {
 
 let lastUrl = location.href;
 
-function onUrlChange() {
+function onUrlChange(): void {
   const newUrl = location.href;
   if (newUrl === lastUrl) return;
 
@@ -1337,21 +1463,17 @@ function onUrlChange() {
   closeDropdown();
   videoInX10s = [];
 
-  // Remove ALL existing STYA buttons (they have stale videoIds in closures)
   document.querySelectorAll('.stya-title-btn').forEach(btn => btn.remove());
 
-  // Reset dropdown state
   const dropdown = document.getElementById('stya-dropdown');
   if (dropdown) {
     delete dropdown.dataset.currentVideoId;
   }
 
-  // Reset processed markers and re-inject
   document.querySelectorAll('[data-x10-processed]').forEach(el => {
     el.removeAttribute('data-x10-processed');
   });
 
-  // Re-inject after a short delay to let YouTube render
   setTimeout(injectTitleButtons, 500);
 }
 
@@ -1363,22 +1485,23 @@ const urlObserver = new MutationObserver(() => {
 // Initialization
 // ============================================
 
-function init() {
+function init(): void {
   console.log('[STYA] Initializing...');
 
   injectStyles();
   createToast();
   createMasterToggle();
 
-  // Start title button injection
   setTimeout(startTitleButtonInjection, 1000);
 
-  // Watch for URL changes (SPA navigation)
   urlObserver.observe(document.body, { subtree: true, childList: true });
   window.addEventListener('popstate', onUrlChange);
 
   console.log('[STYA] Initialized');
 }
+
+// Suppress unused variable warning
+void stopTitleButtonInjection;
 
 // Run initialization
 init();

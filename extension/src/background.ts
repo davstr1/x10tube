@@ -1,8 +1,8 @@
 // StraightToYourAI Background Service Worker
 // Proxies API calls for the content script (avoids context invalidation)
 
-try { importScripts('config.js'); } catch(e) {}
-const DEFAULT_BASE_URL = (typeof STYA_CONFIG !== 'undefined') ? STYA_CONFIG.DEFAULT_BASE_URL : 'http://localhost:3000';
+import { config } from './lib/config';
+import type { ApiFetchMessage, ApiFetchResponse } from './lib/types';
 
 console.log('[STYA] Background service worker loaded');
 
@@ -16,23 +16,23 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 // Get base URL from storage (cached in memory for perf)
-let cachedBaseUrl = null;
+let cachedBaseUrl: string | null = null;
 
-async function getBaseUrl() {
+async function getBaseUrl(): Promise<string> {
   if (cachedBaseUrl) return cachedBaseUrl;
   try {
     const data = await chrome.storage.local.get(['styaBackendUrl']);
-    cachedBaseUrl = data.styaBackendUrl || DEFAULT_BASE_URL;
+    cachedBaseUrl = data.styaBackendUrl || config.baseUrl;
   } catch {
-    cachedBaseUrl = DEFAULT_BASE_URL;
+    cachedBaseUrl = config.baseUrl;
   }
-  return cachedBaseUrl;
+  return cachedBaseUrl!;
 }
 
 // Invalidate cached URL when storage changes
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.styaBackendUrl) {
-    cachedBaseUrl = changes.styaBackendUrl.newValue || DEFAULT_BASE_URL;
+    cachedBaseUrl = changes.styaBackendUrl.newValue || config.baseUrl;
   }
 });
 
@@ -40,20 +40,26 @@ chrome.storage.onChanged.addListener((changes) => {
 // Message handler — proxy API calls
 // ============================================
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg: ApiFetchMessage, _sender, sendResponse: (response: ApiFetchResponse) => void) => {
   if (msg.action === 'apiFetch') {
     handleApiFetch(msg)
       .then(result => sendResponse(result))
-      .catch(error => sendResponse({ _error: true, message: error.message }));
+      .catch(error => sendResponse({
+        _ok: false,
+        _status: 0,
+        _error: true,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }));
     return true; // Keep channel open for async response
   }
+  return false;
 });
 
-async function handleApiFetch(msg) {
+async function handleApiFetch(msg: ApiFetchMessage): Promise<ApiFetchResponse> {
   const baseUrl = await getBaseUrl();
   const url = baseUrl + msg.endpoint;
 
-  const options = {
+  const options: RequestInit = {
     method: msg.method || 'GET',
     headers: msg.headers || {},
     credentials: 'include',
@@ -61,8 +67,8 @@ async function handleApiFetch(msg) {
 
   if (msg.body) {
     options.body = JSON.stringify(msg.body);
-    if (!options.headers['Content-Type']) {
-      options.headers['Content-Type'] = 'application/json';
+    if (!(options.headers as Record<string, string>)['Content-Type']) {
+      (options.headers as Record<string, string>)['Content-Type'] = 'application/json';
     }
   }
 

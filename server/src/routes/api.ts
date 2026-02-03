@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createX10, getX10sForUser, getX10sForAnonymous, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, checkVideoInAnonymousX10s, forkX10, deleteX10, updateX10PrePrompt } from '../services/x10.js';
+import { createX10, getX10sForUser, getX10sForAnonymous, getX10ById, addVideoToX10, removeVideoFromX10, checkVideoInUserX10s, checkVideoInAnonymousX10s, forkX10, deleteX10, updateX10PrePrompt, addPreExtractedContentToX10, createX10WithPreExtractedContent, PreExtractedContent } from '../services/x10.js';
 import { extractVideoId } from '../services/transcript.js';
 import { getUserSettings, updateDefaultPrePrompt } from '../services/settings.js';
 import { config } from '../config.js';
@@ -323,6 +323,143 @@ apiRouter.post('/x10/add', async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error adding content from extension:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to add content'
+    });
+  }
+});
+
+// Add PRE-EXTRACTED content from Chrome extension (no server-side extraction)
+// The extension extracts YouTube transcripts and web page content directly
+apiRouter.post('/x10/add-content', async (req: Request, res: Response) => {
+  const { url, title, type, content, youtube_id, channel, duration, collectionId, forceNew, userCode } = req.body;
+
+  // Validate required fields
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ success: false, error: 'URL required' });
+  }
+  if (!title || typeof title !== 'string') {
+    return res.status(400).json({ success: false, error: 'Title required' });
+  }
+  if (!type || (type !== 'youtube' && type !== 'webpage')) {
+    return res.status(400).json({ success: false, error: 'Type must be "youtube" or "webpage"' });
+  }
+  if (!content || typeof content !== 'string') {
+    return res.status(400).json({ success: false, error: 'Content required' });
+  }
+
+  // Validate content size (max 500KB)
+  if (content.length > 500 * 1024) {
+    return res.status(400).json({ success: false, error: 'Content too large (max 500KB)' });
+  }
+
+  // YouTube videos must have youtube_id
+  if (type === 'youtube' && !youtube_id) {
+    return res.status(400).json({ success: false, error: 'YouTube ID required for YouTube videos' });
+  }
+
+  try {
+    // Use the provided user code or the one from cookie, or generate new
+    const { nanoid } = await import('nanoid');
+    const anonymousId = userCode?.trim() || req.anonymousId || nanoid(16);
+
+    // Build the content object
+    const extractedContent: PreExtractedContent = {
+      url,
+      title,
+      type,
+      content,
+      youtube_id: youtube_id || undefined,
+      channel: channel || undefined,
+      duration: typeof duration === 'number' ? duration : undefined
+    };
+
+    let x10Id: string;
+    let itemId: string;
+
+    // If collectionId is provided, add to that collection
+    if (collectionId) {
+      const x10 = getX10ById(collectionId);
+      if (!x10) {
+        return res.status(404).json({ success: false, error: 'Collection not found' });
+      }
+
+      // Check ownership
+      const isOwner = x10.anonymous_id === anonymousId || x10.user_id === req.headers['x-user-id'];
+      if (!isOwner) {
+        return res.status(403).json({ success: false, error: 'Not authorized to edit this collection' });
+      }
+
+      if (x10.videos.length >= 10) {
+        return res.status(400).json({ success: false, error: 'Collection is full (max 10 items)' });
+      }
+
+      // Check for duplicates
+      const alreadyExists = type === 'youtube'
+        ? x10.videos.some(v => v.youtube_id === youtube_id)
+        : x10.videos.some(v => v.url === url);
+
+      if (alreadyExists) {
+        return res.json({
+          success: true,
+          itemId: x10.videos.find(v => type === 'youtube' ? v.youtube_id === youtube_id : v.url === url)?.id,
+          collectionId: x10.id,
+          userCode: anonymousId,
+          message: 'Item already exists in this collection'
+        });
+      }
+
+      const item = addPreExtractedContentToX10(collectionId, extractedContent);
+      x10Id = collectionId;
+      itemId = item.id;
+    } else if (forceNew) {
+      // Create a new collection
+      const x10 = createX10WithPreExtractedContent(extractedContent, anonymousId);
+      x10Id = x10.id;
+      itemId = x10.videos[0].id;
+    } else {
+      // Add to most recent collection or create new
+      const existingX10s = getX10sForAnonymous(anonymousId);
+
+      if (existingX10s.length > 0 && existingX10s[0].videos.length < 10) {
+        const recentX10 = existingX10s[0];
+
+        // Check for duplicates
+        const alreadyExists = type === 'youtube'
+          ? recentX10.videos.some(v => v.youtube_id === youtube_id)
+          : recentX10.videos.some(v => v.url === url);
+
+        if (alreadyExists) {
+          return res.json({
+            success: true,
+            itemId: recentX10.videos.find(v => type === 'youtube' ? v.youtube_id === youtube_id : v.url === url)?.id,
+            collectionId: recentX10.id,
+            userCode: anonymousId,
+            message: 'Item already exists in your most recent collection'
+          });
+        }
+
+        const item = addPreExtractedContentToX10(recentX10.id, extractedContent);
+        x10Id = recentX10.id;
+        itemId = item.id;
+      } else {
+        // Create new collection
+        const x10 = createX10WithPreExtractedContent(extractedContent, anonymousId);
+        x10Id = x10.id;
+        itemId = x10.videos[0].id;
+      }
+    }
+
+    res.json({
+      success: true,
+      itemId,
+      collectionId: x10Id,
+      userCode: anonymousId
+    });
+
+  } catch (error) {
+    console.error('[API] Error adding pre-extracted content:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to add content'

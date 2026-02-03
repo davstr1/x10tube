@@ -149,6 +149,129 @@ export async function addVideoToX10(x10Id: string, url: string): Promise<Video> 
   };
 }
 
+// Pre-extracted content payload (from extension)
+export interface PreExtractedContent {
+  url: string;
+  title: string;
+  type: 'youtube' | 'webpage';
+  content: string;
+  youtube_id?: string;
+  channel?: string;
+  duration?: number;  // in seconds
+}
+
+// Format seconds to duration string (e.g., "15:23" or "1:02:45")
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Add pre-extracted content to existing x10 (no server-side extraction)
+export function addPreExtractedContentToX10(x10Id: string, content: PreExtractedContent): Video {
+  const videoId = generateId();
+  const now = new Date().toISOString();
+  const durationStr = content.duration ? formatDuration(content.duration) : null;
+
+  db.prepare(`
+    INSERT INTO videos (id, x10_id, url, type, youtube_id, title, channel, duration, transcript, added_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    videoId,
+    x10Id,
+    content.url,
+    content.type,
+    content.youtube_id || null,
+    content.title,
+    content.channel || null,
+    durationStr,
+    content.content,
+    now
+  );
+
+  // Update x10 updated_at
+  db.prepare('UPDATE x10s SET updated_at = ? WHERE id = ?').run(now, x10Id);
+
+  return {
+    id: videoId,
+    x10_id: x10Id,
+    url: content.url,
+    type: content.type,
+    youtube_id: content.youtube_id || null,
+    title: content.title,
+    channel: content.channel || null,
+    duration: durationStr,
+    transcript: content.content,
+    added_at: now
+  };
+}
+
+// Create x10 with pre-extracted content (no server-side extraction)
+export function createX10WithPreExtractedContent(
+  content: PreExtractedContent,
+  anonymousId: string
+): X10WithVideos {
+  const x10Id = generateId();
+  const videoId = generateId();
+  const now = new Date().toISOString();
+  const durationStr = content.duration ? formatDuration(content.duration) : null;
+
+  // Insert x10
+  db.prepare(`
+    INSERT INTO x10s (id, user_id, anonymous_id, title, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(x10Id, null, anonymousId, content.title, now, now);
+
+  // Insert video
+  db.prepare(`
+    INSERT INTO videos (id, x10_id, url, type, youtube_id, title, channel, duration, transcript, added_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    videoId,
+    x10Id,
+    content.url,
+    content.type,
+    content.youtube_id || null,
+    content.title,
+    content.channel || null,
+    durationStr,
+    content.content,
+    now
+  );
+
+  const video: Video = {
+    id: videoId,
+    x10_id: x10Id,
+    url: content.url,
+    type: content.type,
+    youtube_id: content.youtube_id || null,
+    title: content.title,
+    channel: content.channel || null,
+    duration: durationStr,
+    transcript: content.content,
+    added_at: now
+  };
+
+  const tokenCount = estimateTokens(content.content);
+
+  return {
+    id: x10Id,
+    user_id: null,
+    anonymous_id: anonymousId,
+    title: content.title,
+    pre_prompt: null,
+    created_at: now,
+    updated_at: now,
+    videos: [video],
+    tokenCount
+  };
+}
+
 // Remove video from x10
 export function removeVideoFromX10(x10Id: string, videoId: string): boolean {
   const result = db.prepare('DELETE FROM videos WHERE id = ? AND x10_id = ?').run(videoId, x10Id);
