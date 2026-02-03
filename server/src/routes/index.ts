@@ -1,16 +1,14 @@
 import { Router, Request, Response } from 'express';
-import { getX10sForAnonymous, getX10sForUser, getX10ById, deleteX10 } from '../services/x10.js';
+import { getX10sForAnonymous, getX10ById, deleteX10 } from '../services/x10.js';
 import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
 
 export const indexRouter = Router();
 
 // Landing page
-indexRouter.get('/', (req: Request, res: Response) => {
-  const x10s = req.anonymousId ? getX10sForAnonymous(req.anonymousId) : [];
+indexRouter.get('/', (_req: Request, res: Response) => {
   res.render('landing', {
-    title: config.brandName,
-    x10s
+    title: config.brandName
   });
 });
 
