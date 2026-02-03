@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getX10ById, addVideoToX10, removeVideoFromX10, updateX10Title, updateX10PrePrompt } from '../services/x10.js';
-import { extractVideoId } from '../services/transcript.js';
+import { getX10ById, removeVideoFromX10, updateX10Title, updateX10PrePrompt } from '../services/x10.js';
 import { getUserSettings, getDefaultPrePromptText } from '../services/settings.js';
 import { config } from '../config.js';
 
@@ -194,49 +193,13 @@ function canEdit(x10: ReturnType<typeof getX10ById>, anonymousId: string): boole
   return false;
 }
 
-// Add item (video or web page) to x10
-x10Router.post('/:id/add', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { url } = req.body;
-
-  const x10 = getX10ById(id);
-  if (!x10) {
-    return res.status(404).json({ error: 'X10 not found' });
-  }
-
-  // Check ownership
-  if (!canEdit(x10, req.anonymousId)) {
-    return res.status(403).json({ error: 'Not authorized to edit this x10' });
-  }
-
-  // Check item limit
-  if (x10.videos.length >= 10) {
-    return res.status(400).json({ error: 'Maximum 10 items per collection' });
-  }
-
-  // Check if YouTube video already exists
-  const videoId = extractVideoId(url);
-  if (videoId && x10.videos.some(v => v.youtube_id === videoId)) {
-    return res.status(400).json({ error: 'This video is already in this collection' });
-  }
-
-  // Check if URL already exists (for web pages)
-  if (x10.videos.some(v => v.url === url)) {
-    return res.status(400).json({ error: 'This URL is already in this collection' });
-  }
-
-  try {
-    const item = await addVideoToX10(id, url);
-    const wantsJson = req.headers.accept?.includes('application/json');
-    if (wantsJson) {
-      return res.json({ success: true, item: { id: item.id, title: item.title } });
-    }
-    res.redirect(`/s/${id}`);
-  } catch (error) {
-    res.status(400).json({
-      error: error instanceof Error ? error.message : 'Could not add content'
-    });
-  }
+// DISABLED: Server-side extraction removed
+// Adding content from the web page is temporarily disabled - use the Chrome extension instead
+x10Router.post('/:id/add', (_req: Request, res: Response) => {
+  return res.status(410).json({
+    error: 'Adding content from the web is temporarily disabled. Please use the Chrome extension.',
+    hint: 'Content extraction now happens client-side to avoid rate limiting.'
+  });
 });
 
 // Remove video from x10

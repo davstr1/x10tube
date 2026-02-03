@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createX10, getX10sForAnonymous, getX10sForUser, getX10ById, deleteX10 } from '../services/x10.js';
+import { getX10sForAnonymous, getX10sForUser, getX10ById, deleteX10 } from '../services/x10.js';
 import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
 
@@ -14,78 +14,13 @@ indexRouter.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Create x10 from landing page
-indexRouter.post('/create', async (req: Request, res: Response) => {
-  try {
-    const { urls } = req.body;
-
-    if (!urls || typeof urls !== 'string') {
-      return res.status(400).render('landing', {
-        title: config.brandName,
-        error: 'Please paste at least one YouTube URL'
-      });
-    }
-
-    // Parse URLs (one per line)
-    const urlList = urls
-      .split('\n')
-      .map((u: string) => u.trim())
-      .filter((u: string) => u.length > 0);
-
-    if (urlList.length === 0) {
-      return res.status(400).render('landing', {
-        title: config.brandName,
-        error: 'Please paste at least one YouTube URL'
-      });
-    }
-
-    // Create x10 with anonymous ID from cookie
-    const anonymousId = req.anonymousId;
-    const { x10, failed } = await createX10(urlList, null, null, anonymousId);
-
-    const wantsJson = req.headers.accept?.includes('application/json');
-
-    if (x10.videos.length === 0) {
-      if (wantsJson) {
-        return res.status(400).json({
-          error: 'Could not extract content from any of the provided URLs',
-          failed
-        });
-      }
-      return res.status(400).render('landing', {
-        title: config.brandName,
-        error: 'Could not extract transcripts from any of the provided URLs',
-        failedUrls: failed
-      });
-    }
-
-    if (wantsJson) {
-      const baseUrl = config.baseUrl;
-      return res.json({
-        id: x10.id,
-        title: x10.title || 'Untitled',
-        itemCount: x10.videos.length,
-        tokenCount: x10.tokenCount,
-        mdUrl: `${baseUrl}/s/${x10.id}.md`,
-        pageUrl: `/s/${x10.id}`,
-        failed
-      });
-    }
-
-    // Redirect to the new x10 page
-    res.redirect(`/s/${x10.id}`);
-
-  } catch (error) {
-    console.error('Error creating x10:', error);
-    const wantsJson = req.headers.accept?.includes('application/json');
-    if (wantsJson) {
-      return res.status(500).json({ error: 'An error occurred while creating your collection' });
-    }
-    res.status(500).render('landing', {
-      title: config.brandName,
-      error: 'An error occurred while creating your collection'
-    });
-  }
+// DISABLED: Server-side extraction removed
+// The landing page form is temporarily disabled - use the Chrome extension instead
+indexRouter.post('/create', (_req: Request, res: Response) => {
+  return res.status(410).render('landing', {
+    title: config.brandName,
+    error: 'The web form is temporarily disabled. Please use the Chrome extension to add content.'
+  });
 });
 
 // Disconnect - clear the cookie and generate a new anonymous ID

@@ -85,72 +85,21 @@ apiRouter.get('/x10s/by-code/:userCode', (req: Request, res: Response) => {
   });
 });
 
-// Create new x10
-apiRouter.post('/x10/create', async (req: Request, res: Response) => {
-  const { urls } = req.body;
-  const userId = req.headers['x-user-id'] as string | undefined;
-
-  if (!urls || !Array.isArray(urls) || urls.length === 0) {
-    return res.status(400).json({ error: 'URLs array required' });
-  }
-
-  if (urls.length > 10) {
-    return res.status(400).json({ error: 'Maximum 10 items per x10' });
-  }
-
-  try {
-    const { x10, failed } = await createX10(urls, userId || null, null);
-
-    res.json({
-      id: x10.id,
-      url: `/s/${x10.id}`,
-      videoCount: x10.videos.length,
-      failed
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to create x10'
-    });
-  }
+// DISABLED: Server-side extraction removed - use /api/x10/add-content instead
+// This endpoint used to extract content server-side, which caused rate limiting issues
+apiRouter.post('/x10/create', (_req: Request, res: Response) => {
+  return res.status(410).json({
+    error: 'This endpoint is deprecated. Use /api/x10/add-content with pre-extracted content.',
+    hint: 'Content extraction now happens client-side to avoid rate limiting.'
+  });
 });
 
-// Add video to x10
-apiRouter.post('/x10/:id/add', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { url, userCode } = req.body;
-  const userId = req.headers['x-user-id'] as string | undefined;
-
-  if (!url) {
-    return res.status(400).json({ error: 'URL required' });
-  }
-
-  const x10 = getX10ById(id);
-  if (!x10) {
-    return res.status(404).json({ error: 'X10 not found' });
-  }
-
-  // Check ownership by user_id or anonymous_id
-  const isOwnerByUserId = x10.user_id !== null && x10.user_id === userId;
-  const isOwnerByAnonymousId = x10.anonymous_id !== null && x10.anonymous_id === userCode;
-  const isOrphan = x10.user_id === null && x10.anonymous_id === null;
-
-  if (!isOwnerByUserId && !isOwnerByAnonymousId && !isOrphan) {
-    return res.status(403).json({ error: 'Not authorized to edit this x10' });
-  }
-
-  if (x10.videos.length >= 10) {
-    return res.status(400).json({ error: 'Maximum 10 items per x10' });
-  }
-
-  try {
-    const item = await addVideoToX10(id, url);
-    res.json({ success: true, item });
-  } catch (error) {
-    console.error('[API] Error adding item to x10:', id, url, error);
-    res.status(400).json({
-      error: error instanceof Error ? error.message : 'Failed to add content'
-    });
-  }
+// DISABLED: Server-side extraction removed - use /api/x10/add-content instead
+apiRouter.post('/x10/:id/add', (_req: Request, res: Response) => {
+  return res.status(410).json({
+    error: 'This endpoint is deprecated. Use /api/x10/add-content with pre-extracted content.',
+    hint: 'Content extraction now happens client-side to avoid rate limiting.'
+  });
 });
 
 // Remove video from x10
@@ -250,84 +199,14 @@ apiRouter.delete('/x10/:id', (req: Request, res: Response) => {
   }
 });
 
-// Add content from Chrome extension (creates new x10 or adds to most recent)
-// Supports both YouTube videos and web pages
-apiRouter.post('/x10/add', async (req: Request, res: Response) => {
-  const { url, userCode, forceNew } = req.body;
-
-  if (!url || typeof url !== 'string') {
-    return res.status(400).json({ success: false, error: 'URL required' });
-  }
-
-  // Check if it's a YouTube URL
-  const videoId = extractVideoId(url);
-  const isYouTube = !!videoId;
-
-  try {
-    // Use the provided user code or generate a new one
-    const { nanoid } = await import('nanoid');
-    const anonymousId = userCode && userCode.trim() ? userCode.trim() : nanoid(16);
-
-    // Import the function to get x10s for anonymous user
-    const { getX10sForAnonymous } = await import('../services/x10.js');
-
-    // Get user's x10s to find the most recent one
-    const existingX10s = getX10sForAnonymous(anonymousId);
-
-    let x10Id: string;
-    let x10Url: string;
-
-    if (!forceNew && existingX10s.length > 0 && existingX10s[0].videos.length < 10) {
-      // Add to the most recent x10
-      const recentX10 = existingX10s[0];
-
-      // Check if item is already in this x10
-      const alreadyExists = isYouTube
-        ? recentX10.videos.some(v => v.youtube_id === videoId)
-        : recentX10.videos.some(v => v.url === url);
-
-      if (alreadyExists) {
-        return res.json({
-          success: true,
-          x10Id: recentX10.id,
-          x10Url: `/s/${recentX10.id}`,
-          userCode: anonymousId,
-          message: isYouTube ? 'Video already in your most recent x10' : 'Page already in your most recent x10'
-        });
-      }
-
-      const item = await addVideoToX10(recentX10.id, url);
-      x10Id = recentX10.id;
-      x10Url = `/s/${recentX10.id}`;
-    } else {
-      // Create a new x10
-      const { x10, failed } = await createX10([url], null, null, anonymousId);
-
-      if (x10.videos.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: failed[0]?.error || 'Could not extract content'
-        });
-      }
-
-      x10Id = x10.id;
-      x10Url = `/s/${x10.id}`;
-    }
-
-    res.json({
-      success: true,
-      x10Id,
-      x10Url,
-      userCode: anonymousId
-    });
-
-  } catch (error) {
-    console.error('Error adding content from extension:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to add content'
-    });
-  }
+// DISABLED: Server-side extraction removed - use /api/x10/add-content instead
+// This was the main endpoint for the old extension that sent URLs for server-side extraction
+apiRouter.post('/x10/add', (_req: Request, res: Response) => {
+  return res.status(410).json({
+    success: false,
+    error: 'This endpoint is deprecated. Use /api/x10/add-content with pre-extracted content.',
+    hint: 'Content extraction now happens client-side to avoid rate limiting.'
+  });
 });
 
 // Add PRE-EXTRACTED content from Chrome extension (no server-side extraction)
