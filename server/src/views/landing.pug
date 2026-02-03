@@ -10,15 +10,40 @@ block content
       | YouTube, articles, docs. Extract and send to Claude, ChatGPT, or any assistant you already use. One source or twenty.
 
   //- Chrome Extension CTA
-  section.mb-8.text-center
-    .bg-surface.border.border-red-600.rounded-lg.p-6.max-w-md.mx-auto
-      .text-4xl.mb-3 🧩
-      h2.text-lg.font-medium.text-text-primary.mb-2 Get the Chrome Extension
-      p.text-sm.text-text-secondary.mb-4
-        | Collect YouTube videos and web pages as you browse. One click to extract, one click to send to your AI.
-      a.inline-block.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-md.text-sm.font-medium(href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx" target="_blank")
-        | Install Extension
-      p.text-xs.text-text-muted.mt-3 Free · No account needed · Works with any AI assistant
+  section.text-center(style="margin-top: 3rem; margin-bottom: 3rem;")
+    a.inline-flex.items-center.gap-3.bg-surface.hover_bg-surface-hover.border.border-border-strong.hover_border-red-600.rounded-lg.px-6.py-4.transition-colors(href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx" target="_blank")
+      img(src="https://www.google.com/chrome/static/images/chrome-logo-m100.svg" alt="Chrome" style="width: 32px; height: 32px;")
+      .text-left
+        .text-text-primary.font-medium Add to Chrome
+        .text-text-muted.text-xs Free · No account needed
+
+  //- Works with / Send to
+  section.mb-10.text-center
+    .space-y-2
+      //- Works with
+      .flex.items-center.justify-center.gap-2.text-sm
+        span.text-text-muted.w-20.text-right Works with
+        .flex.items-center.gap-4
+          .flex.items-center
+            img(src="https://www.youtube.com/favicon.ico" alt="YouTube" style="width: 16px; height: 16px; margin-right: 6px;")
+            span.text-text-secondary YouTube
+          .flex.items-center
+            svg.text-text-secondary(xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;")
+              circle(cx="12" cy="12" r="10")
+              line(x1="2" y1="12" x2="22" y2="12")
+              path(d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z")
+            span.text-text-secondary Any web page
+
+      //- Send to
+      .flex.items-center.justify-center.gap-2.text-sm
+        span.text-text-muted.w-20.text-right Send to
+        .flex.items-center.gap-2
+          img(src="https://www.google.com/s2/favicons?domain=claude.ai&sz=32" alt="Claude" title="Claude" style="width: 18px; height: 18px;")
+          img(src="https://cdn.oaistatic.com/assets/favicon-miwirzcw.ico" alt="ChatGPT" title="ChatGPT" style="width: 18px; height: 18px;")
+          img(src="https://www.google.com/s2/favicons?domain=gemini.google.com&sz=32" alt="Gemini" title="Gemini" style="width: 18px; height: 18px;")
+          img(src="https://www.google.com/s2/favicons?domain=perplexity.ai&sz=32" alt="Perplexity" title="Perplexity" style="width: 18px; height: 18px;")
+          img(src="https://www.google.com/s2/favicons?domain=grok.com&sz=32" alt="Grok" title="Grok" style="width: 18px; height: 18px;")
+          span.text-text-muted.ml-1 or any assistant
 
   //- Why
   section.py-6.border-t.border-border-default
