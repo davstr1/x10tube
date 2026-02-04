@@ -2,8 +2,36 @@
 // Injects button next to video titles
 
 import { config } from './lib/config';
-import type { ApiFetchMessage, ApiFetchResponse, AddContentPayload } from './lib/types';
+import type { AddContentPayload } from './lib/types';
 import { getTranscript, extractVideoId as extractYoutubeId } from './lib/innertube';
+
+// ============================================
+// Safe Storage Helpers (handle context invalidation gracefully)
+// ============================================
+
+function safeStorageSet(data: Record<string, unknown>): void {
+  try {
+    chrome.storage?.local?.set(data);
+  } catch {
+    // Context invalidated - not critical, just cache
+  }
+}
+
+async function safeStorageGet(keys: string[]): Promise<Record<string, unknown>> {
+  try {
+    return await chrome.storage?.local?.get(keys) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function safeStorageGetCallback(keys: string[], callback: (data: Record<string, unknown>) => void): void {
+  try {
+    chrome.storage?.local?.get(keys, callback);
+  } catch {
+    callback({});
+  }
+}
 
 // ============================================
 // Utility Functions
@@ -70,35 +98,35 @@ class X10API {
     this.userCode = null;
   }
 
-  // Proxy fetch via background script (avoids context invalidation)
+  // Direct fetch (no service worker proxy - avoids context invalidation)
   async _fetch(endpoint: string, options: {
     method?: string;
-    headers?: Record<string, string>;
     body?: unknown;
-    responseType?: 'json' | 'text';
-  } = {}): Promise<ApiFetchResponse> {
-    try {
-      const message: ApiFetchMessage = {
-        action: 'apiFetch',
-        endpoint,
-        method: (options.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE',
-        headers: options.headers || {},
-        body: options.body || undefined,
-        responseType: options.responseType || 'json',
-      };
-      const response = await chrome.runtime.sendMessage(message) as ApiFetchResponse;
+  } = {}): Promise<Record<string, unknown> & { _ok: boolean; _status: number }> {
+    const url = this.baseUrl + endpoint;
 
-      if (!response) {
-        throw new Error('No response from background script');
-      }
-      if (response._error) {
-        throw new Error(response.message || 'Unknown error');
-      }
-      return response;
+    const fetchOptions: RequestInit = {
+      method: options.method || 'GET',
+      credentials: 'include',
+    };
+
+    if (options.body) {
+      fetchOptions.headers = { 'Content-Type': 'application/json' };
+      fetchOptions.body = JSON.stringify(options.body);
+    }
+
+    try {
+      const response = await fetch(url, fetchOptions);
+      const data = await response.json();
+      return { ...data, _ok: response.ok, _status: response.status };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[STYA] _fetch error:', errorMessage);
-      throw error;
+      // Network error or JSON parse error
+      return {
+        _ok: false,
+        _status: 0,
+        _error: true,
+        message: error instanceof Error ? error.message : 'Network error'
+      };
     }
   }
 
@@ -106,20 +134,15 @@ class X10API {
     // Already initialized in memory
     if (this.userCode) return true;
 
-    // Try cache first
-    try {
-      const cached = await chrome.storage.local.get(['styaUserCode', 'styaBackendUrl']);
-      if (cached.styaBackendUrl) this.baseUrl = cached.styaBackendUrl;
-      if (cached.styaUserCode) {
-        this.userCode = cached.styaUserCode;
-        console.log('[STYA] Init from cache:', this.userCode);
-        // Sync in background (non-blocking)
-        this.syncFromServer().catch(() => {});
-        return true;
-      }
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-      console.log('[STYA] Cache read failed:', errorMessage);
+    // Try cache first (safeStorageGet handles errors gracefully)
+    const cached = await safeStorageGet(['styaUserCode', 'styaBackendUrl']);
+    if (cached.styaBackendUrl) this.baseUrl = cached.styaBackendUrl as string;
+    if (cached.styaUserCode) {
+      this.userCode = cached.styaUserCode as string;
+      console.log('[STYA] Init from cache:', this.userCode);
+      // Sync in background (non-blocking)
+      this.syncFromServer().catch(() => {});
+      return true;
     }
 
     // No cache — must sync from server
@@ -137,12 +160,7 @@ class X10API {
 
       if (data.userCode) {
         this.userCode = data.userCode as string;
-        try {
-          await chrome.storage.local.set({ styaUserCode: data.userCode });
-        } catch (e) {
-          const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-          console.log('[STYA] Could not cache userCode:', errorMessage);
-        }
+        safeStorageSet({ styaUserCode: data.userCode });
       }
       console.log('[STYA] Synced, userCode:', this.userCode);
       return true;
@@ -216,9 +234,7 @@ class X10API {
 
       if (data.success && data.userCode) {
         this.userCode = data.userCode as string;
-        try {
-          await chrome.storage.local.set({ styaUserCode: data.userCode });
-        } catch { /* ignore */ }
+        safeStorageSet({ styaUserCode: data.userCode });
       }
 
       return {
@@ -762,10 +778,10 @@ function createDropdown(): HTMLDivElement {
   dropdown.querySelector('#x10-open-direct')?.addEventListener('click', async () => {
     const videoId = dropdown.dataset.currentVideoId;
     if (!videoId) { showToast('Please select a video first', 'error'); return; }
-    const data = await chrome.storage.local.get(['styaLastLLM']);
+    const data = await safeStorageGet(['styaLastLLM']);
     if (!data.styaLastLLM) return;
     const url = `https://www.youtube.com/watch?v=${videoId}`;
-    handleOpenInLLM(url, data.styaLastLLM);
+    handleOpenInLLM(url, data.styaLastLLM as string);
   });
 
   // Toggle "Open in..." submenu on click
@@ -788,7 +804,7 @@ function createDropdown(): HTMLDivElement {
       const llm = (item as HTMLElement).dataset.llm;
       if (!llm) return;
       // Save preference
-      chrome.storage.local.set({ styaLastLLM: llm });
+      safeStorageSet({ styaLastLLM: llm });
       updateDirectButton(dropdown, llm);
       const url = `https://www.youtube.com/watch?v=${videoId}`;
       handleOpenInLLM(url, llm);
@@ -897,13 +913,9 @@ async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement)
   dropdown.style.left = left + 'px';
 
   // Load last LLM preference and show direct button if set
-  try {
-    const data = await chrome.storage.local.get(['styaLastLLM']);
-    if (data.styaLastLLM) {
-      updateDirectButton(dropdown, data.styaLastLLM);
-    }
-  } catch (e) {
-    console.log('[STYA] Could not load last LLM preference:', e);
+  const llmData = await safeStorageGet(['styaLastLLM']);
+  if (llmData.styaLastLLM) {
+    updateDirectButton(dropdown, llmData.styaLastLLM as string);
   }
 
   dropdown.classList.add('open');
@@ -1378,7 +1390,7 @@ function createMasterToggle(): void {
   toggle.title = 'Toggle StraightToYourAI buttons';
 
   // Load saved state
-  chrome.storage.local.get(['styaTitleButtonsEnabled'], (data) => {
+  safeStorageGetCallback(['styaTitleButtonsEnabled'], (data) => {
     if (data.styaTitleButtonsEnabled === false) {
       titleButtonsEnabled = false;
       toggle.classList.add('disabled');
@@ -1398,7 +1410,7 @@ function createMasterToggle(): void {
       document.body.classList.add('stya-buttons-hidden');
     }
 
-    chrome.storage.local.set({ styaTitleButtonsEnabled: titleButtonsEnabled });
+    safeStorageSet({ styaTitleButtonsEnabled: titleButtonsEnabled });
     showToast(titleButtonsEnabled ? 'Buttons enabled' : 'Buttons hidden', 'success');
   });
 

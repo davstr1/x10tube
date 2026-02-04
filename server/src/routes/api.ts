@@ -15,40 +15,10 @@ import {
 } from '../services/collection.js';
 import { extractVideoId } from '../services/transcript.js';
 import { getUserSettings, updateDefaultPrePrompt } from '../services/settings.js';
-import { config } from '../config.js';
 
 export const apiRouter = Router();
 
-// CORS middleware for API routes
-apiRouter.use((req, res, next) => {
-  // For credentials to work, we need specific origin (not *)
-  const origin = req.headers.origin;
-
-  // Allow these origins + any chrome-extension origin
-  const isAllowed = origin && (
-    origin.includes('youtube.com') ||
-    origin.includes(new URL(config.baseUrl).host) ||
-    origin.startsWith('chrome-extension://') ||
-    origin.startsWith('moz-extension://') // Firefox
-  );
-
-  if (isAllowed) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else if (origin) {
-    // For other origins, allow without credentials
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  next();
-});
+// CORS is handled globally in index.ts
 
 // Get current user's identity (for extension sync)
 apiRouter.get('/whoami', (req: Request, res: Response) => {

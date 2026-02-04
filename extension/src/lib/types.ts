@@ -52,27 +52,6 @@ export interface JinaResult {
 }
 
 // ============================================
-// Message types (content <-> background)
-// ============================================
-
-export interface ApiFetchMessage {
-  action: 'apiFetch';
-  endpoint: string;
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  headers?: Record<string, string>;
-  body?: unknown;
-  responseType?: 'json' | 'text';
-}
-
-export interface ApiFetchResponse {
-  _ok: boolean;
-  _status: number;
-  _error?: boolean;
-  message?: string;
-  [key: string]: unknown;
-}
-
-// ============================================
 // Add content payload (new endpoint)
 // ============================================
 

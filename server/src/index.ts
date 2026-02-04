@@ -15,6 +15,36 @@ const PORT = config.port;
 app.locals.baseUrl = config.baseUrl;
 app.locals.brandName = config.brandName;
 
+// Global CORS middleware (must be before body parsers for preflight requests)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  // Allow these origins with credentials
+  const isAllowed = origin && (
+    origin.includes('youtube.com') ||
+    origin.includes(new URL(config.baseUrl).host) ||
+    origin.startsWith('chrome-extension://') ||
+    origin.startsWith('moz-extension://')
+  );
+
+  if (isAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight requests immediately
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  next();
+});
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
