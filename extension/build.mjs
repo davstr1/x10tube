@@ -38,18 +38,18 @@ if (isWatch) {
   // Watch mode: only dev
   const ctx = await esbuild.context({
     ...commonOptions,
-    outdir: 'dist',
+    outdir: 'dist-dev',
     define: { '__STYA_BASE_URL__': JSON.stringify(DEV_URL) },
   });
   await ctx.watch();
-  copyStatic('dist');
+  copyStatic('dist-dev');
   console.log(`Watching for changes... (dev: ${DEV_URL})`);
 } else {
   // Build both dev and prod
   await Promise.all([
     esbuild.build({
       ...commonOptions,
-      outdir: 'dist',
+      outdir: 'dist-dev',
       define: { '__STYA_BASE_URL__': JSON.stringify(DEV_URL) },
     }),
     esbuild.build({
@@ -59,9 +59,9 @@ if (isWatch) {
     }),
   ]);
 
-  copyStatic('dist');
+  copyStatic('dist-dev');
   copyStatic('dist-prod');
 
-  console.log(`✓ dist/      → ${DEV_URL}`);
+  console.log(`✓ dist-dev/  → ${DEV_URL}`);
   console.log(`✓ dist-prod/ → ${PROD_URL}`);
 }

@@ -11,5 +11,5 @@ server/x10tube.db
 server/public/styles.css
 
 # Extension builds
-dist-extension/
-dist-prod/
+extension/dist-dev/
+extension/dist-prod/
