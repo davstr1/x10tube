@@ -7,6 +7,12 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:*/*",
+      "https://toyourai.plstry.me/*"
+    ]
+  },
   "background": {
     "service_worker": "background.js"
   },
