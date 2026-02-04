@@ -956,6 +956,8 @@ function closeDropdown(): void {
     dropdown.classList.remove('open');
     dropdown.style.display = 'none';
   }
+  // Restore page scroll
+  document.body.style.overflow = '';
   isDropdownOpen = false;
 }
 
@@ -1007,6 +1009,9 @@ async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement)
 
   dropdown.style.top = top + 'px';
   dropdown.style.left = left + 'px';
+
+  // Block page scroll while dropdown is open
+  document.body.style.overflow = 'hidden';
 
   // Load last LLM preference and show direct button if set
   const llmData = await safeStorageGet(['styaLastLLM']);

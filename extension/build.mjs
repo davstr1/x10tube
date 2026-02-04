@@ -1,33 +1,67 @@
 import * as esbuild from 'esbuild';
+import { cpSync, mkdirSync } from 'fs';
 
 const isWatch = process.argv.includes('--watch');
 
-// Lire l'URL de base depuis la variable d'environnement (défaut: localhost)
-const baseUrl = process.env.STYA_BASE_URL || 'http://localhost:3000';
+// Configurations
+const DEV_URL = 'http://localhost:3000';
+const PROD_URL = 'https://toyourai.plstry.me';
 
-const buildOptions = {
-  entryPoints: [
-    'src/background.ts',
-    'src/content.ts',
-    'src/popup.ts',
-  ],
-  outdir: 'dist',
+const entryPoints = [
+  'src/background.ts',
+  'src/content.ts',
+  'src/popup.ts',
+];
+
+const commonOptions = {
+  entryPoints,
   bundle: true,
   format: 'iife',
   target: 'chrome120',
   sourcemap: true,
   minify: false,
   logLevel: 'info',
-  define: {
-    '__STYA_BASE_URL__': JSON.stringify(baseUrl),
-  },
 };
 
+// Copy static files to a dist folder
+function copyStatic(outdir) {
+  mkdirSync(`${outdir}/popup`, { recursive: true });
+  mkdirSync(`${outdir}/icons`, { recursive: true });
+  cpSync('popup/popup.html', `${outdir}/popup/popup.html`);
+  cpSync('popup/popup.css', `${outdir}/popup/popup.css`);
+  cpSync('icons', `${outdir}/icons`, { recursive: true });
+  cpSync('manifest.json', `${outdir}/manifest.json`);
+  try { cpSync('claude-inject.js', `${outdir}/claude-inject.js`); } catch {}
+}
+
 if (isWatch) {
-  const ctx = await esbuild.context(buildOptions);
+  // Watch mode: only dev
+  const ctx = await esbuild.context({
+    ...commonOptions,
+    outdir: 'dist',
+    define: { '__STYA_BASE_URL__': JSON.stringify(DEV_URL) },
+  });
   await ctx.watch();
-  console.log(`Watching for changes... (STYA_BASE_URL=${baseUrl})`);
+  copyStatic('dist');
+  console.log(`Watching for changes... (dev: ${DEV_URL})`);
 } else {
-  await esbuild.build(buildOptions);
-  console.log(`Built with STYA_BASE_URL=${baseUrl}`);
+  // Build both dev and prod
+  await Promise.all([
+    esbuild.build({
+      ...commonOptions,
+      outdir: 'dist',
+      define: { '__STYA_BASE_URL__': JSON.stringify(DEV_URL) },
+    }),
+    esbuild.build({
+      ...commonOptions,
+      outdir: 'dist-prod',
+      define: { '__STYA_BASE_URL__': JSON.stringify(PROD_URL) },
+    }),
+  ]);
+
+  copyStatic('dist');
+  copyStatic('dist-prod');
+
+  console.log(`✓ dist/      → ${DEV_URL}`);
+  console.log(`✓ dist-prod/ → ${PROD_URL}`);
 }

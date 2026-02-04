@@ -5,8 +5,6 @@
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
-    "dev": "npm run copy-static && npm run watch",
-    "copy-static": "mkdir -p dist/popup && cp popup/popup.html popup/popup.css dist/popup/ && cp -r icons manifest.json dist/ && cp claude-inject.js dist/ 2>/dev/null || true",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
