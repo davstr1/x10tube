@@ -410,7 +410,7 @@ function renderX10sList(x10s: X10Collection[]): void {
 
   x10s.forEach(x10 => {
     const isInX10 = itemInX10s.includes(x10.id);
-    const videoCount = x10.videos?.length || 0;
+    const videoCount = x10.videoCount || 0;
 
     const item = document.createElement('button');
     item.className = 'x10-item';
@@ -419,7 +419,7 @@ function renderX10sList(x10s: X10Collection[]): void {
     item.innerHTML = `
       <span class="x10-check">${isInX10 ? '✓' : ''}</span>
       <span class="x10-name">${escapeHtml(x10.title || 'Untitled')}</span>
-      <span class="x10-count">${videoCount} item${videoCount > 1 ? 's' : ''}</span>
+      <span class="x10-count">${videoCount}</span>
     `;
 
     if (!isInX10 && currentItem) {
