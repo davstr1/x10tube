@@ -97,16 +97,12 @@ block content
                     .dropdown-menu-inner
                       button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
                         type="button"
-                        onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
-                      ) MD Link
+                        onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Link', 1500)`
+                      ) Link
                       button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-md-content-btn(
                         type="button"
                         data-md-url=mdUrl
                       ) MD Content
-                      button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
-                        type="button"
-                        onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Share URL', 1500)`
-                      ) Share URL
 
                 //- Spacer to push delete to the right
                 .flex-1
