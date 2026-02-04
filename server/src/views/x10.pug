@@ -100,15 +100,11 @@ block content
           .dropdown-menu-inner
             button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
               type="button"
-              onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
-            ) MD Link
+              onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Link', 1500)`
+            ) Link
             button#copy-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
               type="button"
             ) MD Content
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
-              type="button"
-              onclick=`navigator.clipboard.writeText('${x10Url}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Share URL', 1500)`
-            ) Share URL
 
       //- Spacer to push delete to the right
       .flex-1
@@ -180,8 +176,8 @@ block content
                         .dropdown-menu-inner
                           button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover(
                             type="button"
-                            onclick=`navigator.clipboard.writeText('${itemMdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='MD Link', 1500)`
-                          ) MD Link
+                            onclick=`navigator.clipboard.writeText('${itemMdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Link', 1500)`
+                          ) Link
                           button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-item-md-btn(
                             type="button"
                             data-item-id=itemId
