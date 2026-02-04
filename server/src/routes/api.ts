@@ -339,6 +339,24 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
       collectionResultId = collectionId;
       itemId = item.id;
     } else if (forceNew) {
+      // Before creating a new collection, check if user already has a single-item collection with this item
+      const sourceIdForCheck = type === 'youtube' && youtube_id ? youtube_id : hashUrl(url);
+      const allCollections = await getCollectionsForAnonymous(anonymousId);
+      const singleItemCollection = allCollections.find(c =>
+        c.items.length === 1 && c.items[0].source_id === sourceIdForCheck
+      );
+
+      if (singleItemCollection) {
+        // Already have a collection with just this item
+        return res.json({
+          success: true,
+          itemId: singleItemCollection.items[0].id,
+          collectionId: singleItemCollection.id,
+          userCode: anonymousId,
+          message: 'Item already exists in a collection'
+        });
+      }
+
       // Create a new collection
       const collection = await createCollectionWithPreExtractedItem(extractedContent, anonymousId);
       collectionResultId = collection.id;
@@ -368,6 +386,23 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
         collectionResultId = recentCollection.id;
         itemId = item.id;
       } else {
+        // Before creating a new collection, check if user already has a single-item collection with this item
+        const sourceIdForNewCheck = type === 'youtube' && youtube_id ? youtube_id : hashUrl(url);
+        const singleItemCollection = existingCollections.find(c =>
+          c.items.length === 1 && c.items[0].source_id === sourceIdForNewCheck
+        );
+
+        if (singleItemCollection) {
+          // Already have a collection with just this item
+          return res.json({
+            success: true,
+            itemId: singleItemCollection.items[0].id,
+            collectionId: singleItemCollection.id,
+            userCode: anonymousId,
+            message: 'Item already exists in a collection'
+          });
+        }
+
         // Create new collection
         const collection = await createCollectionWithPreExtractedItem(extractedContent, anonymousId);
         collectionResultId = collection.id;
