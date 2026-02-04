@@ -664,7 +664,7 @@ function injectStyles(): void {
     /* Toast */
     #stya-toast {
       position: fixed;
-      bottom: 80px;
+      top: 80px;
       left: 50%;
       transform: translateX(-50%);
       background: #323232;
@@ -687,7 +687,7 @@ function injectStyles(): void {
       background: #dc2626;
     }
     @keyframes x10-toast-in {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
   `;
