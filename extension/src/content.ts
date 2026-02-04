@@ -1009,11 +1009,6 @@ function renderX10List(videoId: string): void {
 }
 
 async function handleCreateWithVideo(videoId: string): Promise<void> {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const createItem = document.querySelector('.x10-item-create');
   if (createItem) {
@@ -1043,11 +1038,6 @@ async function handleCreateWithVideo(videoId: string): Promise<void> {
 }
 
 async function handleAddVideoToX10(x10Id: string, x10Title: string, videoId: string): Promise<void> {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
   if (item) item.classList.add('adding');
@@ -1110,11 +1100,6 @@ const LLM_URLS: Record<string, (prompt: string) => string> = {
 };
 
 async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
   showToast('Creating collection...', '');
   closeDropdown();
 
@@ -1140,11 +1125,6 @@ async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
 }
 
 async function handleCopyMDLink(url: string): Promise<void> {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
   showToast('Creating collection...', '');
   closeDropdown();
 
@@ -1167,11 +1147,6 @@ async function handleCopyMDLink(url: string): Promise<void> {
 }
 
 async function handleCopyMDContent(url: string): Promise<void> {
-  if (!isExtensionContextValid()) {
-    showToast('Please reload the page', 'error');
-    return;
-  }
-
   showToast('Creating collection...', '');
   closeDropdown();
 
