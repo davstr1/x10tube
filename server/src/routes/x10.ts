@@ -8,6 +8,7 @@ import {
 } from '../services/collection.js';
 import { getUserSettings, getDefaultPrePromptText } from '../services/settings.js';
 import { config } from '../config.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 export const x10Router = Router();
 
@@ -21,7 +22,7 @@ x10Router.use('/*.md', (req: Request, res: Response, next) => {
 });
 
 // Collection page (Markdown for LLM) - Must be before /:id to match first
-x10Router.get('/:id.md', async (req: Request, res: Response) => {
+x10Router.get('/:id.md', asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id;
   const collection = await getCollectionById(id);
 
@@ -83,10 +84,10 @@ x10Router.get('/:id.md', async (req: Request, res: Response) => {
 
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.send(md);
-});
+}));
 
 // Single item MD - /s/:id/v/:itemId.md (itemId can be youtube_id or item.id)
-x10Router.get('/:id/v/:itemId.md', async (req: Request, res: Response) => {
+x10Router.get('/:id/v/:itemId.md', asyncHandler(async (req: Request, res: Response) => {
   const { id, itemId } = req.params;
   const collection = await getCollectionById(id);
 
@@ -135,10 +136,10 @@ x10Router.get('/:id/v/:itemId.md', async (req: Request, res: Response) => {
 
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.send(md);
-});
+}));
 
 // Collection page (HTML)
-x10Router.get('/:id', async (req: Request, res: Response) => {
+x10Router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const collection = await getCollectionById(id);
 
@@ -184,7 +185,7 @@ x10Router.get('/:id', async (req: Request, res: Response) => {
     effectivePrePrompt,
     defaultPrePrompt
   });
-});
+}));
 
 // Helper to check if user can edit collection
 function canEdit(collection: CollectionWithItems | null, anonymousId: string): boolean {
@@ -205,7 +206,7 @@ x10Router.post('/:id/add', (_req: Request, res: Response) => {
 });
 
 // Remove item from collection
-x10Router.post('/:id/remove/:videoId', async (req: Request, res: Response) => {
+x10Router.post('/:id/remove/:videoId', asyncHandler(async (req: Request, res: Response) => {
   const { id, videoId } = req.params;
 
   const collection = await getCollectionById(id);
@@ -224,10 +225,10 @@ x10Router.post('/:id/remove/:videoId', async (req: Request, res: Response) => {
   } else {
     res.status(404).json({ error: 'Item not found' });
   }
-});
+}));
 
 // Update collection title
-x10Router.post('/:id/title', async (req: Request, res: Response) => {
+x10Router.post('/:id/title', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { title } = req.body;
 
@@ -247,10 +248,10 @@ x10Router.post('/:id/title', async (req: Request, res: Response) => {
   } else {
     res.status(404).json({ error: 'Collection not found' });
   }
-});
+}));
 
 // Update collection pre-prompt
-x10Router.post('/:id/preprompt', async (req: Request, res: Response) => {
+x10Router.post('/:id/preprompt', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { prePrompt } = req.body;
 
@@ -270,4 +271,4 @@ x10Router.post('/:id/preprompt', async (req: Request, res: Response) => {
   } else {
     res.status(404).json({ error: 'Collection not found' });
   }
-});
+}));

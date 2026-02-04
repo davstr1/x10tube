@@ -126,6 +126,10 @@ async function tryFetchPlayerData(
 ): Promise<PlayerResponse | null> {
   const url = `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}`;
 
+  // Add timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -139,8 +143,11 @@ async function tryFetchPlayerData(
       body: JSON.stringify({
         context: context,
         videoId: videoId
-      })
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.log(`[InnerTube] ${clientName} client returned ${response.status}`);
@@ -157,6 +164,11 @@ async function tryFetchPlayerData(
     console.log(`[InnerTube] ${clientName} client: ${data?.playabilityStatus?.reason || 'Unknown error'}`);
     return null;
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log(`[InnerTube] ${clientName} client timed out`);
+      return null;
+    }
     console.log(`[InnerTube] ${clientName} client error:`, error instanceof Error ? error.message : error);
     return null;
   }
@@ -197,25 +209,39 @@ async function fetchCaptions(captionUrl: string): Promise<string> {
   // Remove srv3 format if present, use default XML format
   const url = captionUrl.replace('&fmt=srv3', '');
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Caption fetch returned ${response.status}`);
-  }
+  // Add timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-  const xml = await response.text();
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
 
-  // Parse XML and extract text
-  const textMatches = xml.matchAll(/<text[^>]*>([^<]*)<\/text>/g);
-  const parts: string[] = [];
-
-  for (const match of textMatches) {
-    const text = decodeHtmlEntities(stripTags(match[1]));
-    if (text.trim()) {
-      parts.push(text);
+    if (!response.ok) {
+      throw new Error(`Caption fetch returned ${response.status}`);
     }
-  }
 
-  return parts.join(' ').replace(/\s+/g, ' ').trim();
+    const xml = await response.text();
+
+    // Parse XML and extract text
+    const textMatches = xml.matchAll(/<text[^>]*>([^<]*)<\/text>/g);
+    const parts: string[] = [];
+
+    for (const match of textMatches) {
+      const text = decodeHtmlEntities(stripTags(match[1]));
+      if (text.trim()) {
+        parts.push(text);
+      }
+    }
+
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Caption fetch timed out (10s)');
+    }
+    throw error;
+  }
 }
 
 // ============================================

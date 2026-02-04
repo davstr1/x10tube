@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 
@@ -7,6 +7,17 @@ import { anonymousMiddleware } from './middleware/anonymous.js';
 import { indexRouter } from './routes/index.js';
 import { x10Router } from './routes/x10.js';
 import { apiRouter } from './routes/api.js';
+import { checkSupabaseConnection } from './supabase.js';
+
+// Handle uncaught errors gracefully
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Unhandled Rejection]', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Uncaught Exception]', error);
+  process.exit(1);
+});
 
 const app = express();
 const PORT = config.port;
@@ -63,6 +74,26 @@ app.use('/', indexRouter);
 app.use('/s', x10Router);
 app.use('/api', apiRouter);
 
+// Global error handler (must be after routes)
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  console.error('[Error]', err.message);
+  console.error(err.stack);
+
+  // Don't leak error details in production
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  if (req.path.startsWith('/api/')) {
+    res.status(500).json({
+      error: isDev ? err.message : 'Internal server error'
+    });
+  } else {
+    res.status(500).render('error', {
+      title: 'Erreur',
+      message: isDev ? err.message : 'Une erreur est survenue'
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).render('error', {
@@ -72,6 +103,19 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`X10Tube server running at ${config.baseUrl}`);
-});
+async function startServer() {
+  try {
+    // Verify database connection before starting
+    await checkSupabaseConnection();
+    console.log('[Startup] Supabase connection OK');
+
+    app.listen(PORT, () => {
+      console.log(`X10Tube server running at ${config.baseUrl}`);
+    });
+  } catch (error) {
+    console.error('[Startup] Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

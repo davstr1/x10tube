@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getCollectionsForAnonymous, getCollectionById, deleteCollection } from '../services/collection.js';
 import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 export const indexRouter = Router();
 
@@ -73,7 +74,7 @@ indexRouter.post('/sync', (req: Request, res: Response) => {
 });
 
 // My collections page - shows collections for logged-in user OR anonymous user
-indexRouter.get('/collections', async (req: Request, res: Response) => {
+indexRouter.get('/collections', asyncHandler(async (req: Request, res: Response) => {
   // TODO: Check if user is logged in and get their collections
   // For now, get collections by anonymous ID
   const anonymousId = req.anonymousId;
@@ -86,10 +87,10 @@ indexRouter.get('/collections', async (req: Request, res: Response) => {
     userCode: anonymousId,
     settings
   });
-});
+}));
 
 // Delete collection (POST because HTML forms don't support DELETE)
-indexRouter.post('/x10/:id/delete', async (req: Request, res: Response) => {
+indexRouter.post('/x10/:id/delete', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const anonymousId = req.anonymousId;
 
@@ -121,4 +122,4 @@ indexRouter.post('/x10/:id/delete', async (req: Request, res: Response) => {
       message: 'Could not delete the collection'
     });
   }
-});
+}));

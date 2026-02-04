@@ -15,6 +15,7 @@ import {
 } from '../services/collection.js';
 import { extractVideoId } from '../services/transcript.js';
 import { getUserSettings, updateDefaultPrePrompt } from '../services/settings.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 export const apiRouter = Router();
 
@@ -26,7 +27,7 @@ apiRouter.get('/whoami', (req: Request, res: Response) => {
 });
 
 // Get user's collections
-apiRouter.get('/x10s', async (req: Request, res: Response) => {
+apiRouter.get('/x10s', asyncHandler(async (req: Request, res: Response) => {
   // TODO: Get user from auth token
   const userId = req.headers['x-user-id'] as string;
 
@@ -45,10 +46,10 @@ apiRouter.get('/x10s', async (req: Request, res: Response) => {
       updatedAt: c.updated_at
     }))
   });
-});
+}));
 
 // Get collections by user code (for extension)
-apiRouter.get('/x10s/by-code/:userCode', async (req: Request, res: Response) => {
+apiRouter.get('/x10s/by-code/:userCode', asyncHandler(async (req: Request, res: Response) => {
   const { userCode } = req.params;
 
   if (!userCode) {
@@ -66,7 +67,7 @@ apiRouter.get('/x10s/by-code/:userCode', async (req: Request, res: Response) => 
       updatedAt: c.updated_at
     }))
   });
-});
+}));
 
 // DISABLED: Server-side extraction removed - use /api/x10/add-content instead
 // This endpoint used to extract content server-side, which caused rate limiting issues
@@ -86,7 +87,7 @@ apiRouter.post('/x10/:id/add', (_req: Request, res: Response) => {
 });
 
 // Remove item from collection
-apiRouter.delete('/x10/:id/video/:videoId', async (req: Request, res: Response) => {
+apiRouter.delete('/x10/:id/video/:videoId', asyncHandler(async (req: Request, res: Response) => {
   const { id, videoId } = req.params;
   const userId = req.headers['x-user-id'] as string | undefined;
 
@@ -106,10 +107,10 @@ apiRouter.delete('/x10/:id/video/:videoId', async (req: Request, res: Response) 
   } else {
     res.status(404).json({ error: 'Item not found' });
   }
-});
+}));
 
 // Check if a video is in user's collections
-apiRouter.get('/check-video', async (req: Request, res: Response) => {
+apiRouter.get('/check-video', asyncHandler(async (req: Request, res: Response) => {
   const { url, videoId: queryVideoId, userCode } = req.query;
   const userId = req.headers['x-user-id'] as string | undefined;
 
@@ -137,10 +138,10 @@ apiRouter.get('/check-video', async (req: Request, res: Response) => {
 
   const inX10s = await checkItemInUserCollections(userId, videoId);
   res.json({ inX10s });
-});
+}));
 
 // Fork collection
-apiRouter.post('/x10/:id/fork', async (req: Request, res: Response) => {
+apiRouter.post('/x10/:id/fork', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.headers['x-user-id'] as string | undefined;
 
@@ -157,10 +158,10 @@ apiRouter.post('/x10/:id/fork', async (req: Request, res: Response) => {
   } else {
     res.status(404).json({ error: 'Collection not found' });
   }
-});
+}));
 
 // Delete collection
-apiRouter.delete('/x10/:id', async (req: Request, res: Response) => {
+apiRouter.delete('/x10/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.headers['x-user-id'] as string | undefined;
 
@@ -169,8 +170,9 @@ apiRouter.delete('/x10/:id', async (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Collection not found' });
   }
 
-  // Check ownership
-  if (collection.user_id !== userId) {
+  // Check ownership (user_id for authenticated users, anonymous_id for anonymous)
+  const isOwner = collection.user_id === userId || collection.anonymous_id === req.anonymousId;
+  if (!isOwner) {
     return res.status(403).json({ error: 'Not authorized to delete this collection' });
   }
 
@@ -180,7 +182,7 @@ apiRouter.delete('/x10/:id', async (req: Request, res: Response) => {
   } else {
     res.status(500).json({ error: 'Failed to delete collection' });
   }
-});
+}));
 
 // DISABLED: Server-side extraction removed - use /api/x10/add-content instead
 // This was the main endpoint for the old extension that sent URLs for server-side extraction
@@ -194,7 +196,7 @@ apiRouter.post('/x10/add', (_req: Request, res: Response) => {
 
 // Add PRE-EXTRACTED content from Chrome extension (no server-side extraction)
 // The extension extracts YouTube transcripts and web page content directly
-apiRouter.post('/x10/add-content', async (req: Request, res: Response) => {
+apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Response) => {
   const { url, title, type, content, youtube_id, channel, duration, collectionId, forceNew, userCode } = req.body;
 
   // Validate required fields
@@ -219,6 +221,17 @@ apiRouter.post('/x10/add-content', async (req: Request, res: Response) => {
   // YouTube videos must have youtube_id
   if (type === 'youtube' && !youtube_id) {
     return res.status(400).json({ success: false, error: 'YouTube ID required for YouTube videos' });
+  }
+
+  // Validate field sizes
+  if (title.length > 500) {
+    return res.status(400).json({ success: false, error: 'Title too long (max 500 chars)' });
+  }
+  if (url.length > 2000) {
+    return res.status(400).json({ success: false, error: 'URL too long (max 2000 chars)' });
+  }
+  if (channel && channel.length > 200) {
+    return res.status(400).json({ success: false, error: 'Channel name too long (max 200 chars)' });
   }
 
   try {
@@ -327,17 +340,17 @@ apiRouter.post('/x10/add-content', async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Failed to add content'
     });
   }
-});
+}));
 
 // Get user settings
-apiRouter.get('/settings', async (req: Request, res: Response) => {
+apiRouter.get('/settings', asyncHandler(async (req: Request, res: Response) => {
   const userCode = req.anonymousId;
   const settings = await getUserSettings(userCode);
   res.json(settings);
-});
+}));
 
 // Update user's default pre-prompt
-apiRouter.patch('/settings/pre-prompt', async (req: Request, res: Response) => {
+apiRouter.patch('/settings/pre-prompt', asyncHandler(async (req: Request, res: Response) => {
   const userCode = req.anonymousId;
   const { prePrompt } = req.body;
 
@@ -345,12 +358,16 @@ apiRouter.patch('/settings/pre-prompt', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'prePrompt must be a string' });
   }
 
+  if (prePrompt.length > 10000) {
+    return res.status(400).json({ error: 'prePrompt too long (max 10000 chars)' });
+  }
+
   const settings = await updateDefaultPrePrompt(userCode, prePrompt);
   res.json(settings);
-});
+}));
 
 // Update collection pre-prompt
-apiRouter.patch('/x10/:id/pre-prompt', async (req: Request, res: Response) => {
+apiRouter.patch('/x10/:id/pre-prompt', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { prePrompt } = req.body;
   const userCode = req.anonymousId;
@@ -366,10 +383,14 @@ apiRouter.patch('/x10/:id/pre-prompt', async (req: Request, res: Response) => {
     return res.status(403).json({ error: 'Not authorized to edit this collection' });
   }
 
+  if (prePrompt && prePrompt.length > 10000) {
+    return res.status(400).json({ error: 'prePrompt too long (max 10000 chars)' });
+  }
+
   const success = await updateCollectionPrePrompt(id, prePrompt || null);
   if (success) {
     res.json({ success: true, prePrompt });
   } else {
     res.status(500).json({ error: 'Failed to update pre-prompt' });
   }
-});
+}));
