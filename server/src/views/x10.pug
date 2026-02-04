@@ -16,7 +16,7 @@ block content
       h1.text-2xl.font-semibold.text-text-primary= x10.title || 'Untitled'
 
     p.text-sm.text-text-secondary.mt-2
-      | #{x10.videos.length} item#{x10.videos.length > 1 ? 's' : ''}
+      | #{x10.items.length} item#{x10.items.length > 1 ? 's' : ''}
       span.mx-2 ·
       | #{tokenDisplay}
       span.mx-2 ·
@@ -123,7 +123,7 @@ block content
   //- Items list (videos + web pages)
   section.mb-10
     .space-y-4
-      each item, index in x10.videos
+      each item, index in x10.items
         - const isYouTube = item.type === 'youtube' || item.youtube_id
         - const thumbnailUrl = isYouTube ? `https://img.youtube.com/vi/${item.youtube_id}/mqdefault.jpg` : `https://www.google.com/s2/favicons?domain=${item.channel}&sz=128`
         - const itemId = isYouTube ? item.youtube_id : item.id
@@ -207,7 +207,7 @@ block content
     section.mb-10
       h3.text-lg.font-semibold.text-text-primary.mb-4 Add content
 
-      if x10.videos.length >= 10
+      if x10.items.length >= 10
         p.text-sm.text-text-secondary Maximum items reached
       else
         form.flex.gap-3(action=`/s/${x10.id}/add` method="POST")

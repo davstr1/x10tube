@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getX10sForAnonymous, getX10ById, deleteX10 } from '../services/x10.js';
+import { getCollectionsForAnonymous, getCollectionById, deleteCollection } from '../services/collection.js';
 import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
 
@@ -72,53 +72,53 @@ indexRouter.post('/sync', (req: Request, res: Response) => {
   res.redirect('/collections');
 });
 
-// My X10s page - shows x10s for logged-in user OR anonymous user
-indexRouter.get('/collections', (req: Request, res: Response) => {
-  // TODO: Check if user is logged in and get their x10s
-  // For now, get x10s by anonymous ID
+// My collections page - shows collections for logged-in user OR anonymous user
+indexRouter.get('/collections', async (req: Request, res: Response) => {
+  // TODO: Check if user is logged in and get their collections
+  // For now, get collections by anonymous ID
   const anonymousId = req.anonymousId;
-  const x10s = getX10sForAnonymous(anonymousId);
-  const settings = getUserSettings(anonymousId);
+  const collections = await getCollectionsForAnonymous(anonymousId);
+  const settings = await getUserSettings(anonymousId);
 
   res.render('myx10s', {
     title: `My collections - ${config.brandName}`,
-    x10s,
+    x10s: collections,
     userCode: anonymousId,
     settings
   });
 });
 
-// Delete x10 (POST because HTML forms don't support DELETE)
-indexRouter.post('/x10/:id/delete', (req: Request, res: Response) => {
+// Delete collection (POST because HTML forms don't support DELETE)
+indexRouter.post('/x10/:id/delete', async (req: Request, res: Response) => {
   const { id } = req.params;
   const anonymousId = req.anonymousId;
 
-  const x10 = getX10ById(id);
-  if (!x10) {
+  const collection = await getCollectionById(id);
+  if (!collection) {
     return res.status(404).render('error', {
       title: 'Not found',
-      message: 'This x10 does not exist'
+      message: 'This collection does not exist'
     });
   }
 
   // Check ownership by anonymous_id (or user_id when auth is implemented)
-  const isOwner = x10.anonymous_id === anonymousId;
-  // TODO: Also check x10.user_id === currentUser.id when auth is implemented
+  const isOwner = collection.anonymous_id === anonymousId;
+  // TODO: Also check collection.user_id === currentUser.id when auth is implemented
 
   if (!isOwner) {
     return res.status(403).render('error', {
       title: 'Not authorized',
-      message: 'You are not allowed to delete this x10'
+      message: 'You are not allowed to delete this collection'
     });
   }
 
-  const success = deleteX10(id);
+  const success = await deleteCollection(id);
   if (success) {
     res.redirect('/collections');
   } else {
     res.status(500).render('error', {
       title: 'Error',
-      message: 'Could not delete the x10'
+      message: 'Could not delete the collection'
     });
   }
 });

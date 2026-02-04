@@ -66,16 +66,26 @@ export async function getMarkdown(url: string): Promise<JinaResult> {
 
   const jinaUrl = `https://r.jina.ai/${encodeURIComponent(url)}`;
 
+  // Add timeout to prevent hanging
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
   let response: Response;
   try {
     response = await fetch(jinaUrl, {
       headers: {
         'Accept': 'application/json',
-      }
+      },
+      signal: controller.signal
     });
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Page extraction timed out (30s)');
+    }
     throw new Error(`Could not reach page: ${error instanceof Error ? error.message : 'Network error'}`);
   }
+  clearTimeout(timeoutId);
 
   // HTTP errors (400, 422, 451)
   if (!response.ok) {

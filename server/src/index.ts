@@ -3,7 +3,6 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 
 import { config } from './config.js';
-import './db.js'; // Initialize database
 import { anonymousMiddleware } from './middleware/anonymous.js';
 import { indexRouter } from './routes/index.js';
 import { x10Router } from './routes/x10.js';

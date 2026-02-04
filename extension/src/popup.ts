@@ -446,15 +446,14 @@ async function handleCreateX10(): Promise<void> {
     btnText.textContent = 'Creating...';
   }
 
-  const result = await api.createX10(currentItem.url);
+  const result = await api.addWithExtraction(currentItem.url, { forceNew: true });
 
-  if (result.success && result.x10) {
+  if (result.success && result.collectionId) {
     showToast('Created new collection!', 'success');
 
     // Open the new x10 page
-    const x10Data = result.x10 as { x10Id: string };
     setTimeout(() => {
-      chrome.tabs.create({ url: api.getX10Url(x10Data.x10Id) });
+      chrome.tabs.create({ url: api.getX10Url(result.collectionId!) });
     }, 500);
   } else {
     showToast(`Error: ${result.error}`, 'error');
@@ -476,7 +475,7 @@ async function handleAddToX10(x10Id: string, x10Title: string): Promise<void> {
     item.classList.add('adding');
   }
 
-  const result = await api.addVideoToX10(x10Id, currentItem.url);
+  const result = await api.addWithExtraction(currentItem.url, { collectionId: x10Id });
 
   if (result.success) {
     showToast(`Added to ${x10Title || 'collection'}`, 'success');
@@ -523,20 +522,23 @@ function escapeHtml(text: string): string {
 // ============================================
 
 async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
-  showToast('Creating collection...', '');
+  showToast('Extracting content...', '');
   disableQuickActions();
 
   try {
-    const result = await api.createX10(url, true); // forceNew = true
+    console.log('[STYA] handleOpenInLLM starting for:', url);
+    const result = await api.addWithExtraction(url, { forceNew: true });
+    console.log('[STYA] addWithExtraction result:', result);
 
-    if (!result.success) {
-      showToast(`Error: ${result.error}`, 'error');
+    if (!result.success || !result.collectionId) {
+      const errorMsg = result.error || 'Failed to extract content';
+      console.error('[STYA] handleOpenInLLM failed:', errorMsg);
+      showToast(`Error: ${errorMsg}`, 'error');
       enableQuickActions();
       return;
     }
 
-    const x10Data = result.x10 as { x10Id: string };
-    const mdUrl = `${api.baseUrl}/s/${x10Data.x10Id}.md`;
+    const mdUrl = `${api.baseUrl}/s/${result.collectionId}.md`;
     const prompt = `Fetch ${mdUrl}`;
     const llmUrl = LLM_URLS[llmType](prompt);
 
@@ -550,20 +552,23 @@ async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
 }
 
 async function handleCopyMDLink(url: string): Promise<void> {
-  showToast('Creating collection...', '');
+  showToast('Extracting content...', '');
   disableQuickActions();
 
   try {
-    const result = await api.createX10(url, true); // forceNew = true
+    console.log('[STYA] handleCopyMDLink starting for:', url);
+    const result = await api.addWithExtraction(url, { forceNew: true });
+    console.log('[STYA] addWithExtraction result:', result);
 
-    if (!result.success) {
-      showToast(`Error: ${result.error}`, 'error');
+    if (!result.success || !result.collectionId) {
+      const errorMsg = result.error || 'Failed to extract content';
+      console.error('[STYA] handleCopyMDLink failed:', errorMsg);
+      showToast(`Error: ${errorMsg}`, 'error');
       enableQuickActions();
       return;
     }
 
-    const x10Data = result.x10 as { x10Id: string };
-    const mdUrl = `${api.baseUrl}/s/${x10Data.x10Id}.md`;
+    const mdUrl = `${api.baseUrl}/s/${result.collectionId}.md`;
     await navigator.clipboard.writeText(mdUrl);
     showToast('MD link copied!', 'success');
     enableQuickActions();
@@ -575,23 +580,29 @@ async function handleCopyMDLink(url: string): Promise<void> {
 }
 
 async function handleCopyMDContent(url: string): Promise<void> {
-  showToast('Creating collection...', '');
+  showToast('Extracting content...', '');
   disableQuickActions();
 
   try {
-    const result = await api.createX10(url, true); // forceNew = true
+    console.log('[STYA] handleCopyMDContent starting for:', url);
+    const result = await api.addWithExtraction(url, { forceNew: true });
+    console.log('[STYA] addWithExtraction result:', result);
 
-    if (!result.success) {
-      showToast(`Error: ${result.error}`, 'error');
+    if (!result.success || !result.collectionId) {
+      const errorMsg = result.error || 'Failed to extract content';
+      console.error('[STYA] handleCopyMDContent failed:', errorMsg);
+      showToast(`Error: ${errorMsg}`, 'error');
       enableQuickActions();
       return;
     }
 
-    const x10Data = result.x10 as { x10Id: string };
-    const mdUrl = `${api.baseUrl}/s/${x10Data.x10Id}.md`;
+    const mdUrl = `${api.baseUrl}/s/${result.collectionId}.md`;
     showToast('Fetching content...', '');
 
     const response = await fetch(mdUrl);
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
     const mdContent = await response.text();
 
     await navigator.clipboard.writeText(mdContent);

@@ -165,46 +165,6 @@ class X10API {
     }
   }
 
-  async createX10(videoUrl: string, forceNew = false): Promise<{ success: boolean; x10Id?: string; userCode?: string; error?: string }> {
-    try {
-      const data = await this._fetch('/api/x10/add', {
-        method: 'POST',
-        body: { url: videoUrl, userCode: this.userCode || undefined, forceNew },
-      });
-
-      if (data.success && data.userCode) {
-        this.userCode = data.userCode as string;
-        try {
-          await chrome.storage.local.set({ styaUserCode: data.userCode });
-        } catch { /* ignore */ }
-      }
-      return {
-        success: !!data.success,
-        x10Id: data.x10Id as string | undefined,
-        userCode: data.userCode as string | undefined,
-        error: data.error as string | undefined
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[STYA] createX10 error:', error);
-      return { success: false, error: errorMessage };
-    }
-  }
-
-  async addVideoToX10(x10Id: string, videoUrl: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const data = await this._fetch(`/api/x10/${x10Id}/add`, {
-        method: 'POST',
-        body: { url: videoUrl, userCode: this.userCode },
-      });
-      return { success: data._ok || !!data.success, error: data.error as string | undefined };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[STYA] addVideoToX10 error:', error);
-      return { success: false, error: errorMessage };
-    }
-  }
-
   async checkVideoInX10s(youtubeId: string): Promise<{ inX10s: string[] }> {
     if (!this.userCode) return { inX10s: [] };
     try {

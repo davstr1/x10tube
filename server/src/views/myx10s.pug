@@ -38,7 +38,7 @@ block content
       each x10 in x10s
         - const tokenDisplay = x10.tokenCount > 1000 ? `${Math.round(x10.tokenCount / 1000)}K tokens` : `${x10.tokenCount} tokens`
         - const date = new Date(x10.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        - const firstItem = x10.videos[0]
+        - const firstItem = x10.items[0]
         - const isFirstYouTube = firstItem && (firstItem.type === 'youtube' || firstItem.youtube_id)
         - const thumbnailUrl = isFirstYouTube ? `https://img.youtube.com/vi/${firstItem.youtube_id}/mqdefault.jpg` : null
         - const faviconUrl = firstItem && !isFirstYouTube ? `https://www.google.com/s2/favicons?domain=${firstItem.channel}&sz=128` : null
@@ -65,7 +65,7 @@ block content
                   a.block(href=`/s/${x10.id}`)
                     h3.font-semibold.text-text-primary.hover_text-red-600.transition-colors.truncate= x10.title || 'Untitled'
                   p.text-sm.text-text-secondary.mt-1
-                    | #{x10.videos.length} item#{x10.videos.length > 1 ? 's' : ''}
+                    | #{x10.items.length} item#{x10.items.length > 1 ? 's' : ''}
                     span.mx-1 ·
                     | #{tokenDisplay}
                 span.text-xs.text-text-muted.flex-shrink-0= date

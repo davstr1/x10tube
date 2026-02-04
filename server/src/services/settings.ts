@@ -1,47 +1,65 @@
-// User settings service
-import db, { UserSettings } from '../db.js';
+// User settings service (migrated to Supabase)
+import { supabase } from '../supabase.js';
+
+export interface UserSettings {
+  user_code: string;
+  default_pre_prompt: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const DEFAULT_PRE_PROMPT = 'Summarize the content. What do we learn?';
-
-// Get user settings (create if not exists)
-export function getUserSettings(userCode: string): UserSettings {
-  let settings = db.prepare('SELECT * FROM user_settings WHERE user_code = ?').get(userCode) as UserSettings | undefined;
-
-  if (!settings) {
-    const now = new Date().toISOString();
-    db.prepare(`
-      INSERT INTO user_settings (user_code, default_pre_prompt, created_at, updated_at)
-      VALUES (?, ?, ?, ?)
-    `).run(userCode, DEFAULT_PRE_PROMPT, now, now);
-
-    settings = {
-      user_code: userCode,
-      default_pre_prompt: DEFAULT_PRE_PROMPT,
-      created_at: now,
-      updated_at: now
-    };
-  }
-
-  return settings;
-}
-
-// Update user's default pre-prompt
-export function updateDefaultPrePrompt(userCode: string, prePrompt: string): UserSettings {
-  const now = new Date().toISOString();
-
-  // Upsert
-  db.prepare(`
-    INSERT INTO user_settings (user_code, default_pre_prompt, created_at, updated_at)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(user_code) DO UPDATE SET
-      default_pre_prompt = excluded.default_pre_prompt,
-      updated_at = excluded.updated_at
-  `).run(userCode, prePrompt, now, now);
-
-  return getUserSettings(userCode);
-}
 
 // Get the default pre-prompt constant
 export function getDefaultPrePromptText(): string {
   return DEFAULT_PRE_PROMPT;
+}
+
+// Get user settings (create if not exists)
+export async function getUserSettings(userCode: string): Promise<UserSettings> {
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_code', userCode)
+    .single();
+
+  if (data) return data;
+
+  // Create if not exists
+  const now = new Date().toISOString();
+  const newSettings: UserSettings = {
+    user_code: userCode,
+    default_pre_prompt: DEFAULT_PRE_PROMPT,
+    created_at: now,
+    updated_at: now
+  };
+
+  const { error: insertError } = await supabase
+    .from('user_settings')
+    .insert(newSettings);
+
+  if (insertError) {
+    console.error('[Settings] Error creating user settings:', insertError);
+  }
+
+  return newSettings;
+}
+
+// Update user's default pre-prompt
+export async function updateDefaultPrePrompt(userCode: string, prePrompt: string): Promise<UserSettings> {
+  const now = new Date().toISOString();
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_code: userCode,
+      default_pre_prompt: prePrompt,
+      updated_at: now
+    });
+
+  if (error) {
+    console.error('[Settings] Error updating pre-prompt:', error);
+  }
+
+  return getUserSettings(userCode);
 }

@@ -1,5 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { getX10ById, removeVideoFromX10, updateX10Title, updateX10PrePrompt } from '../services/x10.js';
+import {
+  getCollectionById,
+  removeItemFromCollection,
+  updateCollectionTitle,
+  updateCollectionPrePrompt,
+  CollectionWithItems
+} from '../services/collection.js';
 import { getUserSettings, getDefaultPrePromptText } from '../services/settings.js';
 import { config } from '../config.js';
 
@@ -14,20 +20,18 @@ x10Router.use('/*.md', (req: Request, res: Response, next) => {
   next();
 });
 
-// X10 page (Markdown for LLM) - Must be before /:id to match first
-x10Router.get('/:id.md', (req: Request, res: Response) => {
+// Collection page (Markdown for LLM) - Must be before /:id to match first
+x10Router.get('/:id.md', async (req: Request, res: Response) => {
   const id = req.params.id;
-  const x10 = getX10ById(id);
+  const collection = await getCollectionById(id);
 
-  if (!x10) {
-    return res.status(404).send('# Not found\n\nThis x10 does not exist.');
+  if (!collection) {
+    return res.status(404).send('# Not found\n\nThis collection does not exist.');
   }
 
-  // Get user settings for default pre-prompt
-  const anonymousId = req.anonymousId;
-  const settings = getUserSettings(anonymousId);
+  // Use collection's pre_prompt or the default (don't create user settings for public .md endpoints)
   const defaultPrePrompt = getDefaultPrePromptText();
-  const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || defaultPrePrompt;
+  const effectivePrePrompt = collection.pre_prompt || defaultPrePrompt;
 
   // Build markdown content
   let md = '';
@@ -37,11 +41,11 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
     md += `${effectivePrePrompt}\n\n`;
   }
 
-  md += `# ${x10.title || 'Untitled'}\n\n`;
+  md += `# ${collection.title || 'Untitled'}\n\n`;
 
   // Items list
   md += `## Items included\n\n`;
-  x10.videos.forEach((item, index) => {
+  collection.items.forEach((item, index) => {
     const isYouTube = item.type === 'youtube' || item.youtube_id;
     const typeLabel = isYouTube ? 'YouTube' : 'Web';
     const durationPart = item.duration ? ` — ${item.duration}` : '';
@@ -53,7 +57,7 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
   // Content
   const baseUrl = config.baseUrl;
   md += `## Content\n\n`;
-  x10.videos.forEach((item, index) => {
+  collection.items.forEach((item, index) => {
     const isYouTube = item.type === 'youtube' || item.youtube_id;
     const itemId = isYouTube ? item.youtube_id : item.id;
 
@@ -70,7 +74,7 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
   });
 
   // Footer
-  const date = new Date(x10.created_at).toLocaleDateString('en-US', {
+  const date = new Date(collection.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
@@ -82,27 +86,25 @@ x10Router.get('/:id.md', (req: Request, res: Response) => {
 });
 
 // Single item MD - /s/:id/v/:itemId.md (itemId can be youtube_id or item.id)
-x10Router.get('/:id/v/:itemId.md', (req: Request, res: Response) => {
+x10Router.get('/:id/v/:itemId.md', async (req: Request, res: Response) => {
   const { id, itemId } = req.params;
-  const x10 = getX10ById(id);
+  const collection = await getCollectionById(id);
 
-  if (!x10) {
-    return res.status(404).send('# Not found\n\nThis x10 does not exist.');
+  if (!collection) {
+    return res.status(404).send('# Not found\n\nThis collection does not exist.');
   }
 
   // Find item by youtube_id OR by item id (for web pages)
-  const item = x10.videos.find(v => v.youtube_id === itemId || v.id === itemId);
+  const item = collection.items.find(v => v.youtube_id === itemId || v.id === itemId);
   if (!item) {
-    return res.status(404).send(`# Not found\n\nItem ${itemId} does not exist in this x10.`);
+    return res.status(404).send(`# Not found\n\nItem ${itemId} does not exist in this collection.`);
   }
 
   const isYouTube = item.type === 'youtube' || item.youtube_id;
 
-  // Get user settings for default pre-prompt
-  const anonymousId = req.anonymousId;
-  const settings = getUserSettings(anonymousId);
+  // Use collection's pre_prompt or the default (don't create user settings for public .md endpoints)
   const defaultPrePrompt = getDefaultPrePromptText();
-  const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || defaultPrePrompt;
+  const effectivePrePrompt = collection.pre_prompt || defaultPrePrompt;
 
   // Build markdown content
   let md = '';
@@ -124,7 +126,7 @@ x10Router.get('/:id/v/:itemId.md', (req: Request, res: Response) => {
   md += `${item.transcript}\n\n`;
 
   // Footer
-  const date = new Date(x10.created_at).toLocaleDateString('en-US', {
+  const date = new Date(collection.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
@@ -135,25 +137,25 @@ x10Router.get('/:id/v/:itemId.md', (req: Request, res: Response) => {
   res.send(md);
 });
 
-// X10 page (HTML)
-x10Router.get('/:id', (req: Request, res: Response) => {
+// Collection page (HTML)
+x10Router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const x10 = getX10ById(id);
+  const collection = await getCollectionById(id);
 
-  if (!x10) {
+  if (!collection) {
     return res.status(404).render('error', {
       title: 'Not found',
-      message: 'This x10 does not exist'
+      message: 'This collection does not exist'
     });
   }
 
   // Format token count for display
-  const tokenDisplay = x10.tokenCount > 1000
-    ? `~${Math.round(x10.tokenCount / 1000)}K tokens`
-    : `~${x10.tokenCount} tokens`;
+  const tokenDisplay = collection.tokenCount > 1000
+    ? `~${Math.round(collection.tokenCount / 1000)}K tokens`
+    : `~${collection.tokenCount} tokens`;
 
   // Format date
-  const createdDate = new Date(x10.created_at).toLocaleDateString('en-US', {
+  const createdDate = new Date(collection.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
@@ -162,33 +164,33 @@ x10Router.get('/:id', (req: Request, res: Response) => {
   // Check if current user is owner (by user_id or anonymous_id)
   const anonymousId = req.anonymousId;
   // TODO: Also check user_id when auth is implemented
-  const isOwner = x10.anonymous_id === anonymousId;
+  const isOwner = collection.anonymous_id === anonymousId;
 
   // Get user settings for default pre-prompt
-  const settings = getUserSettings(anonymousId);
+  const settings = await getUserSettings(anonymousId);
   const defaultPrePrompt = getDefaultPrePromptText();
 
-  // Determine effective pre-prompt (x10's own, or fall back to user's default)
-  const effectivePrePrompt = x10.pre_prompt || settings.default_pre_prompt || defaultPrePrompt;
+  // Determine effective pre-prompt (collection's own, or fall back to user's default)
+  const effectivePrePrompt = collection.pre_prompt || settings.default_pre_prompt || defaultPrePrompt;
 
   res.render('x10', {
-    title: x10.title || 'Untitled collection',
-    x10,
+    title: collection.title || 'Untitled collection',
+    x10: collection,
     tokenDisplay,
     createdDate,
     currentUser: null,
     isOwner,
-    isOrphan: x10.user_id === null && x10.anonymous_id === null,
+    isOrphan: collection.user_id === null && collection.anonymous_id === null,
     effectivePrePrompt,
     defaultPrePrompt
   });
 });
 
-// Helper to check if user can edit x10
-function canEdit(x10: ReturnType<typeof getX10ById>, anonymousId: string): boolean {
-  if (!x10) return false;
+// Helper to check if user can edit collection
+function canEdit(collection: CollectionWithItems | null, anonymousId: string): boolean {
+  if (!collection) return false;
   // Owner by anonymous_id
-  if (x10.anonymous_id === anonymousId) return true;
+  if (collection.anonymous_id === anonymousId) return true;
   // TODO: Also check user_id when auth is implemented
   return false;
 }
@@ -202,70 +204,70 @@ x10Router.post('/:id/add', (_req: Request, res: Response) => {
   });
 });
 
-// Remove video from x10
-x10Router.post('/:id/remove/:videoId', (req: Request, res: Response) => {
+// Remove item from collection
+x10Router.post('/:id/remove/:videoId', async (req: Request, res: Response) => {
   const { id, videoId } = req.params;
 
-  const x10 = getX10ById(id);
-  if (!x10) {
-    return res.status(404).json({ error: 'X10 not found' });
+  const collection = await getCollectionById(id);
+  if (!collection) {
+    return res.status(404).json({ error: 'Collection not found' });
   }
 
   // Check ownership
-  if (!canEdit(x10, req.anonymousId)) {
-    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  if (!canEdit(collection, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this collection' });
   }
 
-  const success = removeVideoFromX10(id, videoId);
+  const success = await removeItemFromCollection(id, videoId);
   if (success) {
     res.redirect(`/s/${id}`);
   } else {
-    res.status(404).json({ error: 'Video not found' });
+    res.status(404).json({ error: 'Item not found' });
   }
 });
 
-// Update x10 title
-x10Router.post('/:id/title', (req: Request, res: Response) => {
+// Update collection title
+x10Router.post('/:id/title', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  const x10 = getX10ById(id);
-  if (!x10) {
-    return res.status(404).json({ error: 'X10 not found' });
+  const collection = await getCollectionById(id);
+  if (!collection) {
+    return res.status(404).json({ error: 'Collection not found' });
   }
 
   // Check ownership
-  if (!canEdit(x10, req.anonymousId)) {
-    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  if (!canEdit(collection, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this collection' });
   }
 
-  const success = updateX10Title(id, title);
+  const success = await updateCollectionTitle(id, title);
   if (success) {
     res.redirect(`/s/${id}`);
   } else {
-    res.status(404).json({ error: 'X10 not found' });
+    res.status(404).json({ error: 'Collection not found' });
   }
 });
 
-// Update x10 pre-prompt
-x10Router.post('/:id/preprompt', (req: Request, res: Response) => {
+// Update collection pre-prompt
+x10Router.post('/:id/preprompt', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { prePrompt } = req.body;
 
-  const x10 = getX10ById(id);
-  if (!x10) {
-    return res.status(404).json({ error: 'X10 not found' });
+  const collection = await getCollectionById(id);
+  if (!collection) {
+    return res.status(404).json({ error: 'Collection not found' });
   }
 
   // Check ownership
-  if (!canEdit(x10, req.anonymousId)) {
-    return res.status(403).json({ error: 'Not authorized to edit this x10' });
+  if (!canEdit(collection, req.anonymousId)) {
+    return res.status(403).json({ error: 'Not authorized to edit this collection' });
   }
 
-  const success = updateX10PrePrompt(id, prePrompt || null);
+  const success = await updateCollectionPrePrompt(id, prePrompt || null);
   if (success) {
     res.redirect(`/s/${id}`);
   } else {
-    res.status(404).json({ error: 'X10 not found' });
+    res.status(404).json({ error: 'Collection not found' });
   }
 });
