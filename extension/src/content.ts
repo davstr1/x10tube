@@ -546,6 +546,9 @@ function injectStyles(): void {
       box-shadow: 0 4px 32px rgba(0,0,0,0.4);
       z-index: 2147483647;
       overflow: hidden;
+      overflow-y: auto;
+      max-height: 90vh;
+      overscroll-behavior: contain;
       display: none;
       font-family: 'Roboto', 'Arial', sans-serif;
     }
@@ -690,6 +693,7 @@ function injectStyles(): void {
     .x10-list {
       max-height: 200px;
       overflow-y: auto;
+      overscroll-behavior: contain;
     }
     .x10-list::-webkit-scrollbar {
       width: 6px;
