@@ -195,7 +195,8 @@ class X10API {
     }
   }
 
-  // NEW: Extract transcript locally and send to server (frontend extraction)
+  // Extract transcript locally and send to server (frontend extraction)
+  // Optimized: checks if item exists on server first to skip extraction
   async createX10WithExtraction(
     videoUrl: string,
     forceNew = false
@@ -207,30 +208,78 @@ class X10API {
         throw new Error('Invalid YouTube URL');
       }
 
-      console.log('[STYA] Extracting transcript for:', videoId);
+      // Check if item already exists on server (skip extraction if yes)
+      const checkResult = await this._fetch(`/api/item/check?youtubeId=${videoId}`);
 
-      // Extract transcript locally (runs in user's browser = user's IP)
-      const result = await getTranscript(videoId);
+      let payload: AddContentPayload;
 
-      console.log('[STYA] Got transcript, sending to server...');
+      if (checkResult.exists && !checkResult._error) {
+        // Item exists - skip extraction!
+        console.log('[STYA] Item already exists on server, skipping extraction');
+        payload = {
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: (checkResult.item as { title: string }).title || 'Untitled',
+          type: 'youtube',
+          content: '',  // Empty - server will reuse existing transcript
+          youtube_id: videoId,
+          channel: (checkResult.item as { channel: string }).channel,
+          duration: undefined,
+          forceNew,
+          useExisting: true  // Signal to server
+        };
+      } else {
+        // Item doesn't exist - extract transcript
+        console.log('[STYA] Extracting transcript for:', videoId);
+        const result = await getTranscript(videoId);
+        console.log('[STYA] Got transcript, sending to server...');
 
-      // Build payload
-      const payload: AddContentPayload = {
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-        title: result.title,
-        type: 'youtube',
-        content: result.transcript,
-        youtube_id: videoId,
-        channel: result.channel,
-        duration: result.duration,
-        forceNew
-      };
+        payload = {
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: result.title,
+          type: 'youtube',
+          content: result.transcript,
+          youtube_id: videoId,
+          channel: result.channel,
+          duration: result.duration,
+          forceNew
+        };
+      }
 
-      // Send pre-extracted content to server
+      // Send to server
       const data = await this._fetch('/api/x10/add-content', {
         method: 'POST',
         body: { ...payload, userCode: this.userCode || undefined },
       });
+
+      // Handle retryWithExtraction (item was deleted between check and add)
+      if (data.retryWithExtraction) {
+        console.log('[STYA] Item was deleted, retrying with extraction...');
+        const result = await getTranscript(videoId);
+        const retryPayload: AddContentPayload = {
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: result.title,
+          type: 'youtube',
+          content: result.transcript,
+          youtube_id: videoId,
+          channel: result.channel,
+          duration: result.duration,
+          forceNew
+        };
+        const retryData = await this._fetch('/api/x10/add-content', {
+          method: 'POST',
+          body: { ...retryPayload, userCode: this.userCode || undefined },
+        });
+        if (retryData.success && retryData.userCode) {
+          this.userCode = retryData.userCode as string;
+          safeStorageSet({ styaUserCode: retryData.userCode });
+        }
+        return {
+          success: !!retryData.success,
+          x10Id: retryData.collectionId as string | undefined,
+          userCode: retryData.userCode as string | undefined,
+          error: retryData.error as string | undefined
+        };
+      }
 
       if (data.success && data.userCode) {
         this.userCode = data.userCode as string;
@@ -250,7 +299,8 @@ class X10API {
     }
   }
 
-  // NEW: Add video to existing collection with frontend extraction
+  // Add video to existing collection with frontend extraction
+  // Optimized: checks if item exists on server first to skip extraction
   async addVideoToX10WithExtraction(
     x10Id: string,
     videoUrl: string
@@ -261,24 +311,70 @@ class X10API {
         throw new Error('Invalid YouTube URL');
       }
 
-      console.log('[STYA] Extracting transcript for:', videoId);
-      const result = await getTranscript(videoId);
+      // Check if item already exists on server (skip extraction if yes)
+      const checkResult = await this._fetch(`/api/item/check?youtubeId=${videoId}`);
 
-      const payload: AddContentPayload = {
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-        title: result.title,
-        type: 'youtube',
-        content: result.transcript,
-        youtube_id: videoId,
-        channel: result.channel,
-        duration: result.duration,
-        collectionId: x10Id
-      };
+      let payload: AddContentPayload;
+
+      if (checkResult.exists && !checkResult._error) {
+        // Item exists - skip extraction!
+        console.log('[STYA] Item already exists on server, skipping extraction');
+        payload = {
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: (checkResult.item as { title: string }).title || 'Untitled',
+          type: 'youtube',
+          content: '',  // Empty - server will reuse existing transcript
+          youtube_id: videoId,
+          channel: (checkResult.item as { channel: string }).channel,
+          duration: undefined,
+          collectionId: x10Id,
+          useExisting: true
+        };
+      } else {
+        // Item doesn't exist - extract transcript
+        console.log('[STYA] Extracting transcript for:', videoId);
+        const result = await getTranscript(videoId);
+
+        payload = {
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: result.title,
+          type: 'youtube',
+          content: result.transcript,
+          youtube_id: videoId,
+          channel: result.channel,
+          duration: result.duration,
+          collectionId: x10Id
+        };
+      }
 
       const data = await this._fetch('/api/x10/add-content', {
         method: 'POST',
         body: { ...payload, userCode: this.userCode || undefined },
       });
+
+      // Handle retryWithExtraction (item was deleted between check and add)
+      if (data.retryWithExtraction) {
+        console.log('[STYA] Item was deleted, retrying with extraction...');
+        const result = await getTranscript(videoId);
+        const retryPayload: AddContentPayload = {
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: result.title,
+          type: 'youtube',
+          content: result.transcript,
+          youtube_id: videoId,
+          channel: result.channel,
+          duration: result.duration,
+          collectionId: x10Id
+        };
+        const retryData = await this._fetch('/api/x10/add-content', {
+          method: 'POST',
+          body: { ...retryPayload, userCode: this.userCode || undefined },
+        });
+        return {
+          success: retryData._ok || !!retryData.success,
+          error: retryData.error as string | undefined
+        };
+      }
 
       return {
         success: data._ok || !!data.success,

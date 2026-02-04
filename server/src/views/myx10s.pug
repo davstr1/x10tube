@@ -39,8 +39,8 @@ block content
         - const tokenDisplay = x10.tokenCount > 1000 ? `${Math.round(x10.tokenCount / 1000)}K tokens` : `${x10.tokenCount} tokens`
         - const date = new Date(x10.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         - const firstItem = x10.items[0]
-        - const isFirstYouTube = firstItem && (firstItem.type === 'youtube' || firstItem.youtube_id)
-        - const thumbnailUrl = isFirstYouTube ? `https://img.youtube.com/vi/${firstItem.youtube_id}/mqdefault.jpg` : null
+        - const isFirstYouTube = firstItem && firstItem.source_type === 'youtube'
+        - const thumbnailUrl = isFirstYouTube ? `https://img.youtube.com/vi/${firstItem.source_id}/mqdefault.jpg` : null
         - const faviconUrl = firstItem && !isFirstYouTube ? `https://www.google.com/s2/favicons?domain=${firstItem.channel}&sz=128` : null
         - const mdUrl = `${baseUrl}/s/${x10.id}.md`
         - const x10Url = `${baseUrl}/s/${x10.id}`

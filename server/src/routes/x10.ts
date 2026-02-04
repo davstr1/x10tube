@@ -47,7 +47,7 @@ x10Router.get('/:id.md', asyncHandler(async (req: Request, res: Response) => {
   // Items list
   md += `## Items included\n\n`;
   collection.items.forEach((item, index) => {
-    const isYouTube = item.type === 'youtube' || item.youtube_id;
+    const isYouTube = item.source_type === 'youtube';
     const typeLabel = isYouTube ? 'YouTube' : 'Web';
     const durationPart = item.duration ? ` — ${item.duration}` : '';
     md += `${index + 1}. [${typeLabel}] ${item.title} — ${item.channel}${durationPart}\n`;
@@ -59,8 +59,9 @@ x10Router.get('/:id.md', asyncHandler(async (req: Request, res: Response) => {
   const baseUrl = config.baseUrl;
   md += `## Content\n\n`;
   collection.items.forEach((item, index) => {
-    const isYouTube = item.type === 'youtube' || item.youtube_id;
-    const itemId = isYouTube ? item.youtube_id : item.id;
+    const isYouTube = item.source_type === 'youtube';
+    // For YouTube: use source_id (the youtube video id). For webpage: use item.id
+    const itemId = isYouTube ? item.source_id : item.id;
 
     md += `### ${index + 1}. ${item.title}\n\n`;
     md += `**Type**: ${isYouTube ? 'YouTube Video' : 'Web Page'}  \n`;
@@ -95,13 +96,13 @@ x10Router.get('/:id/v/:itemId.md', asyncHandler(async (req: Request, res: Respon
     return res.status(404).send('# Not found\n\nThis collection does not exist.');
   }
 
-  // Find item by youtube_id OR by item id (for web pages)
-  const item = collection.items.find(v => v.youtube_id === itemId || v.id === itemId);
+  // Find item by source_id (youtube_id for YouTube) OR by item id (for web pages)
+  const item = collection.items.find(v => v.source_id === itemId || v.id === itemId);
   if (!item) {
     return res.status(404).send(`# Not found\n\nItem ${itemId} does not exist in this collection.`);
   }
 
-  const isYouTube = item.type === 'youtube' || item.youtube_id;
+  const isYouTube = item.source_type === 'youtube';
 
   // Use collection's pre_prompt or the default (don't create user settings for public .md endpoints)
   const defaultPrePrompt = getDefaultPrePromptText();

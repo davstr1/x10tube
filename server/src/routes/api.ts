@@ -11,6 +11,8 @@ import {
   forkCollection,
   deleteCollection,
   updateCollectionPrePrompt,
+  getItemBySourceId,
+  hashUrl,
   PreExtractedItem
 } from '../services/collection.js';
 import { extractVideoId } from '../services/transcript.js';
@@ -127,6 +129,7 @@ apiRouter.get('/check-video', asyncHandler(async (req: Request, res: Response) =
   }
 
   // Check by userCode (for extension) or userId (for authenticated users)
+  // Now uses source_id (which is youtube_id for videos)
   if (userCode && typeof userCode === 'string') {
     const inX10s = await checkItemInAnonymousCollections(userCode, videoId);
     return res.json({ inX10s });
@@ -138,6 +141,37 @@ apiRouter.get('/check-video', asyncHandler(async (req: Request, res: Response) =
 
   const inX10s = await checkItemInUserCollections(userId, videoId);
   res.json({ inX10s });
+}));
+
+// Check if an item already exists (before extraction) - for skip-extraction optimization
+apiRouter.get('/item/check', asyncHandler(async (req: Request, res: Response) => {
+  const { youtubeId, url } = req.query;
+
+  // Determine source_id
+  let sourceId: string;
+  if (youtubeId && typeof youtubeId === 'string') {
+    sourceId = youtubeId;
+  } else if (url && typeof url === 'string') {
+    sourceId = hashUrl(url);
+  } else {
+    return res.status(400).json({ error: 'youtubeId or url required' });
+  }
+
+  const item = await getItemBySourceId(sourceId);
+
+  if (item) {
+    res.json({
+      exists: true,
+      item: {
+        id: item.id,
+        title: item.title,
+        channel: item.channel,
+        duration: item.duration
+      }
+    });
+  } else {
+    res.json({ exists: false });
+  }
 }));
 
 // Fork collection
@@ -196,8 +230,9 @@ apiRouter.post('/x10/add', (_req: Request, res: Response) => {
 
 // Add PRE-EXTRACTED content from Chrome extension (no server-side extraction)
 // The extension extracts YouTube transcripts and web page content directly
+// Supports useExisting flag to skip extraction when item already exists
 apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Response) => {
-  const { url, title, type, content, youtube_id, channel, duration, collectionId, forceNew, userCode } = req.body;
+  const { url, title, type, content, youtube_id, channel, duration, collectionId, forceNew, userCode, useExisting } = req.body;
 
   // Validate required fields
   if (!url || typeof url !== 'string') {
@@ -209,13 +244,28 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
   if (!type || (type !== 'youtube' && type !== 'webpage')) {
     return res.status(400).json({ success: false, error: 'Type must be "youtube" or "webpage"' });
   }
-  if (!content || typeof content !== 'string') {
-    return res.status(400).json({ success: false, error: 'Content required' });
-  }
 
-  // Validate content size (max 500KB)
-  if (content.length > 500 * 1024) {
-    return res.status(400).json({ success: false, error: 'Content too large (max 500KB)' });
+  // If useExisting=true, content can be empty (reuse existing transcript)
+  // Otherwise, content is required
+  if (!useExisting) {
+    if (!content || typeof content !== 'string') {
+      return res.status(400).json({ success: false, error: 'Content required' });
+    }
+    // Validate content size (max 500KB)
+    if (content.length > 500 * 1024) {
+      return res.status(400).json({ success: false, error: 'Content too large (max 500KB)' });
+    }
+  } else {
+    // Verify item exists when useExisting=true
+    const sourceId = type === 'youtube' && youtube_id ? youtube_id : hashUrl(url);
+    const existingItem = await getItemBySourceId(sourceId);
+    if (!existingItem) {
+      return res.status(400).json({
+        success: false,
+        error: 'Item not found. Please retry without cache.',
+        retryWithExtraction: true
+      });
+    }
   }
 
   // YouTube videos must have youtube_id
@@ -240,11 +290,12 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
     const anonymousId = userCode?.trim() || req.anonymousId || nanoid(16);
 
     // Build the content object
+    // When useExisting=true, content may be empty - the service will reuse existing item
     const extractedContent: PreExtractedItem = {
       url,
       title,
       type,
-      content,
+      content: content || '',  // Empty string when useExisting=true
       youtube_id: youtube_id || undefined,
       channel: channel || undefined,
       duration: typeof duration === 'number' ? duration : undefined
@@ -270,15 +321,14 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
         return res.status(400).json({ success: false, error: 'Collection is full (max 10 items)' });
       }
 
-      // Check for duplicates
-      const alreadyExists = type === 'youtube'
-        ? collection.items.some(v => v.youtube_id === youtube_id)
-        : collection.items.some(v => v.url === url);
+      // Check for duplicates using source_id
+      const sourceId = type === 'youtube' && youtube_id ? youtube_id : hashUrl(url);
+      const existingItemInCollection = collection.items.find(v => v.source_id === sourceId);
 
-      if (alreadyExists) {
+      if (existingItemInCollection) {
         return res.json({
           success: true,
-          itemId: collection.items.find(v => type === 'youtube' ? v.youtube_id === youtube_id : v.url === url)?.id,
+          itemId: existingItemInCollection.id,
           collectionId: collection.id,
           userCode: anonymousId,
           message: 'Item already exists in this collection'
@@ -300,15 +350,14 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
       if (existingCollections.length > 0 && existingCollections[0].items.length < 10) {
         const recentCollection = existingCollections[0];
 
-        // Check for duplicates
-        const alreadyExists = type === 'youtube'
-          ? recentCollection.items.some(v => v.youtube_id === youtube_id)
-          : recentCollection.items.some(v => v.url === url);
+        // Check for duplicates using source_id
+        const sourceIdCheck = type === 'youtube' && youtube_id ? youtube_id : hashUrl(url);
+        const existingInRecent = recentCollection.items.find(v => v.source_id === sourceIdCheck);
 
-        if (alreadyExists) {
+        if (existingInRecent) {
           return res.json({
             success: true,
-            itemId: recentCollection.items.find(v => type === 'youtube' ? v.youtube_id === youtube_id : v.url === url)?.id,
+            itemId: existingInRecent.id,
             collectionId: recentCollection.id,
             userCode: anonymousId,
             message: 'Item already exists in your most recent collection'

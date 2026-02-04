@@ -124,9 +124,9 @@ block content
   section.mb-10
     .space-y-4
       each item, index in x10.items
-        - const isYouTube = item.type === 'youtube' || item.youtube_id
-        - const thumbnailUrl = isYouTube ? `https://img.youtube.com/vi/${item.youtube_id}/mqdefault.jpg` : `https://www.google.com/s2/favicons?domain=${item.channel}&sz=128`
-        - const itemId = isYouTube ? item.youtube_id : item.id
+        - const isYouTube = item.source_type === 'youtube'
+        - const thumbnailUrl = isYouTube ? `https://img.youtube.com/vi/${item.source_id}/mqdefault.jpg` : `https://www.google.com/s2/favicons?domain=${item.channel}&sz=128`
+        - const itemId = isYouTube ? item.source_id : item.id
         .border.border-border-strong.rounded-lg.bg-surface
           .flex.gap-4.p-4
             //- Thumbnail

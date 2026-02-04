@@ -66,4 +66,5 @@ export interface AddContentPayload {
   collectionId?: string;
   forceNew?: boolean;
   userCode?: string;
+  useExisting?: boolean;  // Skip extraction - reuse existing item's transcript
 }
