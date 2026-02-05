@@ -1227,7 +1227,13 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     <div class="x10-section-label">Add to...</div>
     <div class="x10-list" id="stya-list"></div>
     <div class="x10-footer">
-      <a href="#" id="stya-dashboard">My collections</a>
+      <a href="#" id="stya-dashboard" class="x10-footer-icon" data-tooltip="My collections">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      </a>
       <span class="x10-footer-sep"></span>
       <a href="#" id="stya-settings" class="x10-footer-icon" data-tooltip="Settings">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
