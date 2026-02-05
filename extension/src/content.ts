@@ -1361,7 +1361,7 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     </div>
   `;
 
-  overlay.innerHTML = header + infoSection + newsBanner + reviewBanner + quickActions + listAndFooter;
+  overlay.innerHTML = header + newsBanner + reviewBanner + infoSection + quickActions + listAndFooter;
 
   // Setup event listeners
   setupOverlayEventListeners(overlay, pageInfo);
