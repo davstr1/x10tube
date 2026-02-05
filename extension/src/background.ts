@@ -32,51 +32,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.tabs.create({ url: `${__STYA_BASE_URL__}/welcome` });
   }
 
-  // Fetch latest news
-  fetchLatestNews();
 });
-
-// Also fetch news on browser startup
-chrome.runtime.onStartup.addListener(() => {
-  fetchLatestNews();
-});
-
-// ─────────────────────────────────────────────────────────────
-// News fetching (cached for 24h)
-// ─────────────────────────────────────────────────────────────
-
-const NEWS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-
-async function fetchLatestNews(): Promise<void> {
-  try {
-    // Check if we fetched recently
-    const data = await chrome.storage.local.get(['newsFetchedAt']);
-    const now = Date.now();
-
-    if (data.newsFetchedAt && (now - data.newsFetchedAt) < NEWS_CACHE_TTL) {
-      console.log('[STYA] News cache still valid');
-      return;
-    }
-
-    console.log('[STYA] Fetching latest news...');
-    const response = await fetch(`${__STYA_BASE_URL__}/news.json`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const news = await response.json();
-    await chrome.storage.local.set({
-      cachedNews: news,
-      newsFetchedAt: now
-    });
-
-    console.log('[STYA] News cached:', news.id);
-  } catch (error) {
-    console.error('[STYA] Failed to fetch news:', error);
-    // Non-critical, silently fail
-  }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Context menu click handler

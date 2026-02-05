@@ -1,15 +1,17 @@
 extends layout
 
 block content
-  h1.text-2xl.font-semibold.mb-6 News
+  h1.text-2xl.font-semibold.mb-8 News
 
   if newsItems && newsItems.length > 0
     each item in newsItems
-      article.bg-surface.rounded-xl.border.border-border-default.p-6.mb-6(id=item.id)
-        .flex.items-center.gap-3.mb-4
-          span.inline-block.bg-red-600.text-white.text-xs.font-semibold.px-2.py-1.rounded= item.id
+      article.bg-surface.rounded-xl.border.border-border-default.mb-8(id=item.id style="padding: 2rem;")
+        .flex.items-center.gap-3(style="margin-bottom: 1.5rem;")
+          span.inline-block.bg-red-600.text-white.text-xs.font-semibold.rounded(style="padding: 6px 12px;")= item.id
           span.text-text-muted.text-sm= item.date
-        h2.text-xl.font-semibold.mb-4.text-text-primary= item.title
-        .prose.prose-invert.text-text-secondary!= item.html
+        - const titleParts = item.title.split('—')
+        - const displayTitle = titleParts.length > 1 ? titleParts.slice(1).join('—').trim() : item.title
+        h2.text-xl.font-semibold.mb-5.text-text-primary= displayTitle
+        .prose.prose-invert.text-text-secondary(style="line-height: 1.7;")!= item.html
   else
     p.text-text-muted No news yet. Check back later!

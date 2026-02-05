@@ -893,54 +893,64 @@ function injectStyles(): void {
     }
 
     /* News banner */
-    .x10-news-banner {
-      display: flex;
-      align-items: center;
-      background: #1e3a5f;
-      padding: 10px 16px;
-      gap: 10px;
+    #stya-dropdown .x10-news-banner {
+      display: none;
+      align-items: center !important;
+      background: #1e3a5f !important;
+      padding: 12px 16px !important;
+      gap: 10px !important;
+      margin: 0 !important;
+      border: none !important;
     }
-    .x10-news-dot {
-      width: 8px;
-      height: 8px;
-      min-width: 8px;
-      background: #4a90d9;
-      border-radius: 50%;
+    #stya-dropdown .x10-news-banner.visible {
+      display: flex !important;
     }
-    .x10-news-text {
-      flex: 1;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    #stya-dropdown .x10-news-dot {
+      width: 8px !important;
+      height: 8px !important;
+      min-width: 8px !important;
+      background: #4a9eff !important;
+      border-radius: 50% !important;
+      flex-shrink: 0 !important;
     }
-    .x10-news-read {
-      background: #e85d4c;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      padding: 5px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      flex-shrink: 0;
+    #stya-dropdown .x10-news-text {
+      flex: 1 !important;
+      color: #fff !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-    .x10-news-read:hover {
-      background: #d64a3a;
+    #stya-dropdown .x10-news-read {
+      background: #3b82f6 !important;
+      color: #fff !important;
+      border: none !important;
+      border-radius: 6px !important;
+      padding: 6px 16px !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      margin: 0 !important;
     }
-    .x10-news-close {
-      background: none;
-      border: none;
-      color: rgba(255,255,255,0.5);
-      font-size: 18px;
-      cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
+    #stya-dropdown .x10-news-read:hover {
+      background: #2563eb !important;
     }
-    .x10-news-close:hover {
-      color: #fff;
+    #stya-dropdown .x10-news-close {
+      background: none !important;
+      border: none !important;
+      color: rgba(255,255,255,0.5) !important;
+      font-size: 20px !important;
+      cursor: pointer !important;
+      padding: 0 4px !important;
+      line-height: 1 !important;
+      margin-left: 4px !important;
+    }
+    #stya-dropdown .x10-news-close:hover {
+      color: #fff !important;
     }
   `;
   document.head.appendChild(styles);
@@ -1197,7 +1207,7 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
 
   // News banner (hidden by default, shown if there's unread news)
   const newsBanner = `
-    <div class="x10-news-banner" id="x10-news-banner" style="display:none;">
+    <div class="x10-news-banner" id="x10-news-banner">
       <span class="x10-news-dot"></span>
       <span class="x10-news-text" id="x10-news-text"></span>
       <button class="x10-news-read" id="x10-news-read">Read</button>
@@ -1351,44 +1361,56 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
 }
 
 async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<void> {
+  const banner = overlay.querySelector('#x10-news-banner') as HTMLElement | null;
+  const textEl = overlay.querySelector('#x10-news-text') as HTMLElement | null;
+
+  if (!banner || !textEl) return;
+
   try {
-    const data = await safeStorageGet(['cachedNews', 'lastSeenNewsId']);
-    const news = data.cachedNews as { id: string; title: string; url: string } | undefined;
+    // Fetch news.json directly
+    const response = await fetch(`${api.baseUrl}/news.json`);
+    if (!response.ok) return;
 
-    if (!news || news.id === data.lastSeenNewsId) {
-      return; // No news or already seen
-    }
+    const news = await response.json();
 
-    const banner = overlay.querySelector('#x10-news-banner') as HTMLElement | null;
-    const text = overlay.querySelector('#x10-news-text') as HTMLElement | null;
+    // Validate news data
+    const newsId = news?.id;
+    const newsTitle = news?.title;
+    const newsUrl = news?.url;
 
-    if (banner && text) {
-      text.textContent = news.title;
-      banner.style.display = 'flex';
-      banner.dataset.newsId = news.id;
-      banner.dataset.newsUrl = news.url;
+    if (typeof newsId !== 'string' || !newsId.trim()) return;
+    if (typeof newsTitle !== 'string' || !newsTitle.trim()) return;
 
-      // Setup event handlers
-      overlay.querySelector('#x10-news-read')?.addEventListener('click', async () => {
-        if (news.id) {
-          await safeStorageSet({ lastSeenNewsId: news.id });
-        }
-        if (news.url) {
-          window.open(`${api.baseUrl}${news.url}`, '_blank');
-        }
-        banner.style.display = 'none';
-      });
+    // Check if already seen
+    const data = await safeStorageGet(['lastSeenNewsId']);
+    if (newsId === data.lastSeenNewsId) return;
 
-      overlay.querySelector('#x10-news-close')?.addEventListener('click', async () => {
-        if (news.id) {
-          await safeStorageSet({ lastSeenNewsId: news.id });
-        }
-        banner.style.display = 'none';
-      });
-    }
+    // Show banner
+    textEl.textContent = newsTitle;
+    banner.classList.add('visible');
+
+    // Setup event handlers
+    const markAsRead = async () => {
+      await safeStorageSet({ lastSeenNewsId: newsId });
+      banner.classList.remove('visible');
+    };
+
+    overlay.querySelector('#x10-news-read')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await markAsRead();
+      if (newsUrl) {
+        window.open(`${api.baseUrl}${newsUrl}`, '_blank');
+      }
+    });
+
+    overlay.querySelector('#x10-news-close')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await markAsRead();
+    });
   } catch (error) {
-    // Non-critical, silently fail
-    console.error('[STYA] Failed to check news:', error);
+    // Silent fail - news is non-critical
   }
 }
 
