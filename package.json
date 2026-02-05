@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "ext:build": "bash scripts/build-extension.sh"
+    "ext:build": "bash scripts/build-extension.sh",
+    "build": "cd server && npm install && npm run css:build && npm run build",
+    "start": "cd server && npm run start"
   },
   "devDependencies": {
     "puppeteer": "^24.35.0"
