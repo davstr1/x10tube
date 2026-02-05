@@ -1,6 +1,9 @@
 extends layout
+include mixins/extension-required
 
 block content
+  +extensionRequired()
+
   section.text-center.mb-12.pt-8
     .flex.justify-center.mb-6
       svg(viewBox="0 0 100 100" style="width: 64px; height: 64px;")

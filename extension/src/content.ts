@@ -1876,6 +1876,9 @@ async function init(): Promise<void> {
   injectStyles();
   createToast();
 
+  // Add marker to indicate extension is installed (for website pages to detect)
+  document.documentElement.setAttribute('data-stya-extension', 'installed');
+
   // YouTube-specific features
   if (isYouTube) {
     // Check if YouTube Power Mode is enabled

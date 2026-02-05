@@ -1,8 +1,11 @@
 extends layout
+include mixins/extension-required
 
 block content
   //- Hidden element for extension to read user code
   div(data-x10-user-code=userCode style="display:none")
+
+  +extensionRequired()
 
   .max-w-md.mx-auto
 

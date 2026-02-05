@@ -1,6 +1,9 @@
 extends layout
+include mixins/extension-required
 
 block content
+  +extensionRequired()
+
   .flex.justify-between.items-center.mb-8
     h1.text-2xl.font-semibold.text-text-primary Settings
 
