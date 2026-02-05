@@ -199,24 +199,6 @@ block content
             .px-4.py-4.bg-surface-alt.text-sm.text-text-secondary.leading-relaxed.max-h-72.overflow-y-auto
               p.whitespace-pre-wrap= item.transcript
 
-  //- Add item form (for owner)
-  if isOwner
-    section.mb-10
-      h3.text-lg.font-semibold.text-text-primary.mb-4 Add content
-
-      if x10.items.length >= 10
-        p.text-sm.text-text-secondary Maximum items reached
-      else
-        form.flex.gap-3(action=`/s/${x10.id}/add` method="POST")
-          input.flex-1.px-4.py-3.border.border-border-strong.rounded-lg.text-sm.focus_outline-none.focus_ring-2.focus_ring-red-500.focus_border-transparent.font-mono.bg-surface.text-text-primary.placeholder-text-muted(
-            type="text"
-            name="url"
-            placeholder="https://youtube.com/watch?v=..."
-            required
-          )
-          button.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-lg.text-sm.font-medium.transition-colors.flex-shrink-0(type="submit")
-            | Add
-
   //- Copy to account button (for non-owners who are logged in)
   if currentUser && !isOwner
     section.mb-10
