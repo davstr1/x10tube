@@ -15,6 +15,8 @@ const env = Object.fromEntries(
 const DEV_URL = env.DEV_URL || 'http://localhost:3000';
 const PROD_URL = env.PROD_URL || 'https://toyourai.plstry.me';
 const CHROME_EXTENSION_URL = env.CHROME_EXTENSION_URL || '';
+const REVIEW_PROMPT_FIRST = parseInt(env.REVIEW_PROMPT_FIRST) || 20;
+const REVIEW_PROMPT_SECOND = parseInt(env.REVIEW_PROMPT_SECOND) || 50;
 
 const entryPoints = [
   'src/background.ts',
@@ -41,6 +43,8 @@ function copyStatic(outdir) {
 
 const commonDefines = {
   '__CHROME_EXTENSION_URL__': JSON.stringify(CHROME_EXTENSION_URL),
+  '__REVIEW_PROMPT_FIRST__': JSON.stringify(REVIEW_PROMPT_FIRST),
+  '__REVIEW_PROMPT_SECOND__': JSON.stringify(REVIEW_PROMPT_SECOND),
 };
 
 if (isWatch) {

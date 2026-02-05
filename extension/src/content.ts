@@ -1440,26 +1440,27 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
   });
 }
 
-// Review prompt threshold (0 for testing, 20 for production)
-const REVIEW_PROMPT_THRESHOLD = 0;
-
-async function incrementActionCount(): Promise<void> {
+async function incrementPopupOpenCount(): Promise<number> {
   try {
-    const data = await safeStorageGet(['actionCount']);
-    const count = (typeof data.actionCount === 'number' ? data.actionCount : 0) + 1;
-    await safeStorageSet({ actionCount: count });
+    const data = await safeStorageGet(['popupOpenCount']);
+    const count = (typeof data.popupOpenCount === 'number' ? data.popupOpenCount : 0) + 1;
+    await safeStorageSet({ popupOpenCount: count });
+    return count;
   } catch (error) {
-    // Silent fail
+    return 0;
   }
 }
 
 async function checkAndShowBanners(overlay: HTMLElement): Promise<void> {
+  // Increment popup open count
+  const openCount = await incrementPopupOpenCount();
+
   // Try to show news banner first
   const newsShown = await checkAndShowNewsBanner(overlay);
 
   // If no news, try to show review banner
   if (!newsShown) {
-    await checkAndShowReviewBanner(overlay);
+    await checkAndShowReviewBanner(overlay, openCount);
   }
 }
 
@@ -1519,19 +1520,23 @@ async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<boolean> {
   }
 }
 
-async function checkAndShowReviewBanner(overlay: HTMLElement): Promise<void> {
+async function checkAndShowReviewBanner(overlay: HTMLElement, openCount: number): Promise<void> {
   const banner = overlay.querySelector('#x10-review-banner') as HTMLElement | null;
   if (!banner) return;
 
   try {
-    const data = await safeStorageGet(['actionCount', 'reviewDismissed']);
+    const data = await safeStorageGet(['reviewDismissCount', 'reviewDismissedAtCount']);
+    const dismissCount = typeof data.reviewDismissCount === 'number' ? data.reviewDismissCount : 0;
+    const dismissedAt = typeof data.reviewDismissedAtCount === 'number' ? data.reviewDismissedAtCount : 0;
 
-    // Don't show if already dismissed
-    if (data.reviewDismissed === true) return;
+    // Never show again after 2 dismissals
+    if (dismissCount >= 2) return;
 
-    // Don't show if not enough actions
-    const count = typeof data.actionCount === 'number' ? data.actionCount : 0;
-    if (count < REVIEW_PROMPT_THRESHOLD) return;
+    // First time: show after REVIEW_PROMPT_FIRST opens
+    if (dismissCount === 0 && openCount < __REVIEW_PROMPT_FIRST__) return;
+
+    // Second time: show REVIEW_PROMPT_SECOND opens after first dismissal
+    if (dismissCount === 1 && openCount < dismissedAt + __REVIEW_PROMPT_SECOND__) return;
 
     // Show banner
     banner.classList.add('visible');
@@ -1540,7 +1545,10 @@ async function checkAndShowReviewBanner(overlay: HTMLElement): Promise<void> {
     overlay.querySelector('#x10-review-close')?.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      await safeStorageSet({ reviewDismissed: true });
+      await safeStorageSet({
+        reviewDismissCount: dismissCount + 1,
+        reviewDismissedAtCount: openCount
+      });
       banner.classList.remove('visible');
     });
   } catch (error) {
@@ -1770,7 +1778,6 @@ async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
 
     window.open(llmUrl, '_blank');
     showToast(`Opened in ${llmType}`, 'success');
-    incrementActionCount();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleOpenInLLM error:', error);
@@ -1793,7 +1800,6 @@ async function handleCopyMDLink(url: string): Promise<void> {
     const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
     await navigator.clipboard.writeText(mdUrl);
     showToast('MD link copied!', 'success');
-    incrementActionCount();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDLink error:', error);
@@ -1821,7 +1827,6 @@ async function handleCopyMDContent(url: string): Promise<void> {
 
     await navigator.clipboard.writeText(mdContent);
     showToast('MD content copied!', 'success');
-    incrementActionCount();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDContent error:', error);
