@@ -19,9 +19,9 @@ block content
 
   //- Works with / Send to
   section.mb-10.text-center
-    .space-y-2
+    .inline-flex.flex-col.gap-2.text-sm
       //- Works with
-      .flex.items-center.justify-center.gap-2.text-sm
+      .flex.items-center.gap-2
         span.text-text-muted.w-20.text-right Works with
         .flex.items-center.gap-4
           .flex.items-center
@@ -35,7 +35,7 @@ block content
             span.text-text-secondary Any web page
 
       //- Send to
-      .flex.items-center.justify-center.gap-2.text-sm
+      .flex.items-center.gap-2
         span.text-text-muted.w-20.text-right Send to
         .flex.items-center.gap-2
           img(src="https://www.google.com/s2/favicons?domain=claude.ai&sz=32" alt="Claude" title="Claude" style="width: 18px; height: 18px;")
@@ -100,7 +100,7 @@ block content
             td.py-3.text-text-secondary(style="vertical-align: top") One or dozens
           tr.border-b.border-border-default
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Output
-            td.py-3.pr-4.text-text-secondary(style="vertical-align: top") It's complicated…
+            td.py-3.pr-4.text-text-secondary.italic(style="vertical-align: top") It's complicated…
             td.py-3.text-text-secondary(style="vertical-align: top") Clean, shareable markdown
           tr
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Pricing
