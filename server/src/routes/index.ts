@@ -1,8 +1,40 @@
 import { Router, Request, Response } from 'express';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { marked } from 'marked';
 import { getCollectionsForAnonymous, getCollectionById, deleteCollection } from '../services/collection.js';
 import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
+
+// Parse NEWS.md into structured items
+function parseNewsMarkdown(): Array<{ id: string; title: string; date: string; html: string }> {
+  try {
+    const newsPath = join(process.cwd(), '..', 'NEWS.md');
+    const content = readFileSync(newsPath, 'utf-8');
+
+    // Split by H1 headers (# Title)
+    const sections = content.split(/^# /m).filter(s => s.trim());
+
+    return sections.map(section => {
+      const lines = section.split('\n');
+      const title = lines[0].trim();
+      const id = title.split('—')[0]?.trim().replace(/\s+/g, '-').toLowerCase() || 'news';
+
+      // Second line should be the date
+      const date = lines[1]?.trim() || '';
+
+      // Rest is the content
+      const body = lines.slice(2).join('\n').trim();
+      const html = marked.parse(body) as string;
+
+      return { id, title, date, html };
+    });
+  } catch (error) {
+    console.error('[News] Failed to parse NEWS.md:', error);
+    return [];
+  }
+}
 
 export const indexRouter = Router();
 
@@ -17,6 +49,15 @@ indexRouter.get('/', (_req: Request, res: Response) => {
 indexRouter.get('/welcome', (_req: Request, res: Response) => {
   res.render('welcome', {
     title: `Welcome - ${config.brandName}`
+  });
+});
+
+// News page
+indexRouter.get('/news', (_req: Request, res: Response) => {
+  const newsItems = parseNewsMarkdown();
+  res.render('news', {
+    title: `News - ${config.brandName}`,
+    newsItems
   });
 });
 

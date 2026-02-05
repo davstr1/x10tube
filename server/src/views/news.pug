@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  h1.text-2xl.font-semibold.mb-6 News
+
+  if newsItems && newsItems.length > 0
+    each item in newsItems
+      article.bg-surface.rounded-xl.border.border-border-default.p-6.mb-6(id=item.id)
+        .flex.items-center.gap-3.mb-4
+          span.inline-block.bg-red-600.text-white.text-xs.font-semibold.px-2.py-1.rounded= item.id
+          span.text-text-muted.text-sm= item.date
+        h2.text-xl.font-semibold.mb-4.text-text-primary= item.title
+        .prose.prose-invert.text-text-secondary!= item.html
+  else
+    p.text-text-muted No news yet. Check back later!

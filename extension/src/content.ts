@@ -891,6 +891,57 @@ function injectStyles(): void {
       border-radius: 8px;
       background-color: #3f3f3f;
     }
+
+    /* News banner */
+    .x10-news-banner {
+      display: flex;
+      align-items: center;
+      background: #1e3a5f;
+      padding: 10px 16px;
+      gap: 10px;
+    }
+    .x10-news-dot {
+      width: 8px;
+      height: 8px;
+      min-width: 8px;
+      background: #4a90d9;
+      border-radius: 50%;
+    }
+    .x10-news-text {
+      flex: 1;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .x10-news-read {
+      background: #e85d4c;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .x10-news-read:hover {
+      background: #d64a3a;
+    }
+    .x10-news-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+    }
+    .x10-news-close:hover {
+      color: #fff;
+    }
   `;
   document.head.appendChild(styles);
 }
@@ -1144,6 +1195,16 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     `;
   }
 
+  // News banner (hidden by default, shown if there's unread news)
+  const newsBanner = `
+    <div class="x10-news-banner" id="x10-news-banner" style="display:none;">
+      <span class="x10-news-dot"></span>
+      <span class="x10-news-text" id="x10-news-text"></span>
+      <button class="x10-news-read" id="x10-news-read">Read</button>
+      <button class="x10-news-close" id="x10-news-close">&times;</button>
+    </div>
+  `;
+
   // Quick actions
   const quickActions = `
     <div class="x10-quick-actions">
@@ -1210,10 +1271,13 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     </div>
   `;
 
-  overlay.innerHTML = header + infoSection + quickActions + listAndFooter;
+  overlay.innerHTML = header + infoSection + newsBanner + quickActions + listAndFooter;
 
   // Setup event listeners
   setupOverlayEventListeners(overlay, pageInfo);
+
+  // Check and show news banner
+  checkAndShowNewsBanner(overlay);
 
   return overlay;
 }
@@ -1284,6 +1348,48 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
       updateDirectButton(overlay, data.styaLastLLM as string);
     }
   });
+}
+
+async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<void> {
+  try {
+    const data = await safeStorageGet(['cachedNews', 'lastSeenNewsId']);
+    const news = data.cachedNews as { id: string; title: string; url: string } | undefined;
+
+    if (!news || news.id === data.lastSeenNewsId) {
+      return; // No news or already seen
+    }
+
+    const banner = overlay.querySelector('#x10-news-banner') as HTMLElement | null;
+    const text = overlay.querySelector('#x10-news-text') as HTMLElement | null;
+
+    if (banner && text) {
+      text.textContent = news.title;
+      banner.style.display = 'flex';
+      banner.dataset.newsId = news.id;
+      banner.dataset.newsUrl = news.url;
+
+      // Setup event handlers
+      overlay.querySelector('#x10-news-read')?.addEventListener('click', async () => {
+        if (news.id) {
+          await safeStorageSet({ lastSeenNewsId: news.id });
+        }
+        if (news.url) {
+          window.open(`${api.baseUrl}${news.url}`, '_blank');
+        }
+        banner.style.display = 'none';
+      });
+
+      overlay.querySelector('#x10-news-close')?.addEventListener('click', async () => {
+        if (news.id) {
+          await safeStorageSet({ lastSeenNewsId: news.id });
+        }
+        banner.style.display = 'none';
+      });
+    }
+  } catch (error) {
+    // Non-critical, silently fail
+    console.error('[STYA] Failed to check news:', error);
+  }
 }
 
 async function showOverlay(options: OverlayOptions): Promise<void> {
