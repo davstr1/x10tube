@@ -47,12 +47,15 @@ block content
 
   //- Why
   section.py-6.border-t.border-border-default
-    h2.text-base.font-medium.mb-4 Why this exists
-
     .space-y-3.text-sm.text-text-secondary.mb-6
-      p.font-medium.text-text-primary AI summarizers should not be bulky monsters.
-      p It should be click, boom, straight to #[em your] AI.
-      p Your assistant — the one that knows your style, your projects, your context.
+      p.font-medium.text-text-primary
+        | Summarizing and discussing web content with your AI
+        br
+        | should be a one-click operation.
+      p
+        | You're watching a video, reading an article. You want your assistant's take on it.
+        br
+        | Not some other chat. #[em Yours.] The one that knows your style, your projects, your context.
       p No workspace. No wizard. No "pro" tier.
 
   //- Comparison table (as separate section)
@@ -63,7 +66,15 @@ block content
           tr.border-b.border-border-default
             th.py-3.pr-4.text-left.font-normal.text-text-muted
             th.py-3.pr-4.text-left.font-normal.text-text-muted Other tools
-            th.py-3.text-left.font-normal.text-text-primary StraightToYourAI
+            th.py-3.text-left.font-normal
+              .flex.items-center.gap-1
+                svg(viewBox="0 0 100 100" style="width: 14px; height: 14px;")
+                  path(d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626")
+                  circle(cx="65" cy="50" r="6" fill="#ffffff")
+                  circle(cx="82" cy="50" r="6" fill="#ffffff")
+                span
+                  span.text-text-primary StraightToYour
+                  span.text-red-600 AI
         tbody(style="vertical-align: top")
           tr.border-b.border-border-default
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Chat
@@ -80,16 +91,16 @@ block content
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Account
             td.py-3.pr-4.text-text-secondary(style="vertical-align: top") Email, plan, workspace
             td.py-3.text-text-secondary(style="vertical-align: top")
-              | No account required
+              | None required
               br
-              span.text-text-muted Anonymous code for cross-device sync
+              span.text-text-muted (anonymous code for cross-device sync)
           tr.border-b.border-border-default
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Sources
             td.py-3.pr-4.text-text-secondary(style="vertical-align: top") One at a time
             td.py-3.text-text-secondary(style="vertical-align: top") One or dozens
           tr.border-b.border-border-default
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Output
-            td.py-3.pr-4.text-text-secondary(style="vertical-align: top") Vendor-locked
+            td.py-3.pr-4.text-text-secondary(style="vertical-align: top") It's complicated…
             td.py-3.text-text-secondary(style="vertical-align: top") Clean, shareable markdown
           tr
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Pricing
