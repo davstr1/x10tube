@@ -5,8 +5,16 @@
   "description": "A page, a video, a document... to your AI",
   "permissions": ["activeTab", "scripting", "storage", "tabs", "contextMenus"],
   "host_permissions": [
-    "<all_urls>"
+    "*://toyourai.plstry.me/*",
+    "*://localhost:*/*",
+    "*://www.youtube.com/*",
+    "*://r.jina.ai/*",
+    "*://www.google.com/*",
+    "*://img.youtube.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; img-src 'self' https:; object-src 'none'"
+  },
   "externally_connectable": {
     "matches": [
       "http://localhost:*/*",
