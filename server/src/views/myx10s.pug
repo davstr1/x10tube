@@ -1,8 +1,11 @@
 extends layout
+include mixins/extension-required
 
 block content
   //- Hidden element for extension to read user code
   div(data-x10-user-code=userCode style="display:none")
+
+  +extensionRequired()
 
   style.
     .dropdown { position: relative; }
@@ -31,7 +34,7 @@ block content
 
   .flex.justify-between.items-center.mb-8
     h1.text-2xl.font-semibold.text-text-primary My collections
-    a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/") + New
+    a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/welcome") + New
 
   //- Main content: X10s list
   if x10s && x10s.length > 0
@@ -115,7 +118,7 @@ block content
   else
     .text-center.py-16.mb-12
       p.text-text-secondary.mb-6 You don't have any collections yet
-      a.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-md.text-sm.font-medium.no-underline(href="/")
+      a.bg-red-600.hover_bg-red-700.text-white.px-6.py-3.rounded-md.text-sm.font-medium.no-underline(href="/welcome")
         | Create my first collection
 
       p.mt-8.text-text-secondary or
