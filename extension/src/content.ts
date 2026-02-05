@@ -10,6 +10,7 @@ import { config } from './lib/config';
 const isYouTube = window.location.hostname.includes('youtube.com');
 import type { AddContentPayload } from './lib/types';
 import { getTranscript, extractVideoId as extractYoutubeId } from './lib/innertube';
+import { getMarkdown, isYouTubeUrl } from './lib/jina';
 
 // ============================================
 // Safe Storage Helpers (handle context invalidation gracefully)
@@ -223,52 +224,69 @@ class X10API {
     }
   }
 
-  // Extract transcript locally and send to server (frontend extraction)
-  // Optimized: checks if item exists on server first to skip extraction
+  // Extract content locally and send to server (frontend extraction)
+  // Supports both YouTube videos (via InnerTube) and web pages (via Jina)
+  // Optimized: checks if YouTube item exists on server first to skip extraction
   async createX10WithExtraction(
-    videoUrl: string,
+    url: string,
     forceNew = false
   ): Promise<{ success: boolean; x10Id?: string; userCode?: string; error?: string }> {
     try {
-      // Extract video ID
-      const videoId = extractYoutubeId(videoUrl);
-      if (!videoId) {
-        throw new Error('Invalid YouTube URL');
-      }
-
-      // Check if item already exists on server (skip extraction if yes)
-      const checkResult = await this._fetch(`/api/item/check?youtubeId=${videoId}`);
-
       let payload: AddContentPayload;
 
-      if (checkResult.exists && !checkResult._error) {
-        // Item exists - skip extraction!
-        console.log('[STYA] Item already exists on server, skipping extraction');
-        payload = {
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          title: (checkResult.item as { title: string }).title || 'Untitled',
-          type: 'youtube',
-          content: '',  // Empty - server will reuse existing transcript
-          youtube_id: videoId,
-          channel: (checkResult.item as { channel: string }).channel,
-          duration: undefined,
-          forceNew,
-          useExisting: true  // Signal to server
-        };
+      if (isYouTubeUrl(url)) {
+        // YouTube video - extract transcript via InnerTube
+        const videoId = extractYoutubeId(url);
+        if (!videoId) {
+          throw new Error('Invalid YouTube URL');
+        }
+
+        // Check if item already exists on server (skip extraction if yes)
+        const checkResult = await this._fetch(`/api/item/check?youtubeId=${videoId}`);
+
+        if (checkResult.exists && !checkResult._error) {
+          // Item exists - skip extraction!
+          console.log('[STYA] Item already exists on server, skipping extraction');
+          payload = {
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: (checkResult.item as { title: string }).title || 'Untitled',
+            type: 'youtube',
+            content: '',  // Empty - server will reuse existing transcript
+            youtube_id: videoId,
+            channel: (checkResult.item as { channel: string }).channel,
+            duration: undefined,
+            forceNew,
+            useExisting: true  // Signal to server
+          };
+        } else {
+          // Item doesn't exist - extract transcript
+          console.log('[STYA] Extracting transcript for:', videoId);
+          const result = await getTranscript(videoId);
+          console.log('[STYA] Got transcript, sending to server...');
+
+          payload = {
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: result.title,
+            type: 'youtube',
+            content: result.transcript,
+            youtube_id: videoId,
+            channel: result.channel,
+            duration: result.duration,
+            forceNew
+          };
+        }
       } else {
-        // Item doesn't exist - extract transcript
-        console.log('[STYA] Extracting transcript for:', videoId);
-        const result = await getTranscript(videoId);
-        console.log('[STYA] Got transcript, sending to server...');
+        // Web page - extract content via Jina Reader
+        console.log('[STYA] Extracting web page via Jina:', url);
+        const result = await getMarkdown(url);
+        console.log('[STYA] Got web content, sending to server...');
 
         payload = {
-          url: `https://www.youtube.com/watch?v=${videoId}`,
+          url: result.url,
           title: result.title,
-          type: 'youtube',
-          content: result.transcript,
-          youtube_id: videoId,
-          channel: result.channel,
-          duration: result.duration,
+          type: 'webpage',
+          content: result.content,
+          channel: result.domain,
           forceNew
         };
       }
@@ -279,34 +297,37 @@ class X10API {
         body: { ...payload, userCode: this.userCode || undefined },
       });
 
-      // Handle retryWithExtraction (item was deleted between check and add)
-      if (data.retryWithExtraction) {
-        console.log('[STYA] Item was deleted, retrying with extraction...');
-        const result = await getTranscript(videoId);
-        const retryPayload: AddContentPayload = {
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          title: result.title,
-          type: 'youtube',
-          content: result.transcript,
-          youtube_id: videoId,
-          channel: result.channel,
-          duration: result.duration,
-          forceNew
-        };
-        const retryData = await this._fetch('/api/x10/add-content', {
-          method: 'POST',
-          body: { ...retryPayload, userCode: this.userCode || undefined },
-        });
-        if (retryData.success && retryData.userCode) {
-          this.userCode = retryData.userCode as string;
-          safeStorageSet({ styaUserCode: retryData.userCode });
+      // Handle retryWithExtraction (item was deleted between check and add) - YouTube only
+      if (data.retryWithExtraction && isYouTubeUrl(url)) {
+        const videoId = extractYoutubeId(url);
+        if (videoId) {
+          console.log('[STYA] Item was deleted, retrying with extraction...');
+          const result = await getTranscript(videoId);
+          const retryPayload: AddContentPayload = {
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: result.title,
+            type: 'youtube',
+            content: result.transcript,
+            youtube_id: videoId,
+            channel: result.channel,
+            duration: result.duration,
+            forceNew
+          };
+          const retryData = await this._fetch('/api/x10/add-content', {
+            method: 'POST',
+            body: { ...retryPayload, userCode: this.userCode || undefined },
+          });
+          if (retryData.success && retryData.userCode) {
+            this.userCode = retryData.userCode as string;
+            safeStorageSet({ styaUserCode: retryData.userCode });
+          }
+          return {
+            success: !!retryData.success,
+            x10Id: retryData.collectionId as string | undefined,
+            userCode: retryData.userCode as string | undefined,
+            error: retryData.error as string | undefined
+          };
         }
-        return {
-          success: !!retryData.success,
-          x10Id: retryData.collectionId as string | undefined,
-          userCode: retryData.userCode as string | undefined,
-          error: retryData.error as string | undefined
-        };
       }
 
       if (data.success && data.userCode) {
@@ -327,50 +348,67 @@ class X10API {
     }
   }
 
-  // Add video to existing collection with frontend extraction
-  // Optimized: checks if item exists on server first to skip extraction
+  // Add content to existing collection with frontend extraction
+  // Supports both YouTube videos (via InnerTube) and web pages (via Jina)
+  // Optimized: checks if YouTube item exists on server first to skip extraction
   async addVideoToX10WithExtraction(
     x10Id: string,
-    videoUrl: string
+    url: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const videoId = extractYoutubeId(videoUrl);
-      if (!videoId) {
-        throw new Error('Invalid YouTube URL');
-      }
-
-      // Check if item already exists on server (skip extraction if yes)
-      const checkResult = await this._fetch(`/api/item/check?youtubeId=${videoId}`);
-
       let payload: AddContentPayload;
 
-      if (checkResult.exists && !checkResult._error) {
-        // Item exists - skip extraction!
-        console.log('[STYA] Item already exists on server, skipping extraction');
-        payload = {
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          title: (checkResult.item as { title: string }).title || 'Untitled',
-          type: 'youtube',
-          content: '',  // Empty - server will reuse existing transcript
-          youtube_id: videoId,
-          channel: (checkResult.item as { channel: string }).channel,
-          duration: undefined,
-          collectionId: x10Id,
-          useExisting: true
-        };
+      if (isYouTubeUrl(url)) {
+        // YouTube video - extract transcript via InnerTube
+        const videoId = extractYoutubeId(url);
+        if (!videoId) {
+          throw new Error('Invalid YouTube URL');
+        }
+
+        // Check if item already exists on server (skip extraction if yes)
+        const checkResult = await this._fetch(`/api/item/check?youtubeId=${videoId}`);
+
+        if (checkResult.exists && !checkResult._error) {
+          // Item exists - skip extraction!
+          console.log('[STYA] Item already exists on server, skipping extraction');
+          payload = {
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: (checkResult.item as { title: string }).title || 'Untitled',
+            type: 'youtube',
+            content: '',  // Empty - server will reuse existing transcript
+            youtube_id: videoId,
+            channel: (checkResult.item as { channel: string }).channel,
+            duration: undefined,
+            collectionId: x10Id,
+            useExisting: true
+          };
+        } else {
+          // Item doesn't exist - extract transcript
+          console.log('[STYA] Extracting transcript for:', videoId);
+          const result = await getTranscript(videoId);
+
+          payload = {
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: result.title,
+            type: 'youtube',
+            content: result.transcript,
+            youtube_id: videoId,
+            channel: result.channel,
+            duration: result.duration,
+            collectionId: x10Id
+          };
+        }
       } else {
-        // Item doesn't exist - extract transcript
-        console.log('[STYA] Extracting transcript for:', videoId);
-        const result = await getTranscript(videoId);
+        // Web page - extract content via Jina Reader
+        console.log('[STYA] Extracting web page via Jina:', url);
+        const result = await getMarkdown(url);
 
         payload = {
-          url: `https://www.youtube.com/watch?v=${videoId}`,
+          url: result.url,
           title: result.title,
-          type: 'youtube',
-          content: result.transcript,
-          youtube_id: videoId,
-          channel: result.channel,
-          duration: result.duration,
+          type: 'webpage',
+          content: result.content,
+          channel: result.domain,
           collectionId: x10Id
         };
       }
@@ -380,28 +418,31 @@ class X10API {
         body: { ...payload, userCode: this.userCode || undefined },
       });
 
-      // Handle retryWithExtraction (item was deleted between check and add)
-      if (data.retryWithExtraction) {
-        console.log('[STYA] Item was deleted, retrying with extraction...');
-        const result = await getTranscript(videoId);
-        const retryPayload: AddContentPayload = {
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          title: result.title,
-          type: 'youtube',
-          content: result.transcript,
-          youtube_id: videoId,
-          channel: result.channel,
-          duration: result.duration,
-          collectionId: x10Id
-        };
-        const retryData = await this._fetch('/api/x10/add-content', {
-          method: 'POST',
-          body: { ...retryPayload, userCode: this.userCode || undefined },
-        });
-        return {
-          success: retryData._ok || !!retryData.success,
-          error: retryData.error as string | undefined
-        };
+      // Handle retryWithExtraction (item was deleted between check and add) - YouTube only
+      if (data.retryWithExtraction && isYouTubeUrl(url)) {
+        const videoId = extractYoutubeId(url);
+        if (videoId) {
+          console.log('[STYA] Item was deleted, retrying with extraction...');
+          const result = await getTranscript(videoId);
+          const retryPayload: AddContentPayload = {
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: result.title,
+            type: 'youtube',
+            content: result.transcript,
+            youtube_id: videoId,
+            channel: result.channel,
+            duration: result.duration,
+            collectionId: x10Id
+          };
+          const retryData = await this._fetch('/api/x10/add-content', {
+            method: 'POST',
+            body: { ...retryPayload, userCode: this.userCode || undefined },
+          });
+          return {
+            success: retryData._ok || !!retryData.success,
+            error: retryData.error as string | undefined
+          };
+        }
       }
 
       return {
