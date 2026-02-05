@@ -49,15 +49,18 @@ export async function getUserSettings(userCode: string): Promise<UserSettings> {
 
 // Update user's default pre-prompt
 export async function updateDefaultPrePrompt(userCode: string, prePrompt: string): Promise<UserSettings> {
+  // First ensure settings exist
+  await getUserSettings(userCode);
+
   const now = new Date().toISOString();
 
   const { error } = await supabase
     .from('user_settings')
-    .upsert({
-      user_code: userCode,
+    .update({
       default_pre_prompt: prePrompt,
       updated_at: now
-    });
+    })
+    .eq('user_code', userCode);
 
   if (error) {
     console.error('[Settings] Error updating pre-prompt:', error);
@@ -68,15 +71,18 @@ export async function updateDefaultPrePrompt(userCode: string, prePrompt: string
 
 // Update YouTube Power Mode setting
 export async function updateYoutubePowerMode(userCode: string, enabled: boolean): Promise<UserSettings> {
+  // First ensure settings exist
+  await getUserSettings(userCode);
+
   const now = new Date().toISOString();
 
   const { error } = await supabase
     .from('user_settings')
-    .upsert({
-      user_code: userCode,
+    .update({
       youtube_power_mode: enabled,
       updated_at: now
-    });
+    })
+    .eq('user_code', userCode);
 
   if (error) {
     console.error('[Settings] Error updating YouTube Power Mode:', error);
