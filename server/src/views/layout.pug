@@ -8,6 +8,39 @@ html(lang="en")
     link(rel="icon" href="/favicon.svg" type="image/svg+xml")
     link(rel="apple-touch-icon" href="/apple-touch-icon.png")
     link(href="/styles.css" rel="stylesheet")
+    style.
+      .nav-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        color: var(--color-text-secondary);
+        border-radius: 6px;
+        position: relative;
+        transition: color 0.15s, background 0.15s;
+      }
+      .nav-icon:hover {
+        color: var(--color-text-primary);
+        background: var(--color-surface-alt);
+      }
+      .nav-icon[data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 8px;
+        padding: 6px 10px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border-strong);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+      }
     script.
       document.documentElement.classList.add('dark');
   body.bg-surface-alt.text-text-primary.min-h-screen.flex.flex-col.antialiased
@@ -23,7 +56,21 @@ html(lang="en")
             span.text-red-600 AI
         nav.flex.items-center.gap-4
           a.text-sm.text-text-secondary.hover_text-text-primary.transition-colors(href="/collections") My collections
-          a.text-sm.text-text-secondary.hover_text-text-primary.transition-colors(href="/settings") Settings
+          .w-px.h-4.bg-border-strong
+          a.nav-icon(href="/settings" data-tooltip="Settings")
+            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;")
+              circle(cx="12" cy="12" r="3")
+              path(d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z")
+          a.nav-icon(href="/welcome" data-tooltip="Help")
+            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;")
+              circle(cx="12" cy="12" r="10")
+              path(d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3")
+              line(x1="12" y1="17" x2="12.01" y2="17")
+          a.nav-icon(href="/sync" data-tooltip="Sync")
+            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;")
+              polyline(points="23 4 23 10 17 10")
+              polyline(points="1 20 1 14 7 14")
+              path(d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15")
 
     main.max-w-2xl.mx-auto.w-full.px-4.py-10.flex-1
       block content
