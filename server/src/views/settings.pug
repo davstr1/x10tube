@@ -24,10 +24,8 @@ block content
           | Show icons next to video titles on YouTube.
           br
           | Click them to quickly add videos without opening each one.
-      label.flex-shrink-0(style="cursor: pointer;")
-        input#youtube-power-mode-checkbox(type="checkbox" checked=(settings.youtube_power_mode !== false) style="display: none;")
-        .toggle-switch(style="width: 44px; height: 24px; border-radius: 12px; position: relative; transition: background 0.2s;")
-          .toggle-knob(style="width: 20px; height: 20px; border-radius: 10px; background: white; position: absolute; top: 2px; transition: left 0.2s;")
+      #youtube-power-mode-toggle.flex-shrink-0(data-enabled=(settings.youtube_power_mode !== false ? 'true' : 'false') style="cursor: pointer; width: 44px; height: 24px; border-radius: 12px; position: relative; transition: background 0.2s;")
+        .toggle-knob(style="width: 20px; height: 20px; border-radius: 10px; background: white; position: absolute; top: 2px; transition: left 0.2s;")
 
   //- Default prompt
   .bg-surface.border.border-border-strong.rounded-lg.p-4.mb-6
@@ -69,18 +67,26 @@ block content
   script.
     (function() {
       // YouTube Power Mode toggle
-      const ytCheckbox = document.getElementById('youtube-power-mode-checkbox');
-      const toggleSwitch = document.querySelector('.toggle-switch');
-      const toggleKnob = document.querySelector('.toggle-knob');
+      const toggle = document.getElementById('youtube-power-mode-toggle');
+      const toggleKnob = toggle ? toggle.querySelector('.toggle-knob') : null;
 
-      console.log('[Settings] Toggle elements:', { ytCheckbox, toggleSwitch, toggleKnob });
+      console.log('[Settings] Toggle element found:', !!toggle);
+
+      if (!toggle || !toggleKnob) {
+        console.error('[Settings] Toggle elements not found!');
+        return;
+      }
+
+      function isEnabled() {
+        return toggle.dataset.enabled === 'true';
+      }
 
       function updateToggleUI() {
-        if (ytCheckbox.checked) {
-          toggleSwitch.style.background = '#dc2626';
+        if (isEnabled()) {
+          toggle.style.background = '#dc2626';
           toggleKnob.style.left = '22px';
         } else {
-          toggleSwitch.style.background = '#3f3f3f';
+          toggle.style.background = '#3f3f3f';
           toggleKnob.style.left = '2px';
         }
       }
@@ -88,23 +94,23 @@ block content
       // Set initial state
       updateToggleUI();
 
-      // Handle click on toggle switch directly
-      toggleSwitch.addEventListener('click', async function(e) {
-        e.preventDefault();
-        ytCheckbox.checked = !ytCheckbox.checked;
+      // Handle click
+      toggle.addEventListener('click', async function() {
+        const newValue = !isEnabled();
+        toggle.dataset.enabled = newValue ? 'true' : 'false';
         updateToggleUI();
-        console.log('[Settings] YouTube Power Mode toggled to:', ytCheckbox.checked);
+        console.log('[Settings] YouTube Power Mode toggled to:', newValue);
         // Save to server
         try {
           const response = await fetch('/api/settings/youtube-power-mode', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: ytCheckbox.checked })
+            body: JSON.stringify({ enabled: newValue })
           });
           const data = await response.json();
           console.log('[Settings] Server response:', data);
         } catch (e) {
-          console.error('Failed to save YouTube Power Mode setting:', e);
+          console.error('[Settings] Failed to save:', e);
         }
       });
 
