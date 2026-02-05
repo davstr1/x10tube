@@ -60,7 +60,7 @@ block content
             span Send to my AI
 
     //- Method 3: Keyboard shortcut
-    section.bg-surface.border.border-border-default.rounded-lg(style="padding: 2rem;")
+    section.bg-surface.border.border-border-default.rounded-lg(style="padding: 2rem; margin-bottom: 1.5rem;")
       h2.text-base.font-medium.text-text-primary.mb-4 3. Keyboard shortcut
       p.text-sm.text-text-secondary.mb-6 Press this shortcut from any page.
       .bg-surface-alt.rounded-lg.text-center(style="padding: 1.5rem;")
@@ -78,6 +78,51 @@ block content
           span Remember: A like AI
       p.text-sm.text-text-muted.mt-4.text-center
         | Customize in #[a.underline(href="chrome://extensions/shortcuts" target="_blank") chrome://extensions/shortcuts]
+
+    //- Method 4: YouTube Power Mode
+    section.bg-surface.border.border-border-default.rounded-lg(style="padding: 2rem;")
+      .flex.items-center.gap-3.mb-4
+        h2.text-base.font-medium.text-text-primary YouTube Power Mode
+        span.text-xs.bg-surface-alt.text-text-muted.border.border-border-default.px-2.py-1.rounded Bonus
+      p.text-sm.text-text-secondary.mb-6
+        | On YouTube, add multiple videos without opening each one.
+        br
+        | Just click the icon next to any video title.
+      .bg-surface-alt.rounded-lg(style="padding: 1.5rem;")
+        .space-y-4
+          //- Video item 1
+          .flex.items-start.gap-4
+            .bg-surface.rounded.flex-shrink-0(style="width: 90px; height: 50px;")
+            .flex.items-start.gap-2.flex-1
+              svg.flex-shrink-0(viewBox="0 0 100 100" style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;")
+                path(d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626")
+                circle(cx="65" cy="50" r="6" fill="#ffffff")
+                circle(cx="82" cy="50" r="6" fill="#ffffff")
+              div
+                .text-sm.text-text-primary How to make the perfect pasta
+                .text-xs.text-text-muted 125K views
+          //- Video item 2
+          .flex.items-start.gap-4
+            .bg-surface.rounded.flex-shrink-0(style="width: 90px; height: 50px;")
+            .flex.items-start.gap-2.flex-1
+              svg.flex-shrink-0(viewBox="0 0 100 100" style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;")
+                path(d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626")
+                circle(cx="65" cy="50" r="6" fill="#ffffff")
+                circle(cx="82" cy="50" r="6" fill="#ffffff")
+              div
+                .text-sm.text-text-primary 10 tips for better productivity
+                .text-xs.text-text-muted 89K views
+          //- Video item 3
+          .flex.items-start.gap-4
+            .bg-surface.rounded.flex-shrink-0(style="width: 90px; height: 50px;")
+            .flex.items-start.gap-2.flex-1
+              svg.flex-shrink-0(viewBox="0 0 100 100" style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;")
+                path(d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626")
+                circle(cx="65" cy="50" r="6" fill="#ffffff")
+                circle(cx="82" cy="50" r="6" fill="#ffffff")
+              div
+                .text-sm.text-text-primary The future of AI explained
+                .text-xs.text-text-muted 1.2M views
 
   //- Footer
   section.text-center.pt-8.border-t.border-border-default(style="margin-top: 3rem;")
