@@ -436,6 +436,7 @@ interface OverlayOptions {
   centered: boolean;
   anchorElement?: HTMLElement;
   videoId?: string;
+  videoTitle?: string;
   context?: OverlayContext;
 }
 
@@ -952,14 +953,24 @@ function getDurationFromPage(): string | undefined {
 function getPageInfo(options: OverlayOptions): PageInfo {
   // Case 1: Explicit videoId (click on YouTube title button)
   if (options.videoId) {
+    // Use passed title if available (from sidebar/recommendations)
+    // Otherwise fall back to page title (for main video button)
+    const title = options.videoTitle
+      || getVideoTitleFromPage()
+      || document.title.replace(' - YouTube', '');
+
+    // Only get channel/duration if no videoTitle was passed (main video on page)
+    const channel = options.videoTitle ? undefined : getChannelFromPage();
+    const duration = options.videoTitle ? undefined : getDurationFromPage();
+
     return {
       type: 'youtube-video',
-      title: getVideoTitleFromPage() || document.title.replace(' - YouTube', ''),
+      title,
       url: `https://www.youtube.com/watch?v=${options.videoId}`,
       thumbnail: `https://img.youtube.com/vi/${options.videoId}/mqdefault.jpg`,
       videoId: options.videoId,
-      channel: getChannelFromPage(),
-      duration: getDurationFromPage()
+      channel,
+      duration
     };
   }
 
@@ -1436,11 +1447,12 @@ async function handleAddToCollection(x10Id: string, x10Title: string, url: strin
 }
 
 // Legacy function - now uses unified showOverlay
-async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement): Promise<void> {
+async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement, videoTitle?: string): Promise<void> {
   await showOverlay({
     centered: false,
     anchorElement,
-    videoId
+    videoId,
+    videoTitle
   });
 }
 
@@ -1556,25 +1568,76 @@ async function handleCopyMDContent(url: string): Promise<void> {
 // Title Button Injection
 // ============================================
 
-function createTitleButton(videoId: string): HTMLButtonElement {
+// Extract video info from DOM at click time (handles YouTube's DOM recycling)
+function extractVideoInfoFromButton(btn: HTMLElement): { videoId: string | null; videoTitle: string | null } {
+  // Find the video container by traversing up the DOM
+  const container = btn.closest(
+    'ytd-playlist-video-renderer, ' +
+    'yt-lockup-metadata-view-model, ' +
+    'ytd-video-renderer, ' +
+    'ytd-rich-item-renderer, ' +
+    'ytd-compact-video-renderer, ' +
+    'ytd-watch-metadata'
+  );
+
+  if (!container) return { videoId: null, videoTitle: null };
+
+  // For watch page main video, use page info
+  if (container.tagName.toLowerCase() === 'ytd-watch-metadata') {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+      videoId: urlParams.get('v'),
+      videoTitle: null  // Will fall back to getVideoTitleFromPage()
+    };
+  }
+
+  // Find the title link in the container
+  const titleLink = container.querySelector(
+    'a#video-title, ' +
+    'a.yt-lockup-metadata-view-model__title, ' +
+    'a#video-title-link'
+  ) as HTMLAnchorElement | null;
+
+  let videoId = titleLink?.href ? extractVideoIdFromUrl(titleLink.href) : null;
+  const videoTitle = titleLink?.title || titleLink?.textContent?.trim() || null;
+
+  // Fallback: try content-id-XXX class
+  if (!videoId) {
+    const lockup = container.closest('yt-lockup-view-model');
+    const contentDiv = lockup?.querySelector('[class*="content-id-"]');
+    if (contentDiv) {
+      const contentClass = Array.from(contentDiv.classList).find(c => c.startsWith('content-id-'));
+      videoId = contentClass?.replace('content-id-', '') || null;
+    }
+  }
+
+  return { videoId, videoTitle };
+}
+
+function createTitleButton(): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = 'stya-title-btn';
   btn.innerHTML = '<svg viewBox="0 0 100 100" style="width:14px;height:14px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg>';
   btn.title = 'Add to StraightToYourAI';
-  btn.dataset.videoId = videoId;
 
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // If dropdown is already open for this button, close it
-    if (isDropdownOpen) {
-      closeDropdown();
+
+    // Extract videoId and title AT CLICK TIME from DOM
+    const { videoId, videoTitle } = extractVideoInfoFromButton(btn);
+
+    if (!videoId) {
+      showToast('Could not find video ID', 'error');
       return;
     }
-    const vid = btn.dataset.videoId;
-    if (vid) {
-      showDropdownForVideo(vid, btn);
+
+    // If dropdown is already open, close it (toggle behavior)
+    if (isDropdownOpen) {
+      closeDropdown();
     }
+
+    showDropdownForVideo(videoId, btn, videoTitle || undefined);
   });
 
   return btn;
@@ -1602,7 +1665,7 @@ function injectTitleButtons(): void {
         const h3 = titleLink.closest('h3');
         if (!h3 || h3.querySelector('.stya-title-btn')) return;
 
-        const btn = createTitleButton(videoId);
+        const btn = createTitleButton();
         h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
@@ -1640,7 +1703,7 @@ function injectTitleButtons(): void {
         if (!videoId) return;
         if (h3.querySelector('.stya-title-btn')) return;
 
-        const btn = createTitleButton(videoId);
+        const btn = createTitleButton();
         h3.insertBefore(btn, h3.firstChild);
         count++;
       } catch (e) {
@@ -1665,7 +1728,7 @@ function injectTitleButtons(): void {
         const titleContainer = titleLink.closest('#details, #meta');
         if (!titleContainer || titleContainer.querySelector('.stya-title-btn')) return;
 
-        const btn = createTitleButton(videoId);
+        const btn = createTitleButton();
         titleContainer.insertBefore(btn, titleContainer.firstChild);
         count++;
       } catch (e) {
@@ -1686,7 +1749,7 @@ function injectTitleButtons(): void {
         if (videoId) {
           const titleContainer = watchPage.querySelector('#title h1, h1.ytd-watch-metadata');
           if (titleContainer && !titleContainer.querySelector('.stya-title-btn')) {
-            const btn = createTitleButton(videoId);
+            const btn = createTitleButton();
             titleContainer.insertBefore(btn, titleContainer.firstChild);
             count++;
           }
@@ -1713,7 +1776,7 @@ function injectTitleButtons(): void {
         const h3 = titleLink.closest('h3');
         if (!h3 || h3.querySelector('.stya-title-btn')) return;
 
-        const btn = createTitleButton(videoId);
+        const btn = createTitleButton();
         h3.insertBefore(btn, titleLink);
         count++;
       } catch (e) {
