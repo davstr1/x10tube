@@ -31,19 +31,11 @@ app.locals.chromeExtensionUrl = config.chromeExtensionUrl;
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  // Allow these origins with credentials
-  const isAllowed = origin && (
-    origin.includes('youtube.com') ||
-    origin.includes(new URL(config.baseUrl).host) ||
-    origin.startsWith('chrome-extension://') ||
-    origin.startsWith('moz-extension://')
-  );
-
-  if (isAllowed) {
+  // Allow all origins with credentials (extension needs to work on any website)
+  // The userCode cookie is not sensitive - it's a random ID for anonymous users
+  if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
