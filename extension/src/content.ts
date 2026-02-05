@@ -952,6 +952,58 @@ function injectStyles(): void {
     #stya-dropdown .x10-news-close:hover {
       color: #fff !important;
     }
+
+    /* Review prompt banner */
+    #stya-dropdown .x10-review-banner {
+      display: none;
+      flex-direction: column !important;
+      background: #1e3a5f !important;
+      padding: 12px 16px !important;
+      gap: 6px !important;
+      margin: 0 !important;
+      border: none !important;
+      position: relative !important;
+    }
+    #stya-dropdown .x10-review-banner.visible {
+      display: flex !important;
+    }
+    #stya-dropdown .x10-review-row {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+    #stya-dropdown .x10-review-row a {
+      color: #fff !important;
+      text-decoration: none !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+    }
+    #stya-dropdown .x10-review-row a:hover {
+      text-decoration: underline !important;
+    }
+    #stya-dropdown .x10-review-row svg {
+      width: 14px !important;
+      height: 14px !important;
+      flex-shrink: 0 !important;
+    }
+    #stya-dropdown .x10-review-close {
+      position: absolute !important;
+      top: 8px !important;
+      right: 8px !important;
+      background: none !important;
+      border: none !important;
+      color: rgba(255,255,255,0.5) !important;
+      font-size: 18px !important;
+      cursor: pointer !important;
+      padding: 0 4px !important;
+      line-height: 1 !important;
+    }
+    #stya-dropdown .x10-review-close:hover {
+      color: #fff !important;
+    }
   `;
   document.head.appendChild(styles);
 }
@@ -1215,6 +1267,25 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     </div>
   `;
 
+  // Review prompt banner (hidden by default, shown after N actions if no news)
+  const reviewBanner = `
+    <div class="x10-review-banner" id="x10-review-banner">
+      <div class="x10-review-row">
+        <a href="${__CHROME_EXTENSION_URL__}/reviews" target="_blank" id="x10-review-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;min-width:14px;flex-shrink:0;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          <span>Like it? Leave a review</span>
+        </a>
+      </div>
+      <div class="x10-review-row">
+        <a href="mailto:toyourai@plstry.me?subject=StraightToYourAI Feedback" target="_blank" id="x10-feedback-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;min-width:14px;flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Got issues? Tell me</span>
+        </a>
+      </div>
+      <button class="x10-review-close" id="x10-review-close">&times;</button>
+    </div>
+  `;
+
   // Quick actions
   const quickActions = `
     <div class="x10-quick-actions">
@@ -1281,13 +1352,13 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     </div>
   `;
 
-  overlay.innerHTML = header + infoSection + newsBanner + quickActions + listAndFooter;
+  overlay.innerHTML = header + infoSection + newsBanner + reviewBanner + quickActions + listAndFooter;
 
   // Setup event listeners
   setupOverlayEventListeners(overlay, pageInfo);
 
-  // Check and show news banner
-  checkAndShowNewsBanner(overlay);
+  // Check and show news or review banner
+  checkAndShowBanners(overlay);
 
   return overlay;
 }
@@ -1360,16 +1431,39 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
   });
 }
 
-async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<void> {
+// Review prompt threshold (0 for testing, 20 for production)
+const REVIEW_PROMPT_THRESHOLD = 0;
+
+async function incrementActionCount(): Promise<void> {
+  try {
+    const data = await safeStorageGet(['actionCount']);
+    const count = (typeof data.actionCount === 'number' ? data.actionCount : 0) + 1;
+    await safeStorageSet({ actionCount: count });
+  } catch (error) {
+    // Silent fail
+  }
+}
+
+async function checkAndShowBanners(overlay: HTMLElement): Promise<void> {
+  // Try to show news banner first
+  const newsShown = await checkAndShowNewsBanner(overlay);
+
+  // If no news, try to show review banner
+  if (!newsShown) {
+    await checkAndShowReviewBanner(overlay);
+  }
+}
+
+async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<boolean> {
   const banner = overlay.querySelector('#x10-news-banner') as HTMLElement | null;
   const textEl = overlay.querySelector('#x10-news-text') as HTMLElement | null;
 
-  if (!banner || !textEl) return;
+  if (!banner || !textEl) return false;
 
   try {
     // Fetch news.json directly
     const response = await fetch(`${api.baseUrl}/news.json`);
-    if (!response.ok) return;
+    if (!response.ok) return false;
 
     const news = await response.json();
 
@@ -1378,12 +1472,12 @@ async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<void> {
     const newsTitle = news?.title;
     const newsUrl = news?.url;
 
-    if (typeof newsId !== 'string' || !newsId.trim()) return;
-    if (typeof newsTitle !== 'string' || !newsTitle.trim()) return;
+    if (typeof newsId !== 'string' || !newsId.trim()) return false;
+    if (typeof newsTitle !== 'string' || !newsTitle.trim()) return false;
 
     // Check if already seen
     const data = await safeStorageGet(['lastSeenNewsId']);
-    if (newsId === data.lastSeenNewsId) return;
+    if (newsId === data.lastSeenNewsId) return false;
 
     // Show banner
     textEl.textContent = newsTitle;
@@ -1409,8 +1503,39 @@ async function checkAndShowNewsBanner(overlay: HTMLElement): Promise<void> {
       e.stopPropagation();
       await markAsRead();
     });
+
+    return true;
   } catch (error) {
-    // Silent fail - news is non-critical
+    return false;
+  }
+}
+
+async function checkAndShowReviewBanner(overlay: HTMLElement): Promise<void> {
+  const banner = overlay.querySelector('#x10-review-banner') as HTMLElement | null;
+  if (!banner) return;
+
+  try {
+    const data = await safeStorageGet(['actionCount', 'reviewDismissed']);
+
+    // Don't show if already dismissed
+    if (data.reviewDismissed === true) return;
+
+    // Don't show if not enough actions
+    const count = typeof data.actionCount === 'number' ? data.actionCount : 0;
+    if (count < REVIEW_PROMPT_THRESHOLD) return;
+
+    // Show banner
+    banner.classList.add('visible');
+
+    // Setup dismiss handler
+    overlay.querySelector('#x10-review-close')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await safeStorageSet({ reviewDismissed: true });
+      banner.classList.remove('visible');
+    });
+  } catch (error) {
+    // Silent fail
   }
 }
 
@@ -1636,6 +1761,7 @@ async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
 
     window.open(llmUrl, '_blank');
     showToast(`Opened in ${llmType}`, 'success');
+    incrementActionCount();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleOpenInLLM error:', error);
@@ -1658,6 +1784,7 @@ async function handleCopyMDLink(url: string): Promise<void> {
     const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
     await navigator.clipboard.writeText(mdUrl);
     showToast('MD link copied!', 'success');
+    incrementActionCount();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDLink error:', error);
@@ -1685,6 +1812,7 @@ async function handleCopyMDContent(url: string): Promise<void> {
 
     await navigator.clipboard.writeText(mdContent);
     showToast('MD content copied!', 'success');
+    incrementActionCount();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDContent error:', error);
