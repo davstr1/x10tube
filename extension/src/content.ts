@@ -505,6 +505,17 @@ function injectStyles(): void {
     h3.yt-lockup-metadata-view-model__heading-reset:has(.stya-title-btn) > a {
       flex: 1;
     }
+
+    /* Playlist video renderer - Watch Later, Liked Videos, Custom Playlists */
+    ytd-playlist-video-renderer #meta h3:has(.stya-title-btn) {
+      display: flex !important;
+      align-items: flex-start !important;
+      flex-direction: row !important;
+    }
+    ytd-playlist-video-renderer #meta h3:has(.stya-title-btn) > a#video-title {
+      flex: 1;
+    }
+
     .stya-title-btn:hover {
       opacity: 1;
       transform: scale(1.15);
@@ -1685,6 +1696,31 @@ function injectTitleButtons(): void {
         console.log('[STYA] Error injecting watch page button:', errorMessage);
       }
     }
+
+    // Format 5: Playlist items (ytd-playlist-video-renderer) - Watch Later, Liked Videos, Custom Playlists
+    const playlistItems = document.querySelectorAll('ytd-playlist-video-renderer:not([data-x10-processed]) a#video-title');
+
+    playlistItems.forEach(titleLink => {
+      try {
+        const renderer = titleLink.closest('ytd-playlist-video-renderer');
+        if (!renderer) return;
+
+        renderer.setAttribute('data-x10-processed', 'true');
+
+        const videoId = extractVideoIdFromUrl((titleLink as HTMLAnchorElement).href);
+        if (!videoId) return;
+
+        const h3 = titleLink.closest('h3');
+        if (!h3 || h3.querySelector('.stya-title-btn')) return;
+
+        const btn = createTitleButton(videoId);
+        h3.insertBefore(btn, titleLink);
+        count++;
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        console.log('[STYA] Error injecting playlist button:', errorMessage);
+      }
+    });
 
   } catch (e) {
     console.error('[STYA] Error in injectTitleButtons:', e);
