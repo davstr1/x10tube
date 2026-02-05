@@ -626,6 +626,10 @@ function injectStyles(): void {
     .x10-dropdown-header .x10-logo {
       font-size: 16px;
       font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .x10-dropdown-header .x10-logo-main {
       color: #f1f1f1;
