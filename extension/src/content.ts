@@ -212,6 +212,17 @@ class X10API {
     }
   }
 
+  async getSettings(): Promise<{ youtube_power_mode: boolean } | null> {
+    try {
+      const data = await this._fetch('/api/settings');
+      if (!data._ok) throw new Error(`HTTP ${data._status}`);
+      return { youtube_power_mode: data.youtube_power_mode as boolean ?? true };
+    } catch (error) {
+      console.error('[STYA] getSettings error:', error);
+      return null;
+    }
+  }
+
   // Extract transcript locally and send to server (frontend extraction)
   // Optimized: checks if item exists on server first to skip extraction
   async createX10WithExtraction(
@@ -1790,7 +1801,7 @@ const urlObserver = new MutationObserver(() => {
 // Initialization
 // ============================================
 
-function init(): void {
+async function init(): Promise<void> {
   console.log('[STYA] Initializing...', isYouTube ? '(YouTube)' : '(Web page)');
 
   injectStyles();
@@ -1798,8 +1809,16 @@ function init(): void {
 
   // YouTube-specific features
   if (isYouTube) {
-    createMasterToggle();
-    setTimeout(startTitleButtonInjection, 1000);
+    // Check if YouTube Power Mode is enabled
+    await api.init();
+    const settings = await api.getSettings();
+    const youtubePowerModeEnabled = settings?.youtube_power_mode !== false;
+
+    if (youtubePowerModeEnabled) {
+      createMasterToggle();
+      setTimeout(startTitleButtonInjection, 1000);
+    }
+
     urlObserver.observe(document.body, { subtree: true, childList: true });
     window.addEventListener('popstate', onUrlChange);
   }

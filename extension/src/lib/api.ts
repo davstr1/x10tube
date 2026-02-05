@@ -319,6 +319,22 @@ export class StyaAPI {
     }
   }
 
+  // Get user settings
+  async getSettings(): Promise<{ youtube_power_mode: boolean } | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/settings`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('[STYA] getSettings error:', error);
+      return null;
+    }
+  }
+
   getDashboardUrl(): string {
     return `${this.baseUrl}/collections`;
   }

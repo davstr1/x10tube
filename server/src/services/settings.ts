@@ -4,6 +4,7 @@ import { supabase } from '../supabase.js';
 export interface UserSettings {
   user_code: string;
   default_pre_prompt: string | null;
+  youtube_power_mode: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +31,7 @@ export async function getUserSettings(userCode: string): Promise<UserSettings> {
   const newSettings: UserSettings = {
     user_code: userCode,
     default_pre_prompt: DEFAULT_PRE_PROMPT,
+    youtube_power_mode: true,
     created_at: now,
     updated_at: now
   };
@@ -59,6 +61,25 @@ export async function updateDefaultPrePrompt(userCode: string, prePrompt: string
 
   if (error) {
     console.error('[Settings] Error updating pre-prompt:', error);
+  }
+
+  return getUserSettings(userCode);
+}
+
+// Update YouTube Power Mode setting
+export async function updateYoutubePowerMode(userCode: string, enabled: boolean): Promise<UserSettings> {
+  const now = new Date().toISOString();
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_code: userCode,
+      youtube_power_mode: enabled,
+      updated_at: now
+    });
+
+  if (error) {
+    console.error('[Settings] Error updating YouTube Power Mode:', error);
   }
 
   return getUserSettings(userCode);
