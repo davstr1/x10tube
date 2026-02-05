@@ -957,7 +957,7 @@ function injectStyles(): void {
     #stya-dropdown .x10-review-banner {
       display: none;
       flex-direction: column !important;
-      background: #1e3a5f !important;
+      background: transparent !important;
       padding: 12px 16px !important;
       gap: 6px !important;
       margin: 0 !important;
@@ -973,7 +973,7 @@ function injectStyles(): void {
       gap: 8px !important;
     }
     #stya-dropdown .x10-review-row a {
-      color: #fff !important;
+      color: #E8C547 !important;
       text-decoration: none !important;
       font-size: 13px !important;
       font-weight: 500 !important;
@@ -982,12 +982,21 @@ function injectStyles(): void {
       gap: 6px !important;
     }
     #stya-dropdown .x10-review-row a:hover {
+      color: #F5D76E !important;
       text-decoration: underline !important;
     }
     #stya-dropdown .x10-review-row svg {
       width: 14px !important;
       height: 14px !important;
       flex-shrink: 0 !important;
+    }
+    #stya-dropdown .x10-review-star {
+      color: #D4A017 !important;
+      fill: #D4A017 !important;
+    }
+    #stya-dropdown .x10-review-message {
+      color: #9CA3AF !important;
+      stroke: #9CA3AF !important;
     }
     #stya-dropdown .x10-review-close {
       position: absolute !important;
@@ -1272,13 +1281,13 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     <div class="x10-review-banner" id="x10-review-banner">
       <div class="x10-review-row">
         <a href="${__CHROME_EXTENSION_URL__}/reviews" target="_blank" id="x10-review-link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;min-width:14px;flex-shrink:0;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          <svg class="x10-review-star" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;min-width:14px;flex-shrink:0;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
           <span>Like it? Leave a review</span>
         </a>
       </div>
       <div class="x10-review-row">
         <a href="mailto:toyourai@plstry.me?subject=StraightToYourAI Feedback" target="_blank" id="x10-feedback-link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;min-width:14px;flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <svg class="x10-review-message" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;min-width:14px;flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span>Got issues? Tell me</span>
         </a>
       </div>
