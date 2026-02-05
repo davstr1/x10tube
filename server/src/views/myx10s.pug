@@ -33,7 +33,12 @@ block content
     .dropdown:hover .dropdown-menu { display: block; }
 
   .flex.justify-between.items-center.mb-8
-    h1.text-2xl.font-semibold.text-text-primary My collections
+    h1.text-2xl.font-semibold.text-text-primary.flex.items-center.gap-3
+      svg.text-text-muted(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;")
+        polygon(points="12 2 2 7 12 12 22 7 12 2")
+        polyline(points="2 17 12 22 22 17")
+        polyline(points="2 12 12 17 22 12")
+      | My collections
     a.bg-red-600.hover_bg-red-700.text-white.px-4.py-2.rounded-md.text-sm.font-medium.no-underline(href="/welcome") + New
 
   //- Main content: X10s list
