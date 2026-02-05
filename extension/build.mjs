@@ -10,7 +10,6 @@ const PROD_URL = 'https://toyourai.plstry.me';
 const entryPoints = [
   'src/background.ts',
   'src/content.ts',
-  'src/popup.ts',
 ];
 
 const commonOptions = {
@@ -25,10 +24,7 @@ const commonOptions = {
 
 // Copy static files to a dist folder
 function copyStatic(outdir) {
-  mkdirSync(`${outdir}/popup`, { recursive: true });
   mkdirSync(`${outdir}/icons`, { recursive: true });
-  cpSync('popup/popup.html', `${outdir}/popup/popup.html`);
-  cpSync('popup/popup.css', `${outdir}/popup/popup.css`);
   cpSync('icons', `${outdir}/icons`, { recursive: true });
   cpSync('manifest.json', `${outdir}/manifest.json`);
   try { cpSync('claude-inject.js', `${outdir}/claude-inject.js`); } catch {}

@@ -1,7 +1,13 @@
-// StraightToYourAI Content Script for YouTube
-// Injects button next to video titles
+// StraightToYourAI Content Script
+// Universal overlay for YouTube and web pages
 
 import { config } from './lib/config';
+
+// ============================================
+// Context Detection
+// ============================================
+
+const isYouTube = window.location.hostname.includes('youtube.com');
 import type { AddContentPayload } from './lib/types';
 import { getTranscript, extractVideoId as extractYoutubeId } from './lib/innertube';
 
@@ -57,10 +63,21 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-// Listen for messages from popup
+// Listen for messages from background/popup
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (!isExtensionContextValid()) return;
 
+  // Open overlay (from background.ts via icon click, keyboard shortcut, or context menu)
+  if (request.action === 'openOverlay') {
+    showOverlay({
+      centered: request.centered ?? true,
+      context: request.context
+    });
+    sendResponse({ success: true });
+    return true;
+  }
+
+  // Get video info (legacy - for compatibility)
   if (request.action === 'getVideoInfo') {
     const urlParams = new URLSearchParams(window.location.search);
     const videoId = urlParams.get('v');
@@ -395,11 +412,42 @@ class X10API {
 const api = new X10API();
 
 // ============================================
+// Types for Overlay
+// ============================================
+
+interface OverlayContext {
+  linkUrl?: string;
+  srcUrl?: string;
+  pageUrl?: string;
+}
+
+interface OverlayOptions {
+  centered: boolean;
+  anchorElement?: HTMLElement;
+  videoId?: string;
+  context?: OverlayContext;
+}
+
+interface PageInfo {
+  type: 'youtube-video' | 'webpage' | 'link';
+  title: string;
+  url: string;
+  thumbnail?: string;
+  favicon?: string;
+  videoId?: string;
+  channel?: string;
+  duration?: string;
+}
+
+// ============================================
 // State
 // ============================================
 
 let isDropdownOpen = false;
 let currentX10s: X10Collection[] = [];
+let overlayElement: HTMLDivElement | null = null;
+let backdropElement: HTMLDivElement | null = null;
+let currentPageInfo: PageInfo | null = null;
 let videoInX10s: string[] = [];
 let titleButtonsEnabled = true;
 let titleButtonInterval: ReturnType<typeof setInterval> | null = null;
@@ -806,134 +854,56 @@ function injectStyles(): void {
       from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
+
+    /* Backdrop for centered overlay */
+    #stya-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2147483646;
+      animation: stya-fade-in 0.15s ease-out;
+    }
+
+    @keyframes stya-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Centered mode for overlay (horizontally centered, top aligned) */
+    #stya-dropdown.stya-centered {
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: stya-scale-in 0.15s ease-out;
+    }
+
+    @keyframes stya-scale-in {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
+    /* Page icon (for web pages instead of video thumbnail) */
+    .x10-page-icon {
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border-radius: 8px;
+      background-color: #3f3f3f;
+    }
   `;
   document.head.appendChild(styles);
-}
-
-// ============================================
-// Dropdown
-// ============================================
-
-function createDropdown(): HTMLDivElement {
-  const dropdown = document.createElement('div');
-  dropdown.id = 'stya-dropdown';
-  dropdown.innerHTML = `
-    <div class="x10-dropdown-header">
-      <span class="x10-logo"><svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg><span class="x10-logo-main">StraightToYour</span><span class="x10-logo-ai">AI</span></span>
-      <button class="x10-dropdown-close">&times;</button>
-    </div>
-    <div class="x10-video-info" id="x10-video-info">
-      <div class="x10-video-thumb" id="x10-video-thumb"></div>
-      <div class="x10-video-details">
-        <div class="x10-video-title" id="x10-video-title"></div>
-        <div class="x10-video-meta" id="x10-video-meta"></div>
-      </div>
-    </div>
-    <div class="x10-quick-actions">
-      <button class="x10-quick-item" id="x10-open-direct" style="display:none;">
-        <span class="x10-quick-icon"></span>
-        <span id="x10-open-direct-label">Open in</span>
-      </button>
-      <button class="x10-quick-item" id="x10-open-in">
-        <span class="x10-quick-icon">▸</span>
-        <span>Open in...</span>
-      </button>
-      <div class="x10-submenu-inline" id="x10-llm-submenu">
-        <button class="x10-submenu-item" data-llm="claude">Claude</button>
-        <button class="x10-submenu-item" data-llm="chatgpt">ChatGPT</button>
-        <button class="x10-submenu-item" data-llm="gemini">Gemini</button>
-        <button class="x10-submenu-item" data-llm="perplexity">Perplexity</button>
-        <button class="x10-submenu-item" data-llm="grok">Grok</button>
-        <button class="x10-submenu-item" data-llm="copilot">Copilot</button>
-      </div>
-      <button class="x10-quick-item" id="x10-copy-link">
-        <span class="x10-quick-icon">🔗</span>
-        <span>Copy MD Link</span>
-      </button>
-      <button class="x10-quick-item" id="x10-copy-content">
-        <span class="x10-quick-icon">📋</span>
-        <span>Copy MD Content</span>
-      </button>
-    </div>
-    <div class="x10-section-label">Add to...</div>
-    <div class="x10-list" id="stya-list"></div>
-    <div class="x10-footer">
-      <a href="#" id="stya-dashboard">My collections</a>
-      <span style="color:#555;">·</span>
-      <a href="#" id="stya-sync">Sync</a>
-    </div>
-  `;
-
-  dropdown.querySelector('.x10-dropdown-close')?.addEventListener('click', closeDropdown);
-  dropdown.querySelector('#stya-dashboard')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.open(api.getDashboardUrl(), '_blank');
-  });
-  dropdown.querySelector('#stya-sync')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.open(`${api.baseUrl}/sync`, '_blank');
-  });
-
-  // Direct open button
-  dropdown.querySelector('#x10-open-direct')?.addEventListener('click', async () => {
-    const videoId = dropdown.dataset.currentVideoId;
-    if (!videoId) { showToast('Please select a video first', 'error'); return; }
-    const data = await safeStorageGet(['styaLastLLM']);
-    if (!data.styaLastLLM) return;
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-    handleOpenInLLM(url, data.styaLastLLM as string);
-  });
-
-  // Toggle "Open in..." submenu on click
-  dropdown.querySelector('#x10-open-in')?.addEventListener('click', () => {
-    const submenu = dropdown.querySelector('#x10-llm-submenu');
-    submenu?.classList.toggle('open');
-    const arrow = dropdown.querySelector('#x10-open-in .x10-quick-icon');
-    if (arrow) arrow.textContent = submenu?.classList.contains('open') ? '▾' : '▸';
-  });
-
-  // Quick action handlers - use the videoId from dropdown state
-  dropdown.querySelectorAll('.x10-submenu-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const videoId = dropdown.dataset.currentVideoId;
-      if (!videoId) {
-        showToast('Please select a video first', 'error');
-        return;
-      }
-      const llm = (item as HTMLElement).dataset.llm;
-      if (!llm) return;
-      // Save preference
-      safeStorageSet({ styaLastLLM: llm });
-      updateDirectButton(dropdown, llm);
-      const url = `https://www.youtube.com/watch?v=${videoId}`;
-      handleOpenInLLM(url, llm);
-    });
-  });
-
-  dropdown.querySelector('#x10-copy-link')?.addEventListener('click', () => {
-    const videoId = dropdown.dataset.currentVideoId;
-    if (!videoId) {
-      showToast('Please select a video first', 'error');
-      return;
-    }
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-    handleCopyMDLink(url);
-  });
-
-  dropdown.querySelector('#x10-copy-content')?.addEventListener('click', () => {
-    const videoId = dropdown.dataset.currentVideoId;
-    if (!videoId) {
-      showToast('Please select a video first', 'error');
-      return;
-    }
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-    handleCopyMDContent(url);
-  });
-
-  dropdown.addEventListener('click', (e) => e.stopPropagation());
-
-  return dropdown;
 }
 
 const LLM_NAMES: Record<string, string> = {
@@ -954,94 +924,382 @@ function updateDirectButton(dropdown: HTMLElement, llmKey: string): void {
   }
 }
 
-function closeDropdown(): void {
-  const dropdown = document.getElementById('stya-dropdown');
-  if (dropdown) {
-    dropdown.classList.remove('open');
-    dropdown.style.display = 'none';
+// ============================================
+// Page Info Helpers
+// ============================================
+
+function getFavicon(): string {
+  const link = document.querySelector<HTMLLinkElement>(
+    'link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]'
+  );
+  if (link?.href) return link.href;
+  return `https://www.google.com/s2/favicons?domain=${window.location.hostname}&sz=64`;
+}
+
+function getFaviconForUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+  } catch {
+    return '';
+  }
+}
+
+function getVideoTitleFromPage(): string | null {
+  return document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim()
+    || document.querySelector('h1.ytd-watch-metadata')?.textContent?.trim()
+    || null;
+}
+
+function getChannelFromPage(): string | undefined {
+  return document.querySelector('#channel-name a')?.textContent?.trim()
+    || document.querySelector('ytd-channel-name a')?.textContent?.trim()
+    || undefined;
+}
+
+function getDurationFromPage(): string | undefined {
+  return document.querySelector('.ytp-time-duration')?.textContent || undefined;
+}
+
+function getPageInfo(options: OverlayOptions): PageInfo {
+  // Case 1: Explicit videoId (click on YouTube title button)
+  if (options.videoId) {
+    return {
+      type: 'youtube-video',
+      title: getVideoTitleFromPage() || document.title.replace(' - YouTube', ''),
+      url: `https://www.youtube.com/watch?v=${options.videoId}`,
+      thumbnail: `https://img.youtube.com/vi/${options.videoId}/mqdefault.jpg`,
+      videoId: options.videoId,
+      channel: getChannelFromPage(),
+      duration: getDurationFromPage()
+    };
+  }
+
+  // Case 2: YouTube page with current video
+  if (isYouTube && window.location.pathname === '/watch') {
+    const videoId = new URLSearchParams(window.location.search).get('v');
+    if (videoId) {
+      return {
+        type: 'youtube-video',
+        title: document.title.replace(' - YouTube', ''),
+        url: window.location.href,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+        videoId,
+        channel: getChannelFromPage(),
+        duration: getDurationFromPage()
+      };
+    }
+  }
+
+  // Case 3: Link (right-click on a link)
+  if (options.context?.linkUrl) {
+    const linkUrl = options.context.linkUrl;
+    // Detect if it's a YouTube link
+    const ytMatch = linkUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+    if (ytMatch) {
+      return {
+        type: 'youtube-video',
+        title: linkUrl,
+        url: linkUrl,
+        thumbnail: `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`,
+        videoId: ytMatch[1]
+      };
+    }
+    return {
+      type: 'link',
+      title: linkUrl,
+      url: linkUrl,
+      favicon: getFaviconForUrl(linkUrl)
+    };
+  }
+
+  // Case 4: Standard web page
+  return {
+    type: 'webpage',
+    title: document.title || window.location.hostname,
+    url: window.location.href,
+    favicon: getFavicon()
+  };
+}
+
+// ============================================
+// Unified Overlay
+// ============================================
+
+function handleEscapeKey(e: KeyboardEvent): void {
+  if (e.key === 'Escape') {
+    closeOverlay();
+  }
+}
+
+function closeOverlay(): void {
+  // Remove overlay
+  if (overlayElement) {
+    overlayElement.classList.remove('open', 'stya-centered');
+    overlayElement.remove();
+    overlayElement = null;
+  }
+  // Remove backdrop
+  if (backdropElement) {
+    backdropElement.remove();
+    backdropElement = null;
   }
   // Restore page scroll
   document.body.style.overflow = '';
+  // Remove escape key listener
+  document.removeEventListener('keydown', handleEscapeKey);
   isDropdownOpen = false;
+  currentPageInfo = null;
 }
 
-async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement): Promise<void> {
-  injectStyles();
-  createToast();
+// Legacy alias for compatibility
+function closeDropdown(): void {
+  closeOverlay();
+}
 
-  let dropdown = document.getElementById('stya-dropdown') as HTMLDivElement | null;
-  if (!dropdown) {
-    dropdown = createDropdown();
-    document.body.appendChild(dropdown);
-  }
-
-  dropdown.dataset.currentVideoId = videoId;
-
-  // Reset submenu state (close it)
-  dropdown.querySelector('#x10-llm-submenu')?.classList.remove('open');
-  const openInIcon = dropdown.querySelector('#x10-open-in .x10-quick-icon');
-  if (openInIcon) openInIcon.textContent = '▸';
-
-  // Populate video info
-  const thumbEl = dropdown.querySelector('#x10-video-thumb') as HTMLElement | null;
-  const titleEl = dropdown.querySelector('#x10-video-title');
-  const metaEl = dropdown.querySelector('#x10-video-meta');
-  if (thumbEl) thumbEl.style.backgroundImage = `url(https://img.youtube.com/vi/${videoId}/mqdefault.jpg)`;
-  // Get title from the anchor element's context
-  const titleText = anchorElement.closest('h3, #title')?.textContent?.trim()
-    || document.title.replace(' - YouTube', '');
-  if (titleEl) titleEl.textContent = titleText;
-  if (metaEl) metaEl.textContent = 'YouTube video';
-
-  // Position near the button
-  const rect = anchorElement.getBoundingClientRect();
-  const dropdownWidth = 280;
-  const dropdownHeight = 300;
+function positionNearAnchor(overlay: HTMLElement, anchor: HTMLElement): void {
+  const rect = anchor.getBoundingClientRect();
+  const overlayWidth = 280;
+  const overlayHeight = 300;
 
   let top = rect.bottom + 8;
   let left = rect.left;
 
   // Keep within viewport
-  if (left + dropdownWidth > window.innerWidth) {
-    left = window.innerWidth - dropdownWidth - 10;
+  if (left + overlayWidth > window.innerWidth) {
+    left = window.innerWidth - overlayWidth - 10;
   }
-  if (top + dropdownHeight > window.innerHeight) {
-    top = rect.top - dropdownHeight - 8;
+  if (top + overlayHeight > window.innerHeight) {
+    top = rect.top - overlayHeight - 8;
   }
   if (left < 10) left = 10;
   if (top < 10) top = 10;
 
-  dropdown.style.top = top + 'px';
-  dropdown.style.left = left + 'px';
+  overlay.style.top = top + 'px';
+  overlay.style.left = left + 'px';
+}
 
-  // Block page scroll while dropdown is open
-  document.body.style.overflow = 'hidden';
-
-  // Load last LLM preference and show direct button if set
-  const llmData = await safeStorageGet(['styaLastLLM']);
-  if (llmData.styaLastLLM) {
-    updateDirectButton(dropdown, llmData.styaLastLLM as string);
-  }
-
-  dropdown.classList.add('open');
-  dropdown.style.display = 'block';
-  isDropdownOpen = true;
-
-  await loadX10sForDropdown(videoId);
-
-  // Close on outside click
+function setupOutsideClickHandler(): void {
   setTimeout(() => {
     const closeHandler = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('#stya-dropdown') && !(e.target as Element).closest('.stya-title-btn')) {
-        closeDropdown();
-        document.removeEventListener('click', closeHandler);
+      const target = e.target as Element;
+      // Don't close if click inside overlay or on title button
+      if (target.closest('#stya-dropdown') || target.closest('.stya-title-btn')) {
+        return;
       }
+      // Don't close if click on backdrop (handled separately)
+      if (target.closest('#stya-backdrop')) {
+        return;
+      }
+      closeOverlay();
+      document.removeEventListener('click', closeHandler);
     };
     document.addEventListener('click', closeHandler);
   }, 100);
 }
 
-async function loadX10sForDropdown(videoId: string): Promise<void> {
+function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
+  const overlay = document.createElement('div');
+  overlay.id = 'stya-dropdown';
+  overlay.dataset.currentUrl = pageInfo.url;
+  if (pageInfo.videoId) {
+    overlay.dataset.currentVideoId = pageInfo.videoId;
+  }
+
+  // Header
+  const header = `
+    <div class="x10-dropdown-header">
+      <span class="x10-logo">
+        <svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;">
+          <path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/>
+          <circle cx="65" cy="50" r="6" fill="#fff"/>
+          <circle cx="82" cy="50" r="6" fill="#fff"/>
+        </svg>
+        <span class="x10-logo-main">StraightToYour</span><span class="x10-logo-ai">AI</span>
+      </span>
+      <button class="x10-dropdown-close">&times;</button>
+    </div>
+  `;
+
+  // Info section (adaptive based on type)
+  let infoSection: string;
+  if (pageInfo.type === 'youtube-video') {
+    infoSection = `
+      <div class="x10-video-info" id="x10-video-info">
+        <div class="x10-video-thumb" style="background-image: url(${pageInfo.thumbnail})"></div>
+        <div class="x10-video-details">
+          <div class="x10-video-title">${escapeHtml(pageInfo.title)}</div>
+          <div class="x10-video-meta">${pageInfo.channel || 'YouTube video'}${pageInfo.duration ? ' · ' + pageInfo.duration : ''}</div>
+        </div>
+      </div>
+    `;
+  } else {
+    infoSection = `
+      <div class="x10-video-info" id="x10-video-info">
+        <div class="x10-page-icon" style="background-image: url(${pageInfo.favicon})"></div>
+        <div class="x10-video-details">
+          <div class="x10-video-title">${escapeHtml(pageInfo.title)}</div>
+          <div class="x10-video-meta">${new URL(pageInfo.url).hostname}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Quick actions
+  const quickActions = `
+    <div class="x10-quick-actions">
+      <button class="x10-quick-item" id="x10-open-direct" style="display:none;">
+        <span class="x10-quick-icon"></span>
+        <span id="x10-open-direct-label">Open in</span>
+      </button>
+      <button class="x10-quick-item" id="x10-open-in">
+        <span class="x10-quick-icon">▸</span>
+        <span>Open in...</span>
+      </button>
+      <div class="x10-submenu-inline" id="x10-llm-submenu">
+        <button class="x10-submenu-item" data-llm="claude">Claude</button>
+        <button class="x10-submenu-item" data-llm="chatgpt">ChatGPT</button>
+        <button class="x10-submenu-item" data-llm="gemini">Gemini</button>
+        <button class="x10-submenu-item" data-llm="perplexity">Perplexity</button>
+        <button class="x10-submenu-item" data-llm="grok">Grok</button>
+        <button class="x10-submenu-item" data-llm="copilot">Copilot</button>
+      </div>
+      <button class="x10-quick-item" id="x10-copy-link">
+        <span class="x10-quick-icon">🔗</span>
+        <span>Copy Link</span>
+      </button>
+      <button class="x10-quick-item" id="x10-copy-content">
+        <span class="x10-quick-icon">📋</span>
+        <span>Copy MD</span>
+      </button>
+    </div>
+  `;
+
+  // Collection list + footer
+  const listAndFooter = `
+    <div class="x10-section-label">Add to...</div>
+    <div class="x10-list" id="stya-list"></div>
+    <div class="x10-footer">
+      <a href="#" id="stya-dashboard">My collections</a>
+      <span style="color:#555;">·</span>
+      <a href="#" id="stya-sync">Sync</a>
+    </div>
+  `;
+
+  overlay.innerHTML = header + infoSection + quickActions + listAndFooter;
+
+  // Setup event listeners
+  setupOverlayEventListeners(overlay, pageInfo);
+
+  return overlay;
+}
+
+function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo): void {
+  // Close button
+  overlay.querySelector('.x10-dropdown-close')?.addEventListener('click', closeOverlay);
+
+  // Dashboard and Sync links
+  overlay.querySelector('#stya-dashboard')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.open(api.getDashboardUrl(), '_blank');
+  });
+  overlay.querySelector('#stya-sync')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.open(`${api.baseUrl}/sync`, '_blank');
+  });
+
+  // Open in LLM (direct button)
+  overlay.querySelector('#x10-open-direct')?.addEventListener('click', async () => {
+    const data = await safeStorageGet(['styaLastLLM']);
+    if (data.styaLastLLM) {
+      handleOpenInLLM(pageInfo.url, data.styaLastLLM as string);
+    }
+  });
+
+  // Open in... (submenu toggle)
+  overlay.querySelector('#x10-open-in')?.addEventListener('click', () => {
+    const submenu = overlay.querySelector('#x10-llm-submenu');
+    submenu?.classList.toggle('open');
+    const arrow = overlay.querySelector('#x10-open-in .x10-quick-icon');
+    if (arrow) arrow.textContent = submenu?.classList.contains('open') ? '▾' : '▸';
+  });
+
+  // LLM submenu items
+  overlay.querySelectorAll('.x10-submenu-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const llm = (item as HTMLElement).dataset.llm;
+      if (!llm) return;
+      safeStorageSet({ styaLastLLM: llm });
+      updateDirectButton(overlay, llm);
+      handleOpenInLLM(pageInfo.url, llm);
+    });
+  });
+
+  // Copy Link
+  overlay.querySelector('#x10-copy-link')?.addEventListener('click', () => {
+    handleCopyMDLink(pageInfo.url);
+  });
+
+  // Copy Content
+  overlay.querySelector('#x10-copy-content')?.addEventListener('click', () => {
+    handleCopyMDContent(pageInfo.url);
+  });
+
+  // Load LLM preference
+  safeStorageGet(['styaLastLLM']).then(data => {
+    if (data.styaLastLLM) {
+      updateDirectButton(overlay, data.styaLastLLM as string);
+    }
+  });
+}
+
+async function showOverlay(options: OverlayOptions): Promise<void> {
+  // Close if already open
+  closeOverlay();
+
+  injectStyles();
+  createToast();
+
+  // Determine page/video info
+  const pageInfo = getPageInfo(options);
+  currentPageInfo = pageInfo;
+
+  // Create backdrop (only in centered mode)
+  if (options.centered) {
+    backdropElement = document.createElement('div');
+    backdropElement.id = 'stya-backdrop';
+    backdropElement.addEventListener('click', closeOverlay);
+    document.body.appendChild(backdropElement);
+  }
+
+  // Create overlay
+  overlayElement = createOverlayElement(pageInfo);
+  document.body.appendChild(overlayElement);
+
+  // Position
+  if (options.centered) {
+    overlayElement.classList.add('stya-centered');
+  } else if (options.anchorElement) {
+    positionNearAnchor(overlayElement, options.anchorElement);
+  }
+
+  // Block page scroll
+  document.body.style.overflow = 'hidden';
+
+  // Show
+  overlayElement.classList.add('open');
+  isDropdownOpen = true;
+
+  // Event listeners
+  document.addEventListener('keydown', handleEscapeKey);
+  setupOutsideClickHandler();
+
+  // Load collections
+  await loadCollectionsForOverlay(pageInfo);
+}
+
+async function loadCollectionsForOverlay(pageInfo: PageInfo): Promise<void> {
   const listEl = document.getElementById('stya-list');
   if (!listEl) return;
 
@@ -1050,39 +1308,38 @@ async function loadX10sForDropdown(videoId: string): Promise<void> {
   try {
     let initOk = await api.init();
     if (!initOk) {
-      // Retry once after 500ms (lets the service worker wake up)
       await new Promise(r => setTimeout(r, 500));
       initOk = await api.init();
     }
     if (!initOk) {
-      console.error('[STYA] Init failed after retry');
-      listEl.innerHTML = `<div class="x10-empty">Could not connect to server<br><small style="color:#888">${api.baseUrl}</small></div>`;
+      listEl.innerHTML = `<div class="x10-empty">Could not connect<br><small style="color:#888">${api.baseUrl}</small></div>`;
       return;
     }
 
     const result = await api.getMyX10s();
     currentX10s = result.x10s || [];
 
-    if (videoId) {
-      const checkResult = await api.checkVideoInX10s(videoId);
-      videoInX10s = checkResult.inX10s || [];
+    // Check if URL is already in collections (only for YouTube videos for now)
+    let itemInX10s: string[] = [];
+    if (pageInfo.videoId) {
+      const checkResult = await api.checkVideoInX10s(pageInfo.videoId);
+      itemInX10s = checkResult.inX10s || [];
     }
 
-    renderX10List(videoId);
+    renderCollectionList(pageInfo, itemInX10s);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[STYA] loadX10sForDropdown error:', error);
     listEl.innerHTML = `<div class="x10-empty">Error: ${errorMessage}</div>`;
   }
 }
 
-function renderX10List(videoId: string): void {
+function renderCollectionList(pageInfo: PageInfo, itemInX10s: string[]): void {
   const listEl = document.getElementById('stya-list');
   if (!listEl) return;
 
   listEl.innerHTML = '';
 
-  // Add "Create new X10" item at the top
+  // "Create new collection" button
   const createItem = document.createElement('button');
   createItem.className = 'x10-item x10-item-create';
   createItem.innerHTML = `
@@ -1090,12 +1347,12 @@ function renderX10List(videoId: string): void {
     <span class="x10-item-name">A new collection</span>
     <span class="x10-item-count"></span>
   `;
-  createItem.addEventListener('click', () => handleCreateWithVideo(videoId));
+  createItem.addEventListener('click', () => handleCreateWithUrl(pageInfo.url));
   listEl.appendChild(createItem);
 
-  // Then add existing x10s
+  // Existing collections
   currentX10s.forEach(x10 => {
-    const isIn = videoInX10s.includes(x10.id);
+    const isIn = pageInfo.videoId ? itemInX10s.includes(x10.id) : false;
     const item = document.createElement('button');
     item.className = 'x10-item';
     item.dataset.x10Id = x10.id;
@@ -1105,7 +1362,7 @@ function renderX10List(videoId: string): void {
       <span class="x10-item-count">${x10.videoCount}</span>
     `;
     if (!isIn) {
-      item.addEventListener('click', () => handleAddVideoToX10(x10.id, x10.title, videoId));
+      item.addEventListener('click', () => handleAddToCollection(x10.id, x10.title, pageInfo.url));
     } else {
       item.style.cursor = 'default';
     }
@@ -1113,8 +1370,7 @@ function renderX10List(videoId: string): void {
   });
 }
 
-async function handleCreateWithVideo(videoId: string): Promise<void> {
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+async function handleCreateWithUrl(url: string): Promise<void> {
   const createItem = document.querySelector('.x10-item-create');
   if (createItem) {
     createItem.classList.add('adding');
@@ -1122,16 +1378,11 @@ async function handleCreateWithVideo(videoId: string): Promise<void> {
     if (nameSpan) nameSpan.textContent = 'Creating...';
   }
 
-  const result = await api.createX10WithExtraction(videoUrl, true);
+  const result = await api.createX10WithExtraction(url, true);
 
   if (result.success) {
-    showToast('Video added to new collection!', 'success');
-    closeDropdown();
-    // Mark the button as added
-    const btn = document.querySelector(`.stya-title-btn[data-video-id="${videoId}"]`);
-    if (btn) {
-      btn.classList.add('added');
-    }
+    showToast('Added to new collection!', 'success');
+    closeOverlay();
   } else {
     showToast(`Error: ${result.error}`, 'error');
     if (createItem) {
@@ -1142,32 +1393,34 @@ async function handleCreateWithVideo(videoId: string): Promise<void> {
   }
 }
 
-async function handleAddVideoToX10(x10Id: string, x10Title: string, videoId: string): Promise<void> {
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+async function handleAddToCollection(x10Id: string, x10Title: string, url: string): Promise<void> {
   const item = document.querySelector(`[data-x10-id="${x10Id}"]`);
   if (item) item.classList.add('adding');
 
-  const result = await api.addVideoToX10WithExtraction(x10Id, videoUrl);
+  const result = await api.addVideoToX10WithExtraction(x10Id, url);
 
   if (result.success) {
     showToast(`Added to ${x10Title || 'collection'}`, 'success');
-    videoInX10s.push(x10Id);
     if (item) {
       item.classList.remove('adding');
       const check = item.querySelector('.x10-item-check');
       if (check) check.textContent = '✓';
       (item as HTMLElement).style.cursor = 'default';
     }
-    closeDropdown();
-    // Mark the button as added
-    const btn = document.querySelector(`.stya-title-btn[data-video-id="${videoId}"]`);
-    if (btn) {
-      btn.classList.add('added');
-    }
+    closeOverlay();
   } else {
     showToast(`Error: ${result.error}`, 'error');
     if (item) item.classList.remove('adding');
   }
+}
+
+// Legacy function - now uses unified showOverlay
+async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement): Promise<void> {
+  await showOverlay({
+    centered: false,
+    anchorElement,
+    videoId
+  });
 }
 
 // ============================================
@@ -1538,16 +1791,18 @@ const urlObserver = new MutationObserver(() => {
 // ============================================
 
 function init(): void {
-  console.log('[STYA] Initializing...');
+  console.log('[STYA] Initializing...', isYouTube ? '(YouTube)' : '(Web page)');
 
   injectStyles();
   createToast();
-  createMasterToggle();
 
-  setTimeout(startTitleButtonInjection, 1000);
-
-  urlObserver.observe(document.body, { subtree: true, childList: true });
-  window.addEventListener('popstate', onUrlChange);
+  // YouTube-specific features
+  if (isYouTube) {
+    createMasterToggle();
+    setTimeout(startTitleButtonInjection, 1000);
+    urlObserver.observe(document.body, { subtree: true, childList: true });
+    window.addEventListener('popstate', onUrlChange);
+  }
 
   console.log('[STYA] Initialized');
 }
