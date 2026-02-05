@@ -91,7 +91,7 @@ block content
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Account
             td.py-3.pr-4.text-text-secondary(style="vertical-align: top") Email, plan, workspace
             td.py-3.text-text-secondary(style="vertical-align: top")
-              | None required
+              | No login, no account required
               br
               span.text-text-muted (anonymous code for cross-device sync)
           tr.border-b.border-border-default
@@ -100,7 +100,7 @@ block content
             td.py-3.text-text-secondary(style="vertical-align: top") One or dozens
           tr.border-b.border-border-default
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Output
-            td.py-3.pr-4.text-text-secondary.italic(style="vertical-align: top") It's complicated…
+            td.py-3.pr-4.text-text-secondary(style="vertical-align: top; font-style: italic;") It's complicated…
             td.py-3.text-text-secondary(style="vertical-align: top") Clean, shareable markdown
           tr
             td.py-3.pr-4.text-text-muted(style="vertical-align: top") Pricing
@@ -140,3 +140,7 @@ block content
       div
         p.text-text-primary Can I sync between devices?
         p.text-text-muted There's no sync feature, but your content is tied to a user code. Enter it on another device to access your pages.
+
+      div
+        p.text-text-primary Questions / Feedback?
+        p.text-text-muted Drop me a line at #[a(href="mailto:toyourai@plstry.me" target="_blank") toyourai@plstry.me]
