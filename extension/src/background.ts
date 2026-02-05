@@ -26,6 +26,11 @@ chrome.runtime.onInstalled.addListener((details) => {
     title: 'Send to my AI',
     contexts: ['page', 'link', 'video', 'image']
   });
+
+  // Open welcome page on first install
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: `${__STYA_BASE_URL__}/welcome` });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────

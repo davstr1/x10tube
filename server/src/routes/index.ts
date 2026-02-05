@@ -13,6 +13,13 @@ indexRouter.get('/', (_req: Request, res: Response) => {
   });
 });
 
+// Welcome page (extension onboarding)
+indexRouter.get('/welcome', (_req: Request, res: Response) => {
+  res.render('welcome', {
+    title: `Welcome - ${config.brandName}`
+  });
+});
+
 // DISABLED: Server-side extraction removed
 // The landing page form is temporarily disabled - use the Chrome extension instead
 indexRouter.post('/create', (_req: Request, res: Response) => {
