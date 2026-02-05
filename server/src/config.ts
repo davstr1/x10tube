@@ -13,6 +13,7 @@ export const config = {
     ? (process.env.PROD_URL || 'https://straighttoyour.ai')
     : (process.env.DEV_URL || 'http://localhost:3000'),
   brandName: process.env.BRAND_NAME || 'straighttoyour.ai',
+  chromeExtensionUrl: process.env.CHROME_EXTENSION_URL || '#',
   // Supabase (no defaults - must be set in .env)
   supabaseUrl: process.env.SUPABASE_URL,
   supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,

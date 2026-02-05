@@ -11,7 +11,7 @@ block content
 
   //- Chrome Extension CTA
   section.text-center(style="margin-top: 3rem; margin-bottom: 3rem;")
-    a.inline-flex.items-center.gap-3.bg-surface.hover_bg-surface-hover.border.border-border-strong.hover_border-red-600.rounded-lg.px-6.py-4.transition-colors(href="https://chromewebstore.google.com/detail/toyourai/xxxxxxxx" target="_blank")
+    a.inline-flex.items-center.gap-3.bg-surface.hover_bg-surface-hover.border.border-border-strong.hover_border-red-600.rounded-lg.px-6.py-4.transition-colors(href=chromeExtensionUrl target="_blank")
       img(src="https://www.google.com/chrome/static/images/chrome-logo-m100.svg" alt="Chrome" style="width: 32px; height: 32px;")
       .text-left
         .text-text-primary.font-medium Add to Chrome
@@ -112,10 +112,13 @@ block content
     h2.text-base.font-medium.mb-3 What you can do
 
     p.text-sm.text-text-secondary.mb-2 Whatever you usually do with your assistant.
-    ul.text-sm.text-text-secondary.space-y-1
+    ul.text-sm.text-text-secondary.space-y-1.mb-3
       li Drop 5 laptop reviews, ask "which one for video editing?"
       li 6 podcasts, 8 hours: key points in one click
       li 12 articles and 4 videos on a topic, one page, ready to learn
+
+    p.text-sm
+      a.text-text-secondary(href=chromeExtensionUrl target="_blank") Add to Chrome and find out.
 
   //- How it works
   section.py-6.border-t.border-border-default

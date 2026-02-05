@@ -25,6 +25,7 @@ const PORT = config.port;
 // Make config available in Pug templates
 app.locals.baseUrl = config.baseUrl;
 app.locals.brandName = config.brandName;
+app.locals.chromeExtensionUrl = config.chromeExtensionUrl;
 
 // Global CORS middleware (must be before body parsers for preflight requests)
 app.use((req, res, next) => {
