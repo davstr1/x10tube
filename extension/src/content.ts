@@ -522,80 +522,6 @@ function injectStyles(): void {
       display: none !important;
     }
 
-    /* Master toggle button */
-    #stya-master-toggle {
-      height: 36px;
-      padding: 0 12px;
-      background: #212121;
-      border: none;
-      border-radius: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-      transition: opacity 0.15s, transform 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Roboto', 'Arial', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-    }
-    #stya-master-toggle:hover {
-      transform: scale(1.05);
-    }
-    #stya-master-toggle .logo-main {
-      color: #f1f1f1;
-    }
-    #stya-master-toggle .logo-ai {
-      color: #dc2626;
-    }
-    #stya-master-toggle.disabled {
-      opacity: 0.5;
-    }
-    #stya-master-toggle.disabled .logo-main,
-    #stya-master-toggle.disabled .logo-ai {
-      color: #888;
-    }
-
-    /* Master toggle container with hover menu */
-    #stya-toggle-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 9999;
-    }
-    #stya-toggle-menu {
-      position: absolute;
-      bottom: 100%;
-      right: 0;
-      margin-bottom: 8px;
-      background: #282828;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(5px);
-      transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    #stya-toggle-container:hover #stya-toggle-menu {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-    #stya-toggle-menu a {
-      display: block;
-      padding: 10px 16px;
-      color: #f1f1f1;
-      text-decoration: none;
-      font-family: 'Roboto', 'Arial', sans-serif;
-      font-size: 13px;
-      transition: background 0.1s;
-    }
-    #stya-toggle-menu a:hover {
-      background: #3a3a3a;
-    }
-
     /* Dropdown */
     #stya-dropdown {
       position: fixed;
@@ -1784,59 +1710,6 @@ function stopTitleButtonInjection(): void {
 }
 
 // ============================================
-// Master Toggle Button
-// ============================================
-
-function createMasterToggle(): void {
-  if (document.getElementById('stya-toggle-container')) return;
-
-  const container = document.createElement('div');
-  container.id = 'stya-toggle-container';
-
-  const menu = document.createElement('div');
-  menu.id = 'stya-toggle-menu';
-  const myX10sLink = document.createElement('a');
-  myX10sLink.href = api.getDashboardUrl();
-  myX10sLink.target = '_blank';
-  myX10sLink.textContent = 'My collections';
-  menu.appendChild(myX10sLink);
-
-  const toggle = document.createElement('button');
-  toggle.id = 'stya-master-toggle';
-  toggle.innerHTML = '<svg viewBox="0 0 100 100" style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;"><path d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626"/><circle cx="65" cy="50" r="6" fill="#fff"/><circle cx="82" cy="50" r="6" fill="#fff"/></svg><span class="logo-main">StraightToYour</span><span class="logo-ai">AI</span>';
-  toggle.title = 'Toggle StraightToYourAI buttons';
-
-  // Load saved state
-  safeStorageGetCallback(['styaTitleButtonsEnabled'], (data) => {
-    if (data.styaTitleButtonsEnabled === false) {
-      titleButtonsEnabled = false;
-      toggle.classList.add('disabled');
-      document.body.classList.add('stya-buttons-hidden');
-    }
-  });
-
-  toggle.addEventListener('click', () => {
-    titleButtonsEnabled = !titleButtonsEnabled;
-
-    if (titleButtonsEnabled) {
-      toggle.classList.remove('disabled');
-      document.body.classList.remove('stya-buttons-hidden');
-      injectTitleButtons();
-    } else {
-      toggle.classList.add('disabled');
-      document.body.classList.add('stya-buttons-hidden');
-    }
-
-    safeStorageSet({ styaTitleButtonsEnabled: titleButtonsEnabled });
-    showToast(titleButtonsEnabled ? 'Buttons enabled' : 'Buttons hidden', 'success');
-  });
-
-  container.appendChild(menu);
-  container.appendChild(toggle);
-  document.body.appendChild(container);
-}
-
-// ============================================
 // SPA Navigation Handling
 // ============================================
 
@@ -1888,10 +1761,10 @@ async function init(): Promise<void> {
     // Check if YouTube Power Mode is enabled
     await api.init();
     const settings = await api.getSettings();
-    const youtubePowerModeEnabled = settings?.youtube_power_mode !== false;
+    console.log('[STYA] YouTube Power Mode settings:', settings);
+    const youtubePowerModeEnabled = settings?.youtube_power_mode === true;
 
     if (youtubePowerModeEnabled) {
-      createMasterToggle();
       setTimeout(startTitleButtonInjection, 1000);
     }
 
