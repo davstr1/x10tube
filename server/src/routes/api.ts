@@ -16,7 +16,7 @@ import {
   PreExtractedItem
 } from '../services/collection.js';
 import { extractVideoId } from '../services/transcript.js';
-import { getUserSettings, updateDefaultPrePrompt } from '../services/settings.js';
+import { getUserSettings, updateDefaultPrePrompt, updateYoutubePowerMode } from '../services/settings.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 
 export const apiRouter = Router();
@@ -447,6 +447,19 @@ apiRouter.patch('/settings/pre-prompt', asyncHandler(async (req: Request, res: R
   }
 
   const settings = await updateDefaultPrePrompt(userCode, prePrompt);
+  res.json(settings);
+}));
+
+// Update YouTube Power Mode setting
+apiRouter.patch('/settings/youtube-power-mode', asyncHandler(async (req: Request, res: Response) => {
+  const userCode = req.anonymousId;
+  const { enabled } = req.body;
+
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled must be a boolean' });
+  }
+
+  const settings = await updateYoutubePowerMode(userCode, enabled);
   res.json(settings);
 }));
 

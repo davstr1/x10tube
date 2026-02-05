@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getCollectionsForAnonymous, getCollectionById, deleteCollection } from '../services/collection.js';
-import { getUserSettings, updateYoutubePowerMode } from '../services/settings.js';
+import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 
@@ -31,17 +31,6 @@ indexRouter.get('/settings', asyncHandler(async (req: Request, res: Response) =>
   });
 }));
 
-// Update settings
-indexRouter.post('/settings', asyncHandler(async (req: Request, res: Response) => {
-  const { youtube_power_mode } = req.body;
-
-  // Checkbox sends value only when checked, undefined when unchecked
-  const enabled = youtube_power_mode === 'on' || youtube_power_mode === true;
-
-  await updateYoutubePowerMode(req.anonymousId, enabled);
-
-  res.redirect('/settings?saved=1');
-}));
 
 // DISABLED: Server-side extraction removed
 // The landing page form is temporarily disabled - use the Chrome extension instead
