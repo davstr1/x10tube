@@ -73,6 +73,8 @@ block content
       const toggleSwitch = document.querySelector('.toggle-switch');
       const toggleKnob = document.querySelector('.toggle-knob');
 
+      console.log('[Settings] Toggle elements:', { ytCheckbox, toggleSwitch, toggleKnob });
+
       function updateToggleUI() {
         if (ytCheckbox.checked) {
           toggleSwitch.style.background = '#dc2626';
@@ -86,16 +88,21 @@ block content
       // Set initial state
       updateToggleUI();
 
-      // Handle click
-      ytCheckbox.addEventListener('change', async function() {
+      // Handle click on toggle switch directly
+      toggleSwitch.addEventListener('click', async function(e) {
+        e.preventDefault();
+        ytCheckbox.checked = !ytCheckbox.checked;
         updateToggleUI();
+        console.log('[Settings] YouTube Power Mode toggled to:', ytCheckbox.checked);
         // Save to server
         try {
-          await fetch('/api/settings/youtube-power-mode', {
+          const response = await fetch('/api/settings/youtube-power-mode', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ enabled: ytCheckbox.checked })
           });
+          const data = await response.json();
+          console.log('[Settings] Server response:', data);
         } catch (e) {
           console.error('Failed to save YouTube Power Mode setting:', e);
         }
