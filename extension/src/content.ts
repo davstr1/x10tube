@@ -1193,6 +1193,8 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     <div class="x10-footer">
       <a href="#" id="stya-dashboard">My collections</a>
       <span style="color:#555;">·</span>
+      <a href="#" id="stya-settings">Settings</a>
+      <span style="color:#555;">·</span>
       <a href="#" id="stya-sync">Sync</a>
     </div>
   `;
@@ -1213,6 +1215,10 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
   overlay.querySelector('#stya-dashboard')?.addEventListener('click', (e) => {
     e.preventDefault();
     window.open(api.getDashboardUrl(), '_blank');
+  });
+  overlay.querySelector('#stya-settings')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.open(`${api.baseUrl}/settings`, '_blank');
   });
   overlay.querySelector('#stya-sync')?.addEventListener('click', (e) => {
     e.preventDefault();
