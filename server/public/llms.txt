@@ -1,0 +1,30 @@
+# StraightToYourAI
+
+> Turn any YouTube video or web page into an AI-ready markdown document.
+
+StraightToYourAI is a Chrome extension that extracts content from YouTube videos (transcripts) and web pages, then packages them for easy consumption by AI assistants like Claude, ChatGPT, Gemini, and others.
+
+## Documentation
+
+- [Welcome / Getting Started](https://toyourai.plstry.me/welcome): How to install and use the extension
+- [Privacy Policy](https://toyourai.plstry.me/privacy): Our privacy practices
+
+## Features
+
+- Extract YouTube video transcripts automatically
+- Extract web page content via Jina Reader
+- Create collections of up to 10 items
+- Share collections via .md or .txt URLs
+- Open directly in Claude, ChatGPT, Gemini, Perplexity, Grok, or Copilot
+
+## API Endpoints
+
+Collections can be accessed as markdown at:
+- `https://toyourai.plstry.me/s/{id}.md` - Markdown format
+- `https://toyourai.plstry.me/s/{id}.txt` - Plain text format
+
+These URLs are designed to be fetched by AI assistants for analysis.
+
+## Contact
+
+- Email: toyourai@plstry.me
