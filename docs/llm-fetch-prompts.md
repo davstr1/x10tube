@@ -70,14 +70,11 @@ Summarize the content at this URL: https://toyourai.plstry.me/s/{id}.txt
 
 ## Perplexity
 
-**Status:** ❓ À tester
+**Status:** ❌ Ne fonctionne pas (mode sandbox)
 
-**Prompt:**
-```
-Fetch https://toyourai.plstry.me/s/{id}.txt
-```
+Perplexity fonctionne en mode **sandbox** - il ne peut pas fetch d'URLs externes directement. Il fait ses propres recherches web mais ne va pas chercher une URL spécifique que tu lui donnes.
 
-Perplexity est conçu pour la recherche web, devrait fonctionner nativement.
+**Workaround:** Copier-coller le contenu manuellement.
 
 ---
 
@@ -113,10 +110,10 @@ Copilot (Bing) récupère le contenu correctement.
 |-----|--------|-----------|--------|
 | Claude | ✅ | `.txt` ou `.md` | `Fetch {URL}` |
 | ChatGPT | ✅ | `.txt` uniquement | `Fetch {URL}` |
-| Gemini | ❌ | N/A | Non fiable - copier-coller le contenu |
-| Perplexity | ❓ | `.txt` | `Fetch {URL}` |
 | Grok | ✅ | `.txt` | `Fetch {URL}` |
 | Copilot | ✅ | `.txt` | `Fetch {URL}` |
+| Gemini | ❌ | N/A | Non fiable - copier-coller |
+| Perplexity | ❌ | N/A | Mode sandbox - copier-coller |
 
 ## Notes
 
