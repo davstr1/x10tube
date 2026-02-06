@@ -61,6 +61,13 @@ indexRouter.get('/news', (_req: Request, res: Response) => {
   });
 });
 
+// Privacy policy page
+indexRouter.get('/privacy', (_req: Request, res: Response) => {
+  res.render('privacy', {
+    title: `Privacy Policy - ${config.brandName}`
+  });
+});
+
 // Settings page
 indexRouter.get('/settings', asyncHandler(async (req: Request, res: Response) => {
   const settings = await getUserSettings(req.anonymousId);
