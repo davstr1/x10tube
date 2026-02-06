@@ -1192,6 +1192,11 @@ function injectStyles(): void {
     #x10-clipboard-modal .x10-modal-body strong {
       color: #fff !important;
     }
+    #x10-clipboard-modal .x10-modal-tip {
+      font-size: 12px !important;
+      color: #9CA3AF !important;
+      margin-top: 12px !important;
+    }
     #x10-clipboard-modal .x10-modal-actions {
       display: flex !important;
       gap: 12px !important;
@@ -1576,6 +1581,10 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
         <span class="x10-quick-icon">📋</span>
         <span>Copy MD</span>
       </button>
+      <button class="x10-quick-item" id="x10-download-md">
+        <span class="x10-quick-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+        <span>Download MD</span>
+      </button>
     </div>
   `;
 
@@ -1712,6 +1721,11 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
   // Copy Content
   overlay.querySelector('#x10-copy-content')?.addEventListener('click', () => {
     handleCopyMDContent(pageInfo.url);
+  });
+
+  // Download MD
+  overlay.querySelector('#x10-download-md')?.addEventListener('click', () => {
+    handleDownloadMD(pageInfo.url);
   });
 
   // Load LLM preference
@@ -2138,6 +2152,44 @@ async function handleCopyMDContent(url: string): Promise<void> {
   }
 }
 
+// Download markdown as file
+function downloadAsMarkdownFile(content: string, filename = 'straighttoyourai-collection.md'): void {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function handleDownloadMD(url: string): Promise<void> {
+  showToast('Creating collection...', '');
+  closeDropdown();
+
+  try {
+    const result = await api.createX10WithExtraction(url, true);
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      return;
+    }
+
+    const txtUrl = `${api.baseUrl}/s/${result.x10Id}.txt`;
+    showToast('Fetching content...', '');
+
+    const response = await fetch(txtUrl);
+    const txtContent = await response.text();
+
+    downloadAsMarkdownFile(txtContent);
+    showToast('File downloaded!', 'success');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[STYA] handleDownloadMD error:', error);
+    showToast(`Error: ${errorMessage}`, 'error');
+  }
+}
+
 // Clipboard icon SVG for toast
 const CLIPBOARD_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 
@@ -2209,6 +2261,7 @@ function showClipboardWarningPopover(llmType: string, pageUrl: string, _overlay:
       <div class="x10-modal-body">
         <p><strong>${llmName}</strong> doesn't currently support fetching external links. This is a limitation on their side, not ours.</p>
         <p>Instead, we'll copy your content to the clipboard. Just paste it (Ctrl+V) once ${llmName} opens.</p>
+        <p class="x10-modal-tip">If your pasted content appears truncated, use Download MD and drop the file into the chat.</p>
       </div>
       <div class="x10-modal-actions">
         <button class="x10-modal-btn-primary" id="x10-modal-confirm">
@@ -2313,6 +2366,7 @@ function showDirectClipboardWarning(llmType: string, mdUrl: string): void {
       <div class="x10-modal-body">
         <p><strong>${llmName}</strong> doesn't currently support fetching external links. This is a limitation on their side, not ours.</p>
         <p>Instead, we'll copy your content to the clipboard. Just paste it (Ctrl+V) once ${llmName} opens.</p>
+        <p class="x10-modal-tip">If your pasted content appears truncated, use Download MD and drop the file into the chat.</p>
       </div>
       <div class="x10-modal-actions">
         <button class="x10-modal-btn-primary" id="x10-modal-confirm">

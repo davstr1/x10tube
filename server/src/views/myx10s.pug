@@ -133,7 +133,17 @@ block content
                       button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-md-content-btn(
                         type="button"
                         data-md-url=mdUrl
-                      ) MD Content
+                      ) Copy MD
+                      button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.download-md-btn.flex.items-center.gap-1(
+                        type="button"
+                        data-md-url=mdUrl
+                        data-title=x10.title
+                      )
+                        svg(width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                          path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                          polyline(points="7 10 12 15 17 10")
+                          line(x1="12" y1="15" x2="12" y2="3")
+                        | Download MD
 
                 //- Spacer to push delete to the right
                 .flex-1
@@ -157,6 +167,17 @@ block content
 
   script.
     (function() {
+      // Download function
+      function downloadAsMarkdownFile(content, filename) {
+        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'straighttoyourai-collection.md';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
       // Copy MD Content functionality
       document.querySelectorAll('.copy-md-content-btn').forEach(function(btn) {
         btn.addEventListener('click', async function() {
@@ -166,10 +187,29 @@ block content
             const md = await response.text();
             await navigator.clipboard.writeText(md);
             btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'MD Content', 1500);
+            setTimeout(() => btn.textContent = 'Copy MD', 1500);
           } catch (e) {
             btn.textContent = 'Error';
-            setTimeout(() => btn.textContent = 'MD Content', 1500);
+            setTimeout(() => btn.textContent = 'Copy MD', 1500);
+          }
+        });
+      });
+
+      // Download MD functionality
+      document.querySelectorAll('.download-md-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          const mdUrl = btn.dataset.mdUrl;
+          const title = btn.dataset.title;
+          const originalHtml = btn.innerHTML;
+          try {
+            const response = await fetch(mdUrl);
+            const md = await response.text();
+            downloadAsMarkdownFile(md, (title || 'collection') + '.md');
+            btn.innerHTML = 'Downloaded!';
+            setTimeout(() => btn.innerHTML = originalHtml, 1500);
+          } catch (e) {
+            btn.innerHTML = 'Error';
+            setTimeout(() => btn.innerHTML = originalHtml, 1500);
           }
         });
       });

@@ -118,7 +118,15 @@ block content
             ) Link
             button#copy-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
               type="button"
-            ) MD Content
+            ) Copy MD
+            button#download-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
+              type="button"
+            )
+              svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                polyline(points="7 10 12 15 17 10")
+                line(x1="12" y1="15" x2="12" y2="3")
+              | Download MD
 
       //- Spacer to push delete to the right
       .flex-1
@@ -218,7 +226,16 @@ block content
                           button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.copy-item-md-btn(
                             type="button"
                             data-item-url=itemMdUrl
-                          ) MD Content
+                          ) Copy MD
+                          button.block.w-full.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.download-item-md-btn.flex.items-center.gap-1(
+                            type="button"
+                            data-item-url=itemMdUrl
+                          )
+                            svg(width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                              path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                              polyline(points="7 10 12 15 17 10")
+                              line(x1="12" y1="15" x2="12" y2="3")
+                            | Download MD
 
                 if isOwner
                   form(action=`/s/${x10.id}/remove/${item.id}` method="POST")
@@ -309,6 +326,17 @@ block content
         });
       }
 
+      // Download function
+      function downloadAsMarkdownFile(content, filename) {
+        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'straighttoyourai-collection.md';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
       // Copy MD functionality (full collection)
       const copyMdBtn = document.getElementById('copy-md-btn');
       if (copyMdBtn) {
@@ -318,10 +346,28 @@ block content
             const md = await response.text();
             await navigator.clipboard.writeText(md);
             copyMdBtn.textContent = 'Copied!';
-            setTimeout(() => copyMdBtn.textContent = 'MD Content', 1500);
+            setTimeout(() => copyMdBtn.textContent = 'Copy MD', 1500);
           } catch (e) {
             copyMdBtn.textContent = 'Error';
-            setTimeout(() => copyMdBtn.textContent = 'MD Content', 1500);
+            setTimeout(() => copyMdBtn.textContent = 'Copy MD', 1500);
+          }
+        });
+      }
+
+      // Download MD functionality (full collection)
+      const downloadMdBtn = document.getElementById('download-md-btn');
+      if (downloadMdBtn) {
+        downloadMdBtn.addEventListener('click', async function() {
+          const originalHtml = downloadMdBtn.innerHTML;
+          try {
+            const response = await fetch('/s/#{x10.id}.txt');
+            const md = await response.text();
+            downloadAsMarkdownFile(md, '#{x10.title || "collection"}.md');
+            downloadMdBtn.innerHTML = 'Downloaded!';
+            setTimeout(() => downloadMdBtn.innerHTML = originalHtml, 1500);
+          } catch (e) {
+            downloadMdBtn.innerHTML = 'Error';
+            setTimeout(() => downloadMdBtn.innerHTML = originalHtml, 1500);
           }
         });
       }
@@ -335,10 +381,28 @@ block content
             const md = await response.text();
             await navigator.clipboard.writeText(md);
             btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'MD Content', 1500);
+            setTimeout(() => btn.textContent = 'Copy MD', 1500);
           } catch (e) {
             btn.textContent = 'Error';
-            setTimeout(() => btn.textContent = 'MD Content', 1500);
+            setTimeout(() => btn.textContent = 'Copy MD', 1500);
+          }
+        });
+      });
+
+      // Download MD functionality (individual items)
+      document.querySelectorAll('.download-item-md-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          const itemUrl = btn.dataset.itemUrl;
+          const originalHtml = btn.innerHTML;
+          try {
+            const response = await fetch(itemUrl);
+            const md = await response.text();
+            downloadAsMarkdownFile(md);
+            btn.innerHTML = 'Downloaded!';
+            setTimeout(() => btn.innerHTML = originalHtml, 1500);
+          } catch (e) {
+            btn.innerHTML = 'Error';
+            setTimeout(() => btn.innerHTML = originalHtml, 1500);
           }
         });
       });
