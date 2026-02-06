@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { cpSync, mkdirSync, readFileSync } from 'fs';
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 const isWatch = process.argv.includes('--watch');
 
@@ -35,10 +35,23 @@ const commonOptions = {
 };
 
 // Copy static files to a dist folder
-function copyStatic(outdir) {
+function copyStatic(outdir, { prod = false } = {}) {
   mkdirSync(`${outdir}/icons`, { recursive: true });
   cpSync('icons', `${outdir}/icons`, { recursive: true });
-  cpSync('manifest.json', `${outdir}/manifest.json`);
+
+  // Process manifest: strip localhost entries in prod
+  const manifest = JSON.parse(readFileSync('manifest.json', 'utf-8'));
+  if (prod) {
+    const isLocalhost = (s) => s.includes('localhost');
+    if (manifest.host_permissions) {
+      manifest.host_permissions = manifest.host_permissions.filter(p => !isLocalhost(p));
+    }
+    if (manifest.externally_connectable?.matches) {
+      manifest.externally_connectable.matches = manifest.externally_connectable.matches.filter(p => !isLocalhost(p));
+    }
+  }
+  writeFileSync(`${outdir}/manifest.json`, JSON.stringify(manifest, null, 2) + '\n');
+
   try { cpSync('claude-inject.js', `${outdir}/claude-inject.js`); } catch {}
 }
 
@@ -75,7 +88,7 @@ if (isWatch) {
   ]);
 
   copyStatic('dist-dev');
-  copyStatic('dist-prod');
+  copyStatic('dist-prod', { prod: true });
 
   console.log(`✓ dist-dev/  → ${DEV_URL}`);
   console.log(`✓ dist-prod/ → ${PROD_URL}`);
