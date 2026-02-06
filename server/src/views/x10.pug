@@ -81,14 +81,18 @@ block content
               href=`https://chat.openai.com/?q=${chatgptPrompt}`
               target="_blank"
             ) ChatGPT
-            a.block.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.no-underline(
-              href=`https://www.google.com/search?udm=50&aep=11&q=${claudePrompt}`
-              target="_blank"
-            ) Gemini
-            a.block.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.no-underline(
-              href=`https://www.perplexity.ai/search/?q=${claudePrompt}`
-              target="_blank"
-            ) Perplexity
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.clipboard-llm-btn(
+              type="button"
+              data-llm="gemini"
+              data-llm-url="https://gemini.google.com/app"
+              data-md-url=mdUrl
+            ) Gemini#[span.text-text-muted *]
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.clipboard-llm-btn(
+              type="button"
+              data-llm="perplexity"
+              data-llm-url="https://www.perplexity.ai/"
+              data-md-url=mdUrl
+            ) Perplexity#[span.text-text-muted *]
             a.block.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.no-underline(
               href=`https://x.com/i/grok?text=${claudePrompt}`
               target="_blank"
@@ -97,6 +101,7 @@ block content
               href=`https://copilot.microsoft.com/?q=${claudePrompt}`
               target="_blank"
             ) Copilot
+            .px-4.py-2.text-xs.text-text-muted.border-t.border-border-default.mt-1 * Clipboard mode
 
       //- Copy dropdown
       - const x10Url = `${baseUrl}/s/${x10.id}`
@@ -172,10 +177,21 @@ block content
                         .dropdown-menu-inner
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://claude.ai/new?q=${itemPromptEncoded}` target="_blank") Claude
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://chat.openai.com/?q=${itemPromptEncoded}` target="_blank") ChatGPT
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.google.com/search?udm=50&aep=11&q=${itemPromptEncoded}` target="_blank") Gemini
-                          a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://www.perplexity.ai/search/?q=${itemPromptEncoded}` target="_blank") Perplexity
+                          button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.clipboard-llm-btn(
+                            type="button"
+                            data-llm="gemini"
+                            data-llm-url="https://gemini.google.com/app"
+                            data-md-url=itemMdUrl
+                          ) Gemini#[span.text-text-muted *]
+                          button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.clipboard-llm-btn(
+                            type="button"
+                            data-llm="perplexity"
+                            data-llm-url="https://www.perplexity.ai/"
+                            data-md-url=itemMdUrl
+                          ) Perplexity#[span.text-text-muted *]
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://x.com/i/grok?text=${itemPromptEncoded}` target="_blank") Grok
                           a.block.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.no-underline(href=`https://copilot.microsoft.com/?q=${itemPromptEncoded}` target="_blank") Copilot
+                          .px-3.py-1.text-xs.text-text-muted.border-t.border-border-default.mt-1 * Clipboard mode
 
                     //- Copy... dropdown
                     .dropdown.text-xs
@@ -317,4 +333,249 @@ block content
           }
         });
       });
+
+      // Clipboard-only LLM handling (Gemini, Perplexity)
+      const LLM_NAMES = { gemini: 'Gemini', perplexity: 'Perplexity' };
+
+      function showClipboardModal(llmName, mdUrl, llmUrl) {
+        // Remove existing modal
+        const existing = document.getElementById('clipboard-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'clipboard-modal';
+        modal.innerHTML = `
+          <div class="modal-backdrop"></div>
+          <div class="modal-content">
+            <div class="modal-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>Clipboard Mode</span>
+            </div>
+            <div class="modal-body">
+              <p><strong>${llmName}</strong> doesn't currently support fetching external links. This is a limitation on their side, not ours.</p>
+              <p>Instead, we'll copy your content to the clipboard. Just paste it (Ctrl+V) once ${llmName} opens.</p>
+            </div>
+            <div class="modal-actions">
+              <button class="modal-btn-primary" id="modal-confirm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy & Open ${llmName}
+              </button>
+              <button class="modal-btn-secondary" id="modal-cancel">Cancel</button>
+            </div>
+            <label class="modal-dismiss">
+              <input type="checkbox" id="modal-dismiss-checkbox">
+              <span>Got it, don't show again</span>
+            </label>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Handle confirm
+        document.getElementById('modal-confirm').addEventListener('click', async function() {
+          const dismiss = document.getElementById('modal-dismiss-checkbox').checked;
+          if (dismiss) {
+            localStorage.setItem(llmName.toLowerCase() + 'WarningDismissed', 'true');
+          }
+          modal.remove();
+          await copyAndOpen(mdUrl, llmUrl);
+        });
+
+        // Handle cancel
+        document.getElementById('modal-cancel').addEventListener('click', function() {
+          modal.remove();
+        });
+
+        // Handle backdrop click
+        modal.querySelector('.modal-backdrop').addEventListener('click', function() {
+          modal.remove();
+        });
+
+        // Handle Escape key
+        function handleEscape(e) {
+          if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', handleEscape);
+          }
+        }
+        document.addEventListener('keydown', handleEscape);
+      }
+
+      async function copyAndOpen(mdUrl, llmUrl) {
+        try {
+          const response = await fetch(mdUrl);
+          const content = await response.text();
+          await navigator.clipboard.writeText(content);
+          window.open(llmUrl, '_blank');
+          showToast('Content copied — paste it!');
+        } catch (e) {
+          console.error('Error copying content:', e);
+        }
+      }
+
+      function showToast(message) {
+        const existing = document.getElementById('clipboard-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'clipboard-toast';
+        toast.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          ${message}
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+
+      // Attach handlers to clipboard LLM buttons
+      document.querySelectorAll('.clipboard-llm-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          const llm = btn.dataset.llm;
+          const llmUrl = btn.dataset.llmUrl;
+          const mdUrl = btn.dataset.mdUrl;
+          const llmName = LLM_NAMES[llm] || llm;
+          const dismissed = localStorage.getItem(llm + 'WarningDismissed') === 'true';
+
+          if (dismissed) {
+            await copyAndOpen(mdUrl, llmUrl);
+          } else {
+            showClipboardModal(llmName, mdUrl, llmUrl);
+          }
+        });
+      });
     })();
+
+  //- Modal and Toast styles
+  style.
+    #clipboard-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #clipboard-modal .modal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+    }
+    #clipboard-modal .modal-content {
+      position: relative;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-strong);
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+      animation: modal-in 0.2s ease-out;
+    }
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    #clipboard-modal .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      color: var(--color-text-muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #clipboard-modal .modal-body {
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    #clipboard-modal .modal-body p {
+      margin: 0 0 12px 0;
+    }
+    #clipboard-modal .modal-body p:last-child {
+      margin-bottom: 0;
+    }
+    #clipboard-modal .modal-body strong {
+      color: var(--color-text-primary);
+    }
+    #clipboard-modal .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    #clipboard-modal .modal-btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--color-surface-hover);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border-strong);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+    }
+    #clipboard-modal .modal-btn-primary:hover {
+      background: var(--color-border-strong);
+    }
+    #clipboard-modal .modal-btn-secondary {
+      background: transparent;
+      color: var(--color-text-muted);
+      border: 1px solid var(--color-border-strong);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #clipboard-modal .modal-btn-secondary:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text-primary);
+    }
+    #clipboard-modal .modal-dismiss {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      justify-content: flex-end;
+    }
+    #clipboard-modal .modal-dismiss input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+    #clipboard-toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #16a34a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+      animation: toast-in 0.2s ease-out;
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }

@@ -754,6 +754,17 @@ function injectStyles(): void {
     .x10-llm-name {
       flex: 1;
     }
+    .x10-llm-asterisk {
+      color: #9CA3AF;
+      margin-left: 2px;
+    }
+    .x10-llm-note {
+      padding: 8px 16px;
+      font-size: 11px;
+      color: #9CA3AF;
+      border-top: 1px solid #333;
+      margin-top: 4px;
+    }
 
     /* Section label */
     .x10-section-label {
@@ -1120,6 +1131,119 @@ function injectStyles(): void {
     #stya-dropdown .x10-review-close:hover {
       color: #fff !important;
     }
+
+    /* Clipboard warning modal (separate overlay) */
+    #x10-clipboard-modal {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 999999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-family: 'Roboto', 'Arial', sans-serif !important;
+    }
+    #x10-clipboard-modal .x10-modal-backdrop {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      background: rgba(0, 0, 0, 0.6) !important;
+    }
+    #x10-clipboard-modal .x10-modal-content {
+      position: relative !important;
+      background: #1e1e1e !important;
+      border: 1px solid #3f3f3f !important;
+      border-radius: 16px !important;
+      padding: 24px !important;
+      width: 90% !important;
+      max-width: 400px !important;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5) !important;
+      animation: x10-modal-in 0.2s ease-out !important;
+    }
+    @keyframes x10-modal-in {
+      from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    #x10-clipboard-modal .x10-modal-header {
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      margin-bottom: 16px !important;
+      color: #9CA3AF !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+    }
+    #x10-clipboard-modal .x10-modal-body {
+      color: #e0e0e0 !important;
+      font-size: 14px !important;
+      line-height: 1.6 !important;
+      margin-bottom: 20px !important;
+    }
+    #x10-clipboard-modal .x10-modal-body p {
+      margin: 0 0 12px 0 !important;
+    }
+    #x10-clipboard-modal .x10-modal-body p:last-child {
+      margin-bottom: 0 !important;
+    }
+    #x10-clipboard-modal .x10-modal-body strong {
+      color: #fff !important;
+    }
+    #x10-clipboard-modal .x10-modal-actions {
+      display: flex !important;
+      gap: 12px !important;
+      margin-bottom: 16px !important;
+    }
+    #x10-clipboard-modal .x10-modal-btn-primary {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      background: #4a4a4a !important;
+      color: #fff !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 12px 20px !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      flex: 1 !important;
+    }
+    #x10-clipboard-modal .x10-modal-btn-primary:hover {
+      background: #5a5a5a !important;
+    }
+    #x10-clipboard-modal .x10-modal-btn-secondary {
+      background: transparent !important;
+      color: #9CA3AF !important;
+      border: 1px solid #3f3f3f !important;
+      border-radius: 8px !important;
+      padding: 12px 20px !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+    }
+    #x10-clipboard-modal .x10-modal-btn-secondary:hover {
+      background: #2a2a2a !important;
+      color: #fff !important;
+    }
+    #x10-clipboard-modal .x10-modal-dismiss {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      color: #9CA3AF !important;
+      font-size: 12px !important;
+      cursor: pointer !important;
+      justify-content: flex-end !important;
+    }
+    #x10-clipboard-modal .x10-modal-dismiss input[type="checkbox"] {
+      width: 14px !important;
+      height: 14px !important;
+      accent-color: #3b82f6 !important;
+      cursor: pointer !important;
+    }
   `;
   document.head.appendChild(styles);
 }
@@ -1438,10 +1562,11 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
       <div class="x10-submenu-inline" id="x10-llm-submenu">
         <button class="x10-submenu-item" data-llm="claude"><span class="x10-llm-icon">${LLM_ICONS_COLOR.claude}</span><span class="x10-llm-name">Claude</span></button>
         <button class="x10-submenu-item" data-llm="chatgpt"><span class="x10-llm-icon">${LLM_ICONS_COLOR.chatgpt}</span><span class="x10-llm-name">ChatGPT</span></button>
-        <button class="x10-submenu-item" data-llm="gemini"><span class="x10-llm-icon">${LLM_ICONS_COLOR.gemini}</span><span class="x10-llm-name">Gemini</span></button>
-        <button class="x10-submenu-item" data-llm="perplexity"><span class="x10-llm-icon">${LLM_ICONS_COLOR.perplexity}</span><span class="x10-llm-name">Perplexity</span></button>
+        <button class="x10-submenu-item" data-llm="gemini"><span class="x10-llm-icon">${LLM_ICONS_COLOR.gemini}</span><span class="x10-llm-name">Gemini<span class="x10-llm-asterisk">*</span></span></button>
+        <button class="x10-submenu-item" data-llm="perplexity"><span class="x10-llm-icon">${LLM_ICONS_COLOR.perplexity}</span><span class="x10-llm-name">Perplexity<span class="x10-llm-asterisk">*</span></span></button>
         <button class="x10-submenu-item" data-llm="grok"><span class="x10-llm-icon">${LLM_ICONS_COLOR.grok}</span><span class="x10-llm-name">Grok</span></button>
         <button class="x10-submenu-item" data-llm="copilot"><span class="x10-llm-icon">${LLM_ICONS_COLOR.copilot}</span><span class="x10-llm-name">Copilot</span></button>
+        <div class="x10-llm-note">* Clipboard mode — paste manually</div>
       </div>
       <button class="x10-quick-item" id="x10-copy-link">
         <span class="x10-quick-icon">🔗</span>
@@ -1526,8 +1651,22 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
   // Open in LLM (direct button)
   overlay.querySelector('#x10-open-direct')?.addEventListener('click', async () => {
     const data = await safeStorageGet(['styaLastLLM']);
-    if (data.styaLastLLM) {
-      handleOpenInLLM(pageInfo.url, data.styaLastLLM as string);
+    const llm = data.styaLastLLM as string;
+    if (!llm) return;
+
+    // Check if this LLM requires clipboard mode
+    if (CLIPBOARD_ONLY_LLMS.includes(llm)) {
+      const storageKey = `${llm}WarningDismissed`;
+      const dismissData = await safeStorageGet([storageKey]);
+      if (dismissData[storageKey]) {
+        // Warning already dismissed - go directly to clipboard mode
+        handleClipboardOnlyLLM(pageInfo.url, llm);
+      } else {
+        // Show warning popover
+        showClipboardWarningPopover(llm, pageInfo.url, overlay);
+      }
+    } else {
+      handleOpenInLLM(pageInfo.url, llm);
     }
   });
 
@@ -1547,7 +1686,21 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
       if (!llm) return;
       await safeStorageSet({ styaLastLLM: llm });
       updateDirectButton(overlay, llm);
-      handleOpenInLLM(pageInfo.url, llm);
+
+      // Check if this LLM requires clipboard mode
+      if (CLIPBOARD_ONLY_LLMS.includes(llm)) {
+        const storageKey = `${llm}WarningDismissed`;
+        const data = await safeStorageGet([storageKey]);
+        if (data[storageKey]) {
+          // Warning already dismissed - go directly to clipboard mode
+          handleClipboardOnlyLLM(pageInfo.url, llm);
+        } else {
+          // Show warning popover
+          showClipboardWarningPopover(llm, pageInfo.url, overlay);
+        }
+      } else {
+        handleOpenInLLM(pageInfo.url, llm);
+      }
     });
   });
 
@@ -1893,6 +2046,15 @@ function showToast(message: string, type = ''): void {
 // Quick Actions (One-Click LLM)
 // ============================================
 
+// LLMs that don't support URL fetching - use clipboard mode instead
+const CLIPBOARD_ONLY_LLMS = ['gemini', 'perplexity'];
+
+// Base URLs for clipboard-only LLMs (no prompt parameter)
+const LLM_CLIPBOARD_URLS: Record<string, string> = {
+  gemini: 'https://gemini.google.com/app',
+  perplexity: 'https://www.perplexity.ai/'
+};
+
 const LLM_URLS: Record<string, (prompt: string) => string> = {
   claude: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   chatgpt: (prompt) => `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,
@@ -1974,6 +2136,128 @@ async function handleCopyMDContent(url: string): Promise<void> {
     console.error('[STYA] handleCopyMDContent error:', error);
     showToast(`Error: ${errorMessage}`, 'error');
   }
+}
+
+// Clipboard icon SVG for toast
+const CLIPBOARD_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+
+// Handle clipboard-only LLMs (Gemini, Perplexity)
+async function handleClipboardOnlyLLM(url: string, llmType: string): Promise<void> {
+  showToast('Creating collection...', '');
+  closeDropdown();
+
+  try {
+    const result = await api.createX10WithExtraction(url, true);
+
+    if (!result.success) {
+      showToast(`Error: ${result.error}`, 'error');
+      return;
+    }
+
+    const txtUrl = `${api.baseUrl}/s/${result.x10Id}.txt`;
+    showToast('Fetching content...', '');
+
+    const response = await fetch(txtUrl);
+    const txtContent = await response.text();
+
+    await navigator.clipboard.writeText(txtContent);
+
+    // Open LLM and show toast
+    const llmUrl = LLM_CLIPBOARD_URLS[llmType];
+    window.open(llmUrl, '_blank');
+    showToastWithIcon(`${CLIPBOARD_ICON}Content copied — paste it!`, 'success');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[STYA] handleClipboardOnlyLLM error:', error);
+    showToast(`Error: ${errorMessage}`, 'error');
+  }
+}
+
+// Show toast with HTML icon
+function showToastWithIcon(html: string, type = ''): void {
+  const toast = document.getElementById('stya-toast');
+  if (!toast) return;
+  toast.innerHTML = html;
+  toast.className = 'show' + (type ? ` ${type}` : '');
+  setTimeout(() => {
+    toast.className = '';
+  }, 3000);
+}
+
+// Show clipboard warning modal for LLMs that don't support URL fetching
+function showClipboardWarningPopover(llmType: string, pageUrl: string, _overlay: HTMLElement): void {
+  const llmName = LLM_NAMES[llmType] || llmType;
+
+  // Remove any existing modal
+  const existingModal = document.getElementById('x10-clipboard-modal');
+  if (existingModal) existingModal.remove();
+
+  // Create modal backdrop + content as a separate overlay
+  const modal = document.createElement('div');
+  modal.id = 'x10-clipboard-modal';
+  modal.innerHTML = `
+    <div class="x10-modal-backdrop"></div>
+    <div class="x10-modal-content">
+      <div class="x10-modal-header">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>Clipboard Mode</span>
+      </div>
+      <div class="x10-modal-body">
+        <p><strong>${llmName}</strong> doesn't currently support fetching external links. This is a limitation on their side, not ours.</p>
+        <p>Instead, we'll copy your content to the clipboard. Just paste it (Ctrl+V) once ${llmName} opens.</p>
+      </div>
+      <div class="x10-modal-actions">
+        <button class="x10-modal-btn-primary" id="x10-modal-confirm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy & Open ${llmName}
+        </button>
+        <button class="x10-modal-btn-secondary" id="x10-modal-cancel">Cancel</button>
+      </div>
+      <label class="x10-modal-dismiss">
+        <input type="checkbox" id="x10-modal-dismiss-checkbox">
+        <span>Got it, don't show again</span>
+      </label>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Close dropdown
+  closeDropdown();
+
+  // Handle confirm button
+  modal.querySelector('#x10-modal-confirm')?.addEventListener('click', async () => {
+    const dismissCheckbox = modal.querySelector('#x10-modal-dismiss-checkbox') as HTMLInputElement;
+    if (dismissCheckbox?.checked) {
+      const storageKey = `${llmType}WarningDismissed`;
+      await safeStorageSet({ [storageKey]: true });
+    }
+    modal.remove();
+    handleClipboardOnlyLLM(pageUrl, llmType);
+  });
+
+  // Handle cancel button
+  modal.querySelector('#x10-modal-cancel')?.addEventListener('click', () => {
+    modal.remove();
+  });
+
+  // Close on backdrop click
+  modal.querySelector('.x10-modal-backdrop')?.addEventListener('click', () => {
+    modal.remove();
+  });
+
+  // Close on Escape key
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
 }
 
 // ============================================
