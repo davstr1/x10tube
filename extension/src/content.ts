@@ -2116,8 +2116,13 @@ async function handleCopyMDLink(url: string): Promise<void> {
     }
 
     const txtUrl = `${api.baseUrl}/s/${result.x10Id}.txt`;
-    await navigator.clipboard.writeText(txtUrl);
-    showToast('Link copied!', 'success');
+    const clipResult = await copyToClipboard(txtUrl);
+
+    if (clipResult.success) {
+      showToast('Link copied!', 'success');
+    } else {
+      showToast('Could not copy link. Please try again.', 'error');
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDLink error:', error);
@@ -2143,8 +2148,13 @@ async function handleCopyMDContent(url: string): Promise<void> {
     const response = await fetch(txtUrl);
     const txtContent = await response.text();
 
-    await navigator.clipboard.writeText(txtContent);
-    showToast('MD content copied!', 'success');
+    const clipResult = await copyToClipboard(txtContent);
+
+    if (clipResult.success) {
+      showToast('MD content copied!', 'success');
+    } else {
+      showToast('Could not copy content. Please try again.', 'error');
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDContent error:', error);
@@ -2193,6 +2203,37 @@ async function handleDownloadMD(url: string): Promise<void> {
 // Clipboard icon SVG for toast
 const CLIPBOARD_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 
+// Robust clipboard copy utility
+// Uses execCommand first (no permission prompt, no user activation timeout)
+// Falls back to navigator.clipboard if execCommand fails
+async function copyToClipboard(text: string): Promise<{ success: boolean; error?: string }> {
+  // Method 1: execCommand (no permission prompt, no 5s timeout)
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (success) {
+      return { success: true };
+    }
+  } catch (e) {
+    console.warn('[STYA] execCommand copy failed:', e);
+  }
+
+  // Method 2: Clipboard API fallback
+  try {
+    await navigator.clipboard.writeText(text);
+    return { success: true };
+  } catch (e) {
+    console.warn('[STYA] navigator.clipboard.writeText failed:', e);
+  }
+
+  return { success: false, error: 'Could not copy to clipboard' };
+}
+
 // Handle clipboard-only LLMs (Gemini, Perplexity)
 async function handleClipboardOnlyLLM(url: string, llmType: string): Promise<void> {
   showToast('Creating collection...', '');
@@ -2212,12 +2253,16 @@ async function handleClipboardOnlyLLM(url: string, llmType: string): Promise<voi
     const response = await fetch(txtUrl);
     const txtContent = await response.text();
 
-    await navigator.clipboard.writeText(txtContent);
+    const clipResult = await copyToClipboard(txtContent);
 
-    // Open LLM and show toast
-    const llmUrl = LLM_CLIPBOARD_URLS[llmType];
-    window.open(llmUrl, '_blank');
-    showToastWithIcon(`${CLIPBOARD_ICON}Content copied — paste it!`, 'success');
+    if (clipResult.success) {
+      const llmUrl = LLM_CLIPBOARD_URLS[llmType];
+      window.open(llmUrl, '_blank');
+      showToastWithIcon(`${CLIPBOARD_ICON}Content copied — paste it!`, 'success');
+    } else {
+      console.error('[STYA] Clipboard copy failed:', clipResult.error);
+      showToast('Could not copy to clipboard. Please try again.', 'error');
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleClipboardOnlyLLM error:', error);
@@ -2332,11 +2377,17 @@ async function openDirectClipboardLLM(mdUrl: string, llmType: string): Promise<v
     showToast('Copying content...', '');
     const response = await fetch(mdUrl);
     const content = await response.text();
-    await navigator.clipboard.writeText(content);
 
-    const llmUrl = LLM_CLIPBOARD_URLS[llmType];
-    window.open(llmUrl, '_blank');
-    showToastWithIcon(`${CLIPBOARD_ICON}Content copied — paste it!`, 'success');
+    const clipResult = await copyToClipboard(content);
+
+    if (clipResult.success) {
+      const llmUrl = LLM_CLIPBOARD_URLS[llmType];
+      window.open(llmUrl, '_blank');
+      showToastWithIcon(`${CLIPBOARD_ICON}Content copied — paste it!`, 'success');
+    } else {
+      console.error('[STYA] Clipboard copy failed:', clipResult.error);
+      showToast('Could not copy to clipboard. Please try again.', 'error');
+    }
   } catch (error) {
     console.error('[STYA] openDirectClipboardLLM error:', error);
     showToast('Error copying content', 'error');
