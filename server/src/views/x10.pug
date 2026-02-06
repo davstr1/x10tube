@@ -70,36 +70,50 @@ block content
           span.ml-1 ▾
         .dropdown-menu
           .dropdown-menu-inner
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
               data-stya-open-in="claude"
               data-stya-md-url=mdUrl
-            ) Claude
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            )
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="#D4A27F"><path d="M11.64 6.353a.75.75 0 0 1-.14 1.052L8.3 9.963a.75.75 0 0 1-.912 0L4.5 7.405a.75.75 0 0 1 .912-1.192l2.744 2.098 2.744-2.098a.75.75 0 0 1 1.052.14z"/><path fill-rule="evenodd" d="M7.156.25a2.843 2.843 0 0 0-2.156.99L3.378 3.19a.75.75 0 0 1-.564.26H1.75a1.5 1.5 0 0 0-1.5 1.5v8.3a2.5 2.5 0 0 0 2.5 2.5h10.5a2.5 2.5 0 0 0 2.5-2.5v-8.3a1.5 1.5 0 0 0-1.5-1.5h-1.057a.75.75 0 0 1-.57-.26L10.99 1.24a2.84 2.84 0 0 0-2.146-.99zM6.13 2.104a1.34 1.34 0 0 1 1.018-.467h1.692c.39 0 .763.17 1.02.467l1.62 1.949a2.25 2.25 0 0 0 1.71.78h1.06v8.417a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1V4.833h1.064a2.25 2.25 0 0 0 1.697-.78z" clip-rule="evenodd"/></svg>
+              | Claude
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
               data-stya-open-in="chatgpt"
               data-stya-md-url=mdUrl
-            ) ChatGPT
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            )
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="#10A37F"><path d="M14.813 6.344a3.7 3.7 0 0 0-.318-3.048 3.74 3.74 0 0 0-4.036-1.778A3.7 3.7 0 0 0 7.672.25a3.74 3.74 0 0 0-3.57 2.6 3.7 3.7 0 0 0-2.477 1.792 3.74 3.74 0 0 0 .46 4.378 3.7 3.7 0 0 0 .318 3.048 3.74 3.74 0 0 0 4.036 1.779 3.7 3.7 0 0 0 2.786 1.247 3.74 3.74 0 0 0 3.571-2.6 3.7 3.7 0 0 0 2.478-1.793 3.74 3.74 0 0 0-.461-4.377M8.321 14.18a2.78 2.78 0 0 1-1.786-.65c.023-.012.062-.035.088-.05l2.966-1.713a.48.48 0 0 0 .244-.422V7.102l1.254.724a.04.04 0 0 1 .023.033v3.463a2.79 2.79 0 0 1-2.789 2.79zM2.194 11.6a2.77 2.77 0 0 1-.332-1.87l.088.053 2.966 1.713a.48.48 0 0 0 .487 0l3.623-2.092v1.448a.05.05 0 0 1-.019.04L5.98 12.627a2.79 2.79 0 0 1-3.814-1.027zm-.803-6.477a2.78 2.78 0 0 1 1.454-1.22v3.527a.48.48 0 0 0 .243.42l3.622 2.093-1.253.724a.04.04 0 0 1-.042.004L2.388 8.936a2.79 2.79 0 0 1-1.026-3.813zm10.538 2.455L8.306 5.485l1.254-.723a.04.04 0 0 1 .042-.004l3.027 1.748a2.79 2.79 0 0 1-.431 5.032V8.012a.48.48 0 0 0-.24-.421zm1.248-1.882a3 3 0 0 0-.088-.052L10.123 3.93a.48.48 0 0 0-.487 0L6.013 6.022V4.574a.05.05 0 0 1 .02-.04l3.026-1.748a2.79 2.79 0 0 1 4.146 2.882zM5.314 8.898l-1.254-.724a.04.04 0 0 1-.022-.034V4.677a2.79 2.79 0 0 1 4.574-2.14l-.088.05L5.558 4.3a.48.48 0 0 0-.244.422zm.68-1.466L8 6.326l2.006 1.158v2.316L8 10.958 5.994 9.8z"/></svg>
+              | ChatGPT
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
               data-stya-open-in="gemini"
               data-stya-md-url=mdUrl
-            ) Gemini#[span.text-text-muted *]
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            )
+              <svg width="16" height="16" viewBox="0 0 16 16"><defs><linearGradient id="gemini-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4285F4"/><stop offset="50%" style="stop-color:#9B72CB"/><stop offset="100%" style="stop-color:#D96570"/></linearGradient></defs><path fill="url(#gemini-grad)" d="M15.545 6.558a9.4 9.4 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.7 7.7 0 0 1 5.352 2.082l-2.284 2.284A4.35 4.35 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.8 4.8 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.7 3.7 0 0 0 1.599-2.431H8v-3.08z"/></svg>
+              | Gemini
+              span.text-text-muted *
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
               data-stya-open-in="perplexity"
               data-stya-md-url=mdUrl
-            ) Perplexity#[span.text-text-muted *]
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            )
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="#1FB8CD"><path d="M5.333 1.333v4L1.667 2.5v11l3.666-2.833v4l3-2.25V16h.334v-3.583l3 2.25v-4l3.666 2.833v-11L12.667 5.333v-4l-3 2.25V0h-.334v3.583zM12 5.75v4.5l3-2.25zM5.667 5.687v4.626L3 12.375V3.625zM6.333 5.75l2.334 1.75v5l-2.334-1.75zm3 1.75l2.334-1.75v5l-2.334 1.75zM6 2v2.563L3.665 2.5 6 1.333zm0 11.5v.667l-2.335-1.75L6 10.688zM10 2v2.563l2.335-2.063L10 1.333zm0 11.5v.667l2.335-1.75L10 10.688z"/></svg>
+              | Perplexity
+              span.text-text-muted *
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
               data-stya-open-in="grok"
               data-stya-md-url=mdUrl
-            ) Grok
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            )
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/></svg>
+              | Grok
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
               data-stya-open-in="copilot"
               data-stya-md-url=mdUrl
-            ) Copilot
+            )
+              <svg width="16" height="16" viewBox="0 0 16 16"><defs><linearGradient id="copilot-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0078D4"/><stop offset="100%" style="stop-color:#00BCF2"/></linearGradient></defs><path fill="url(#copilot-grad)" d="M7.462 0H0v7.19h7.462zM16 0H8.538v7.19H16zM7.462 8.211H0V16h7.462zm8.538 0H8.538V16H16z"/></svg>
+              | Copilot
             .px-4.py-2.text-xs.text-text-muted.border-t.border-border-default.mt-1 * Clipboard mode
 
       //- Copy dropdown
@@ -112,13 +126,21 @@ block content
           span.ml-1 ▾
         .dropdown-menu
           .dropdown-menu-inner
-            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+            button.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
-              onclick=`navigator.clipboard.writeText('${mdUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Link', 1500)`
-            ) Link
-            button#copy-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover(
+              onclick=`navigator.clipboard.writeText('${mdUrl}'); this.querySelector('span').textContent='Copied!'; setTimeout(() => this.querySelector('span').textContent='Link', 1500)`
+            )
+              svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                path(d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71")
+                path(d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71")
+              span Link
+            button#copy-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
-            ) Copy MD
+            )
+              svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
+                path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+              span Copy MD
             button#download-md-btn.block.w-full.text-left.px-4.py-2.text-sm.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
               type="button"
             )
@@ -126,7 +148,7 @@ block content
                 path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
                 polyline(points="7 10 12 15 17 10")
                 line(x1="12" y1="15" x2="12" y2="3")
-              | Download MD
+              span Download MD
 
       //- Spacer to push delete to the right
       .flex-1
