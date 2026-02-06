@@ -57,6 +57,14 @@ curl -v -H "User-Agent: Mozilla/5.0 (compatible; ChatGPT-User/1.0; +https://open
 ### Key Finding
 The `ChatGPT-User` User-Agent is **NOT being blocked**. The server responds normally with proper HTTP status codes.
 
+### Railway HTTP Logs Verification
+**Checked Railway HTTP logs: No 400 errors found.**
+
+This confirms:
+- Either ChatGPT requests never reach the server
+- Or they receive 200 responses (as curl tests show)
+- **The 400 is generated internally by OpenAI**, not by our infrastructure
+
 ---
 
 ## Infrastructure Notes
@@ -229,8 +237,10 @@ The 400 error is **NOT reproducible** and is a **known issue with ChatGPT's brow
 - ✅ Server responds correctly to ChatGPT User-Agent (HTTP 200)
 - ✅ No blocking at Cloudflare, Railway, or application level
 - ✅ Content-Type `text/markdown` is returned properly
+- ✅ **Railway HTTP logs show zero 400 errors**
 - ❌ The 400 error cannot be reproduced with curl
 - ⚠️ This is a documented, widespread problem on OpenAI's side
+- 🔴 **The 400 is generated internally by OpenAI, not by our server**
 
 ### Verdict
 **No action required on our side.** The server works correctly. ChatGPT's browsing tool has known reliability issues (~10% success rate reported by some users) that are unrelated to target server configuration.
