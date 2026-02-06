@@ -50,13 +50,19 @@ block content
 
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") Anonymous usage analytics
 
-      p We collect anonymous usage events to understand how the extension is used (e.g. which AI provider is selected, which export method is used). This data is sent to #[a.text-red-500(href="https://posthog.com" target="_blank") PostHog].
+      p To understand how the extension is used and make it better, we collect minimal, anonymous usage events via #[a.text-red-500(href="https://posthog.com" target="_blank") PostHog]. Here's exactly what that means:
 
-      ul(style="margin: 1rem 0; padding-left: 1.5rem;")
-        li Only action types are tracked (e.g. "opened in Claude", "copied markdown")
-        li No URLs, page titles, video titles, or content is ever sent
-        li Your anonymous identifier is used solely to count unique users
-        li No personal information is collected or shared
+      p(style="margin-top: 1rem;") We track simple button clicks — for example, which AI provider you open (Claude, ChatGPT…), which export method you use (copy, download), and when the extension is activated. That's it.
+
+      p(style="margin-top: 1rem; font-weight: 500; color: var(--text-primary);") What is never tracked, under any circumstances:
+
+      ul(style="margin: 0.5rem 0 1rem; padding-left: 1.5rem;")
+        li The content of what you save (transcripts, articles, text)
+        li URLs or page titles of the pages you visit or save
+        li Video titles or any information about what you watch
+        li Any personal information whatsoever
+
+      p Your anonymous identifier is used solely to count unique users — we have no way to link it back to you as a person. Think of it as a tally counter: we see "someone opened in Claude", not "who" or "what page".
 
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") Data deletion
 

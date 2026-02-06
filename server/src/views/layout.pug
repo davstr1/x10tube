@@ -97,3 +97,22 @@ html(lang="en")
               path(d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7")
             | Contact
 
+    if posthogApiKey
+      script.
+        (function() {
+          var PH_KEY = '#{posthogApiKey}';
+          var PH_URL = 'https://app.posthog.com/capture/';
+          var vid = localStorage.getItem('stya_visitor_id');
+          if (!vid) { vid = crypto.randomUUID(); localStorage.setItem('stya_visitor_id', vid); }
+          fetch(PH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              api_key: PH_KEY,
+              event: 'page_view',
+              distinct_id: vid,
+              properties: { path: location.pathname }
+            })
+          }).catch(function() {});
+        })();
+
