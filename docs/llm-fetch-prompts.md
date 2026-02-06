@@ -39,31 +39,32 @@ Si le browsing tool échoue, utiliser le mode Agent qui utilise un vrai navigate
 
 ## Gemini
 
-**Status:** ⚠️ Nécessite un prompt spécifique
+**Status:** ❌ Non fiable (hallucine ou refuse)
 
-**Problème:** Gemini a tendance à halluciner le contenu au lieu de vraiment le chercher.
+**Problème:** Gemini est très inconsistant pour le fetch d'URLs:
+- Parfois hallucine le contenu au lieu de le chercher
+- Parfois refuse avec "I am sorry, but I am unable to browse the provided URL"
+- Fonctionne aléatoirement selon les URLs (Wikipedia OK, autres sites aléatoire)
 
-**Solution:** Utiliser le terme **"Browse Tool"** (pas "URL Context") car c'est le nom interne que Gemini utilise.
-
-**Prompts recommandés:**
+**Prompts testés (résultats inconsistants):**
 ```
-Use your Browse Tool to read this URL and summarize: https://toyourai.plstry.me/s/{id}.txt
-```
-
-```
-First, use the Browse Tool to fetch the content at https://toyourai.plstry.me/s/{id}.txt, then analyze it.
+Use your Browse Tool to read this URL: https://toyourai.plstry.me/s/{id}.txt
 ```
 
 ```
-Browse this URL and extract the key information: https://toyourai.plstry.me/s/{id}.txt
+Summarize the content at this URL: https://toyourai.plstry.me/s/{id}.txt
 ```
 
-> ⚠️ **Important:**
-> - Utiliser "Browse Tool" et non "URL Context"
-> - Inclure l'URL complète avec `https://`
-> - Gemini supporte: HTML, PDF, images (PNG, JPEG), JSON, XML, CSV, TXT
+> ⚠️ **Problème connu:**
+> - Le "URL Context" de Gemini est bugué dans l'interface web consumer
+> - Fonctionne mieux via l'API avec `tools=[{"url_context": {}}]`
+> - Pas de fix officiel annoncé par Google
 
-**Source:** [How to Correctly Reference Gemini's URL Context Tool](https://medium.com/@l0_0is/how-to-correctly-reference-geminis-url-context-tool-a-tip-for-better-context-engineering-3a285331f3cd)
+**Workaround:** Copier-coller le contenu manuellement dans Gemini au lieu de donner l'URL.
+
+**Sources:**
+- [Does URL context even work?](https://discuss.ai.google.dev/t/does-url-context-even-work-can-you-fix-it/91770)
+- [Why has Gemini lost its ability to read web links?](https://discuss.ai.google.dev/t/why-has-gemini-lost-its-ability-to-read-web-links/49775)
 
 ---
 
@@ -111,8 +112,8 @@ Copilot (Bing) récupère le contenu correctement.
 | LLM | Status | Extension | Prompt |
 |-----|--------|-----------|--------|
 | Claude | ✅ | `.txt` ou `.md` | `Fetch {URL}` |
-| ChatGPT | ⚠️ | `.txt` uniquement | `Fetch {URL}` |
-| Gemini | ⚠️ | `.txt` | `Use your Browse Tool to read {URL}` |
+| ChatGPT | ✅ | `.txt` uniquement | `Fetch {URL}` |
+| Gemini | ❌ | N/A | Non fiable - copier-coller le contenu |
 | Perplexity | ❓ | `.txt` | `Fetch {URL}` |
 | Grok | ✅ | `.txt` | `Fetch {URL}` |
 | Copilot | ✅ | `.txt` | `Fetch {URL}` |
