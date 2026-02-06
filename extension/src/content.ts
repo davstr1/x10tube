@@ -2261,6 +2261,145 @@ function showClipboardWarningPopover(llmType: string, pageUrl: string, _overlay:
 }
 
 // ============================================
+// Direct LLM Open (for website integration)
+// ============================================
+// These functions are used when clicking "Open in..." on toyourai.plstry.me
+// The content is already extracted, so we just need to open the LLM
+
+// Open directly in a regular LLM (Claude, ChatGPT, Grok, Copilot)
+function openDirectInLLM(mdUrl: string, llmType: string): void {
+  const prompt = `Fetch ${mdUrl}`;
+  const llmUrl = LLM_URLS[llmType](prompt);
+  window.open(llmUrl, '_blank');
+}
+
+// Open directly in clipboard-only LLM (Gemini, Perplexity)
+async function openDirectClipboardLLM(mdUrl: string, llmType: string): Promise<void> {
+  try {
+    showToast('Copying content...', '');
+    const response = await fetch(mdUrl);
+    const content = await response.text();
+    await navigator.clipboard.writeText(content);
+
+    const llmUrl = LLM_CLIPBOARD_URLS[llmType];
+    window.open(llmUrl, '_blank');
+    showToastWithIcon(`${CLIPBOARD_ICON}Content copied — paste it!`, 'success');
+  } catch (error) {
+    console.error('[STYA] openDirectClipboardLLM error:', error);
+    showToast('Error copying content', 'error');
+  }
+}
+
+// Show clipboard warning modal for direct website integration
+function showDirectClipboardWarning(llmType: string, mdUrl: string): void {
+  const llmName = LLM_NAMES[llmType] || llmType;
+
+  const existingModal = document.getElementById('x10-clipboard-modal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'x10-clipboard-modal';
+  modal.innerHTML = `
+    <div class="x10-modal-backdrop"></div>
+    <div class="x10-modal-content">
+      <div class="x10-modal-header">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>Clipboard Mode</span>
+      </div>
+      <div class="x10-modal-body">
+        <p><strong>${llmName}</strong> doesn't currently support fetching external links. This is a limitation on their side, not ours.</p>
+        <p>Instead, we'll copy your content to the clipboard. Just paste it (Ctrl+V) once ${llmName} opens.</p>
+      </div>
+      <div class="x10-modal-actions">
+        <button class="x10-modal-btn-primary" id="x10-modal-confirm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy & Open ${llmName}
+        </button>
+        <button class="x10-modal-btn-secondary" id="x10-modal-cancel">Cancel</button>
+      </div>
+      <label class="x10-modal-dismiss">
+        <input type="checkbox" id="x10-modal-dismiss-checkbox">
+        <span>Got it, don't show again</span>
+      </label>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector('#x10-modal-confirm')?.addEventListener('click', async () => {
+    const dismissCheckbox = modal.querySelector('#x10-modal-dismiss-checkbox') as HTMLInputElement;
+    if (dismissCheckbox?.checked) {
+      const storageKey = `${llmType}WarningDismissed`;
+      await safeStorageSet({ [storageKey]: true });
+    }
+    modal.remove();
+    openDirectClipboardLLM(mdUrl, llmType);
+  });
+
+  modal.querySelector('#x10-modal-cancel')?.addEventListener('click', () => {
+    modal.remove();
+  });
+
+  modal.querySelector('.x10-modal-backdrop')?.addEventListener('click', () => {
+    modal.remove();
+  });
+
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+}
+
+// Handle clicks on [data-stya-open-in] buttons on the website
+function initWebsiteIntegration(): void {
+  // Only run on toyourai.plstry.me or localhost
+  if (!window.location.hostname.includes('toyourai.plstry.me') &&
+      !window.location.hostname.includes('localhost')) {
+    return;
+  }
+
+  // Create toast element if not exists
+  createToast();
+
+  // Listen for clicks on Open In buttons
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-stya-open-in]') as HTMLElement | null;
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const llmType = btn.dataset.styaOpenIn;
+    const mdUrl = btn.dataset.styaMdUrl;
+
+    if (!llmType || !mdUrl) return;
+
+    if (CLIPBOARD_ONLY_LLMS.includes(llmType)) {
+      // Check if warning was dismissed
+      const storageKey = `${llmType}WarningDismissed`;
+      const data = await safeStorageGet([storageKey]);
+      if (data[storageKey]) {
+        openDirectClipboardLLM(mdUrl, llmType);
+      } else {
+        showDirectClipboardWarning(llmType, mdUrl);
+      }
+    } else {
+      openDirectInLLM(mdUrl, llmType);
+    }
+  });
+}
+
+// Initialize website integration
+initWebsiteIntegration();
+
+// ============================================
 // Title Button Injection
 // ============================================
 
