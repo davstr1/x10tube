@@ -35,6 +35,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   // Open welcome page on first install
   if (details.reason === 'install') {
     chrome.tabs.create({ url: `${__STYA_BASE_URL__}/welcome` });
+    trackEvent('extension_installed');
   }
 
 });
