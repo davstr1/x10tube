@@ -105,6 +105,7 @@ interface X10Collection {
   id: string;
   title: string;
   videoCount: number;
+  thumbnail?: string;
 }
 
 class X10API {
@@ -255,6 +256,7 @@ class X10API {
             youtube_id: videoId,
             channel: (checkResult.item as { channel: string }).channel,
             duration: undefined,
+            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
             forceNew,
             useExisting: true  // Signal to server
           };
@@ -272,6 +274,7 @@ class X10API {
             youtube_id: videoId,
             channel: result.channel,
             duration: result.duration,
+            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
             forceNew
           };
         }
@@ -287,6 +290,7 @@ class X10API {
           type: 'webpage',
           content: result.content,
           channel: result.domain,
+          thumbnail: `https://www.google.com/s2/favicons?domain=${result.domain}&sz=64`,
           forceNew
         };
       }
@@ -812,6 +816,40 @@ function injectStyles(): void {
       font-size: 12px;
       color: #888;
       flex-shrink: 0;
+    }
+    .x10-item-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #3f3f3f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .x10-item-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .x10-item-thumb svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.5;
+    }
+    .x10-item-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .x10-item-info .x10-item-name {
+      font-size: 13px;
+    }
+    .x10-item-info .x10-item-count {
+      font-size: 11px;
     }
 
     /* Create item styling */
@@ -1729,16 +1767,23 @@ function renderCollectionList(pageInfo: PageInfo, itemInX10s: string[]): void {
 
   listEl.innerHTML = '';
 
+  // Plus icon for create button
+  const plusIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+
   // "Create new collection" button
   const createItem = document.createElement('button');
   createItem.className = 'x10-item x10-item-create';
   createItem.innerHTML = `
-    <span class="x10-item-check" style="font-weight: bold;">+</span>
-    <span class="x10-item-name">A new collection</span>
-    <span class="x10-item-count"></span>
+    <span class="x10-item-thumb" style="background: #4a4a4a;">${plusIcon}</span>
+    <span class="x10-item-info">
+      <span class="x10-item-name">New collection</span>
+    </span>
   `;
   createItem.addEventListener('click', () => handleCreateWithUrl(pageInfo.url));
   listEl.appendChild(createItem);
+
+  // Fallback folder icon for collections without thumbnail
+  const folderIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
 
   // Existing collections
   currentX10s.forEach(x10 => {
@@ -1746,10 +1791,16 @@ function renderCollectionList(pageInfo: PageInfo, itemInX10s: string[]): void {
     const item = document.createElement('button');
     item.className = 'x10-item';
     item.dataset.x10Id = x10.id;
+    const thumbContent = x10.thumbnail
+      ? `<img src="${escapeHtml(x10.thumbnail)}" alt="" onerror="this.parentElement.innerHTML='${folderIcon}'">`
+      : folderIcon;
     item.innerHTML = `
+      <span class="x10-item-thumb">${thumbContent}</span>
+      <span class="x10-item-info">
+        <span class="x10-item-name">${escapeHtml(x10.title || 'Untitled')}</span>
+        <span class="x10-item-count">${x10.videoCount} item${x10.videoCount !== 1 ? 's' : ''}</span>
+      </span>
       <span class="x10-item-check">${isIn ? '✓' : ''}</span>
-      <span class="x10-item-name">${escapeHtml(x10.title || 'Untitled')}</span>
-      <span class="x10-item-count">${x10.videoCount}</span>
     `;
     if (!isIn) {
       item.addEventListener('click', () => handleAddToCollection(x10.id, x10.title, pageInfo.url));

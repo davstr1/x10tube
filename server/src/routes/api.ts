@@ -66,7 +66,8 @@ apiRouter.get('/x10s/by-code/:userCode', asyncHandler(async (req: Request, res: 
       title: c.title,
       videoCount: c.items.length,
       tokens: c.tokenCount,
-      updatedAt: c.updated_at
+      updatedAt: c.updated_at,
+      thumbnail: c.thumbnail_url
     }))
   });
 }));

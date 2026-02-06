@@ -63,6 +63,7 @@ export interface AddContentPayload {
   youtube_id?: string;
   channel?: string;
   duration?: number;
+  thumbnail?: string;
   collectionId?: string;
   forceNew?: boolean;
   userCode?: string;

@@ -13,6 +13,7 @@ export interface Collection {
   anonymous_id: string | null;
   title: string | null;
   pre_prompt: string | null;
+  thumbnail_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +44,7 @@ export interface PreExtractedItem {
   youtube_id?: string;
   channel?: string;
   duration?: number;
+  thumbnail?: string;
 }
 
 // ============================================
@@ -173,7 +175,7 @@ export async function createCollectionWithPreExtractedItem(
     }
   }
 
-  // Create collection
+  // Create collection (with thumbnail from first item)
   const { error: collectionError } = await supabase
     .from('collections')
     .insert({
@@ -181,6 +183,7 @@ export async function createCollectionWithPreExtractedItem(
       user_id: null,
       anonymous_id: anonymousId,
       title: title,
+      thumbnail_url: content.thumbnail || null,
       created_at: now,
       updated_at: now
     });
@@ -213,6 +216,7 @@ export async function createCollectionWithPreExtractedItem(
     anonymous_id: anonymousId,
     title: title,
     pre_prompt: null,
+    thumbnail_url: content.thumbnail || null,
     created_at: now,
     updated_at: now,
     items: [item],
