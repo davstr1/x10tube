@@ -82,36 +82,40 @@ Perplexity est conçu pour la recherche web, devrait fonctionner nativement.
 
 ## Grok
 
-**Status:** ❓ À tester
+**Status:** ✅ Fonctionne
 
 **Prompt:**
 ```
 Fetch https://toyourai.plstry.me/s/{id}.txt
 ```
+
+Grok récupère le contenu sans problème.
 
 ---
 
 ## Copilot
 
-**Status:** ❓ À tester
+**Status:** ✅ Fonctionne
 
 **Prompt:**
 ```
 Fetch https://toyourai.plstry.me/s/{id}.txt
 ```
 
+Copilot (Bing) récupère le contenu correctement.
+
 ---
 
 ## Résumé des Prompts
 
-| LLM | Extension | Prompt |
-|-----|-----------|--------|
-| Claude | `.txt` ou `.md` | `Fetch {URL}` |
-| ChatGPT | `.txt` uniquement | `Fetch {URL}` |
-| Gemini | `.txt` | `Use your Browse Tool to read {URL}` |
-| Perplexity | `.txt` | `Fetch {URL}` |
-| Grok | `.txt` | `Fetch {URL}` |
-| Copilot | `.txt` | `Fetch {URL}` |
+| LLM | Status | Extension | Prompt |
+|-----|--------|-----------|--------|
+| Claude | ✅ | `.txt` ou `.md` | `Fetch {URL}` |
+| ChatGPT | ⚠️ | `.txt` uniquement | `Fetch {URL}` |
+| Gemini | ⚠️ | `.txt` | `Use your Browse Tool to read {URL}` |
+| Perplexity | ❓ | `.txt` | `Fetch {URL}` |
+| Grok | ✅ | `.txt` | `Fetch {URL}` |
+| Copilot | ✅ | `.txt` | `Fetch {URL}` |
 
 ## Notes
 
