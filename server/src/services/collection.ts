@@ -100,6 +100,9 @@ export async function getCollectionById(id: string): Promise<CollectionWithItems
   };
 }
 
+// Hardcoded pagination limit
+const COLLECTIONS_PER_PAGE = 20;
+
 export async function getCollectionsForAnonymous(anonymousId: string): Promise<CollectionWithItems[]> {
   const { data, error } = await supabase
     .from('collections')
@@ -116,6 +119,31 @@ export async function getCollectionsForAnonymous(anonymousId: string): Promise<C
   }));
 }
 
+export async function getCollectionsForAnonymousPaginated(
+  anonymousId: string,
+  page: number
+): Promise<{ collections: CollectionWithItems[]; hasMore: boolean }> {
+  const offset = (page - 1) * COLLECTIONS_PER_PAGE;
+
+  const { data, error } = await supabase
+    .from('collections')
+    .select('*, items(*)')
+    .eq('anonymous_id', anonymousId)
+    .order('updated_at', { ascending: false })
+    .range(offset, offset + COLLECTIONS_PER_PAGE); // Fetch one extra to check hasMore
+
+  if (error || !data) return { collections: [], hasMore: false };
+
+  const hasMore = data.length > COLLECTIONS_PER_PAGE;
+  const collections = data.slice(0, COLLECTIONS_PER_PAGE).map(c => ({
+    ...c,
+    items: c.items || [],
+    tokenCount: calculateTokenCount(c.items || [])
+  }));
+
+  return { collections, hasMore };
+}
+
 export async function getCollectionsForUser(userId: string): Promise<CollectionWithItems[]> {
   const { data, error } = await supabase
     .from('collections')
@@ -130,6 +158,31 @@ export async function getCollectionsForUser(userId: string): Promise<CollectionW
     items: c.items || [],
     tokenCount: calculateTokenCount(c.items || [])
   }));
+}
+
+export async function getCollectionsForUserPaginated(
+  userId: string,
+  page: number
+): Promise<{ collections: CollectionWithItems[]; hasMore: boolean }> {
+  const offset = (page - 1) * COLLECTIONS_PER_PAGE;
+
+  const { data, error } = await supabase
+    .from('collections')
+    .select('*, items(*)')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .range(offset, offset + COLLECTIONS_PER_PAGE);
+
+  if (error || !data) return { collections: [], hasMore: false };
+
+  const hasMore = data.length > COLLECTIONS_PER_PAGE;
+  const collections = data.slice(0, COLLECTIONS_PER_PAGE).map(c => ({
+    ...c,
+    items: c.items || [],
+    tokenCount: calculateTokenCount(c.items || [])
+  }));
+
+  return { collections, hasMore };
 }
 
 // Get any item by source_id (for cache check before extraction)

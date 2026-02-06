@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { marked } from 'marked';
-import { getCollectionsForAnonymous, getCollectionById, deleteCollection } from '../services/collection.js';
+import { getCollectionsForAnonymous, getCollectionsForAnonymousPaginated, getCollectionById, deleteCollection } from '../services/collection.js';
 import { getUserSettings } from '../services/settings.js';
 import { config } from '../config.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
@@ -145,14 +145,36 @@ indexRouter.get('/collections', asyncHandler(async (req: Request, res: Response)
   // TODO: Check if user is logged in and get their collections
   // For now, get collections by anonymous ID
   const anonymousId = req.anonymousId;
-  const collections = await getCollectionsForAnonymous(anonymousId);
+  const { collections, hasMore } = await getCollectionsForAnonymousPaginated(anonymousId, 1);
   const settings = await getUserSettings(anonymousId);
 
   res.render('myx10s', {
     title: `My collections - ${config.brandName}`,
     x10s: collections,
     userCode: anonymousId,
-    settings
+    settings,
+    hasMore,
+    currentPage: 1
+  });
+}));
+
+// API endpoint for loading more collections (infinite scroll)
+indexRouter.get('/api/collections', asyncHandler(async (req: Request, res: Response) => {
+  const anonymousId = req.anonymousId;
+  const page = parseInt(req.query.page as string) || 1;
+  const { collections, hasMore } = await getCollectionsForAnonymousPaginated(anonymousId, page);
+
+  res.json({
+    collections: collections.map(x10 => ({
+      id: x10.id,
+      title: x10.title,
+      itemCount: x10.items.length,
+      tokenCount: x10.tokenCount,
+      updatedAt: x10.updated_at,
+      firstItem: x10.items[0] || null
+    })),
+    hasMore,
+    page
   });
 }));
 

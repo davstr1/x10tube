@@ -43,7 +43,7 @@ block content
 
   //- Main content: X10s list
   if x10s && x10s.length > 0
-    .space-y-4.mb-12
+    #collections-list.space-y-4.mb-12(data-page=currentPage data-has-more=hasMore data-base-url=baseUrl)
       each x10 in x10s
         - const tokenDisplay = x10.tokenCount > 1000 ? `${Math.round(x10.tokenCount / 1000)}K tokens` : `${x10.tokenCount} tokens`
         - const date = new Date(x10.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -174,6 +174,14 @@ block content
                 form.inline(action=`/x10/${x10.id}/delete` method="POST" style="display:inline")
                   button.w-6.h-6.flex.items-center.justify-center.text-text-muted.hover_text-red-500.hover_bg-red-500.hover_bg-opacity-10.rounded-full.transition-colors(type="submit" onclick="return confirm('Delete this collection?')") ×
 
+    //- Infinite scroll sentinel and loader
+    if hasMore
+      #load-more-sentinel.py-8.flex.justify-center
+        .loading-spinner.hidden
+          svg.animate-spin.h-6.w-6.text-text-muted(xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24")
+            circle.opacity-25(cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4")
+            path.opacity-75(fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z")
+
   else
     .text-center.py-16.mb-12
       p.text-text-secondary.mb-6 You don't have any collections yet
@@ -248,4 +256,99 @@ block content
           }
         });
       });
+
+      // Infinite scroll
+      (function() {
+        const list = document.getElementById('collections-list');
+        const sentinel = document.getElementById('load-more-sentinel');
+        if (!list || !sentinel) return;
+
+        let currentPage = parseInt(list.dataset.page) || 1;
+        let hasMore = list.dataset.hasMore === 'true';
+        let isLoading = false;
+        const baseUrl = list.dataset.baseUrl;
+
+        const spinner = sentinel.querySelector('.loading-spinner');
+
+        function createCollectionCard(x10) {
+          const tokenDisplay = x10.tokenCount > 1000
+            ? Math.round(x10.tokenCount / 1000) + 'K tokens'
+            : x10.tokenCount + ' tokens';
+          const date = new Date(x10.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const firstItem = x10.firstItem;
+          const isFirstYouTube = firstItem && firstItem.source_type === 'youtube';
+          const thumbnailUrl = isFirstYouTube ? 'https://img.youtube.com/vi/' + firstItem.source_id + '/mqdefault.jpg' : null;
+          const faviconUrl = firstItem && !isFirstYouTube ? 'https://www.google.com/s2/favicons?domain=' + firstItem.channel + '&sz=128' : null;
+          const mdUrl = baseUrl + '/s/' + x10.id + '.txt';
+
+          let thumbnailHtml = '';
+          if (thumbnailUrl) {
+            thumbnailHtml = '<img class="w-36 h-20 object-cover rounded-md" src="' + thumbnailUrl + '" alt="' + (x10.title || 'Untitled') + '">';
+          } else if (faviconUrl) {
+            thumbnailHtml = '<div class="w-36 h-20 rounded-md bg-surface-alt flex items-center justify-center"><img class="w-10 h-10" src="' + faviconUrl + '" alt=""></div>';
+          }
+
+          const card = document.createElement('div');
+          card.className = 'bg-surface border border-border-strong rounded-lg hover_border-text-muted transition-colors';
+          card.innerHTML = `
+            <div class="flex gap-4 p-4">
+              <a class="flex-shrink-0 block" href="/s/${x10.id}">${thumbnailHtml}</a>
+              <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-start gap-2 mb-2">
+                  <div class="min-w-0">
+                    <a class="block" href="/s/${x10.id}">
+                      <h3 class="font-semibold text-text-primary hover_text-red-600 transition-colors truncate">${x10.title || 'Untitled'}</h3>
+                    </a>
+                    <p class="text-sm text-text-secondary mt-1">${x10.itemCount} item${x10.itemCount > 1 ? 's' : ''} · ${tokenDisplay}</p>
+                  </div>
+                  <span class="text-xs text-text-muted flex-shrink-0">${date}</span>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                  <a class="text-text-muted hover_text-text-secondary" href="/s/${x10.id}">Open</a>
+                  <a class="text-text-muted hover_text-text-secondary" href="/s/${x10.id}">View</a>
+                </div>
+              </div>
+            </div>
+          `;
+          return card;
+        }
+
+        async function loadMore() {
+          if (isLoading || !hasMore) return;
+          isLoading = true;
+          spinner.classList.remove('hidden');
+
+          try {
+            const response = await fetch('/api/collections?page=' + (currentPage + 1));
+            const data = await response.json();
+
+            data.collections.forEach(function(x10) {
+              const card = createCollectionCard(x10);
+              list.insertBefore(card, sentinel);
+            });
+
+            currentPage = data.page;
+            hasMore = data.hasMore;
+            list.dataset.page = currentPage;
+            list.dataset.hasMore = hasMore;
+
+            if (!hasMore) {
+              sentinel.remove();
+            }
+          } catch (e) {
+            console.error('Failed to load more collections:', e);
+          } finally {
+            isLoading = false;
+            spinner.classList.add('hidden');
+          }
+        }
+
+        const observer = new IntersectionObserver(function(entries) {
+          if (entries[0].isIntersecting && hasMore && !isLoading) {
+            loadMore();
+          }
+        }, { rootMargin: '100px' });
+
+        observer.observe(sentinel);
+      })();
     })();
