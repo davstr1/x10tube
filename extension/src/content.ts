@@ -1678,7 +1678,7 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
     const data = await safeStorageGet(['styaLastLLM']);
     const llm = data.styaLastLLM as string;
     if (!llm) return;
-    trackEvent('open_in_provider', { provider: llm });
+    trackEvent('open_in_' + llm);
 
     // Check if this LLM requires clipboard mode
     if (CLIPBOARD_ONLY_LLMS.includes(llm)) {
@@ -1710,7 +1710,7 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
       e.stopPropagation();
       const llm = (item as HTMLElement).dataset.llm;
       if (!llm) return;
-      trackEvent('open_in_provider', { provider: llm });
+      trackEvent('open_in_' + llm);
       await safeStorageSet({ styaLastLLM: llm });
       updateDirectButton(overlay, llm);
 
@@ -2520,6 +2520,7 @@ function initWebsiteIntegration(): void {
     const mdUrl = btn.dataset.styaMdUrl;
 
     if (!llmType || !mdUrl) return;
+    trackEvent('open_in_' + llmType);
 
     if (CLIPBOARD_ONLY_LLMS.includes(llmType)) {
       // Check if warning was dismissed
