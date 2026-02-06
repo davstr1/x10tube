@@ -233,7 +233,7 @@ apiRouter.post('/x10/add', (_req: Request, res: Response) => {
 // The extension extracts YouTube transcripts and web page content directly
 // Supports useExisting flag to skip extraction when item already exists
 apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Response) => {
-  const { url, title, type, content, youtube_id, channel, duration, collectionId, forceNew, userCode, useExisting } = req.body;
+  const { url, title, type, content, youtube_id, channel, duration, thumbnail, collectionId, forceNew, userCode, useExisting } = req.body;
 
   // Validate required fields
   if (!url || typeof url !== 'string') {
@@ -299,7 +299,8 @@ apiRouter.post('/x10/add-content', asyncHandler(async (req: Request, res: Respon
       content: content || '',  // Empty string when useExisting=true
       youtube_id: youtube_id || undefined,
       channel: channel || undefined,
-      duration: typeof duration === 'number' ? duration : undefined
+      duration: typeof duration === 'number' ? duration : undefined,
+      thumbnail: thumbnail || undefined
     };
 
     let collectionResultId: string;
