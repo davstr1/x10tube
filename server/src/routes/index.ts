@@ -4,6 +4,7 @@ import { join } from 'path';
 import { marked } from 'marked';
 import { getCollectionsForAnonymous, getCollectionsForAnonymousPaginated, getCollectionById, deleteCollection } from '../services/collection.js';
 import { getUserSettings } from '../services/settings.js';
+import { sendUninstallFeedback } from '../services/mailer.js';
 import { config } from '../config.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 
@@ -67,6 +68,29 @@ indexRouter.get('/privacy', (_req: Request, res: Response) => {
     title: `Privacy Policy - ${config.brandName}`
   });
 });
+
+// Uninstall feedback page
+indexRouter.get('/uninstall', (_req: Request, res: Response) => {
+  res.render('uninstall', {
+    title: `Feedback - ${config.brandName}`
+  });
+});
+
+// Uninstall feedback API
+indexRouter.post('/api/uninstall-feedback', asyncHandler(async (req: Request, res: Response) => {
+  const { reason, details, email } = req.body;
+  if (!reason || typeof reason !== 'string') {
+    return res.status(400).json({ error: 'Reason required' });
+  }
+
+  try {
+    await sendUninstallFeedback(reason, details || '', email || '');
+  } catch (err) {
+    console.error('[Uninstall feedback] Email failed:', err);
+  }
+
+  res.json({ ok: true });
+}));
 
 // Settings page
 indexRouter.get('/settings', asyncHandler(async (req: Request, res: Response) => {

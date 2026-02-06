@@ -29,6 +29,9 @@ chrome.runtime.onInstalled.addListener((details) => {
     contexts: ['page', 'link', 'video', 'image']
   });
 
+  // Set uninstall feedback URL (updated on install + update)
+  chrome.runtime.setUninstallURL(`${__STYA_BASE_URL__}/uninstall`);
+
   // Open welcome page on first install
   if (details.reason === 'install') {
     chrome.tabs.create({ url: `${__STYA_BASE_URL__}/welcome` });

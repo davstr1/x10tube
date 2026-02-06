@@ -1,0 +1,107 @@
+extends layout
+
+block content
+  section.text-center.mb-8.pt-4
+    .flex.justify-center.mb-4
+      svg(viewBox="0 0 100 100" style="width: 48px; height: 48px;")
+        path(d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626")
+        circle(cx="65" cy="50" r="6" fill="#ffffff")
+        circle(cx="82" cy="50" r="6" fill="#ffffff")
+    h1.text-xl.font-semibold.text-text-primary.mb-2 Sorry to see you go
+    p.text-sm.text-text-secondary Help us improve — what made you uninstall?
+
+  #feedback-form
+    article.bg-surface.rounded-xl.border.border-border-default(style="padding: 2rem;")
+      .space-y-3.mb-6
+        label.flex.items-center.gap-3.text-sm.text-text-secondary.cursor-pointer(style="padding: 0.5rem 0;")
+          input.accent-red-600(type="radio" name="reason" value="dont-need")
+          span I don't need it anymore
+        label.flex.items-center.gap-3.text-sm.text-text-secondary.cursor-pointer(style="padding: 0.5rem 0;")
+          input.accent-red-600(type="radio" name="reason" value="didnt-work")
+          span It didn't work as expected
+        label.flex.items-center.gap-3.text-sm.text-text-secondary.cursor-pointer(style="padding: 0.5rem 0;")
+          input.accent-red-600(type="radio" name="reason" value="other-tool")
+          span I use another tool
+        label.flex.items-center.gap-3.text-sm.text-text-secondary.cursor-pointer(style="padding: 0.5rem 0;")
+          input.accent-red-600(type="radio" name="reason" value="other")
+          span Other
+
+      .mb-4
+        textarea#feedback-details.w-full.bg-surface-alt.border.border-border-default.rounded-lg.text-sm.text-text-primary.placeholder-text-muted(rows="3" placeholder="Anything else you'd like to share? (optional)" style="padding: 0.75rem; resize: vertical;")
+
+      #email-row.mb-6(style="display: none;")
+        label.text-xs.text-text-muted.mb-1.block Leave your email if you'd like a reply (optional)
+        input#feedback-email.w-full.bg-surface-alt.border.border-border-default.rounded-lg.text-sm.text-text-primary.placeholder-text-muted(type="email" placeholder="you@example.com" style="padding: 0.75rem;")
+
+      button#send-feedback.w-full.bg-red-600.hover_bg-red-700.text-white.font-medium.rounded-lg.text-sm.transition-colors(style="padding: 0.75rem;" disabled) Send feedback
+
+  #feedback-thanks(style="display: none;")
+    article.bg-surface.rounded-xl.border.border-border-default.text-center(style="padding: 3rem 2rem;")
+      p.text-lg.font-semibold.text-text-primary.mb-2 Thank you!
+      p.text-sm.text-text-secondary Your feedback helps us improve.
+
+  script.
+    (function() {
+      var form = document.getElementById('feedback-form');
+      var thanks = document.getElementById('feedback-thanks');
+      var btn = document.getElementById('send-feedback');
+      var textarea = document.getElementById('feedback-details');
+      var emailRow = document.getElementById('email-row');
+      var emailInput = document.getElementById('feedback-email');
+      var radios = document.querySelectorAll('input[name="reason"]');
+
+      // Enable button when a reason is selected
+      radios.forEach(function(r) {
+        r.addEventListener('change', function() { btn.disabled = false; });
+      });
+
+      // Show email field when user types in textarea
+      textarea.addEventListener('input', function() {
+        emailRow.style.display = textarea.value.trim() ? 'block' : 'none';
+      });
+
+      btn.addEventListener('click', function() {
+        var checked = document.querySelector('input[name="reason"]:checked');
+        if (!checked) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        var payload = {
+          reason: checked.value,
+          details: textarea.value.trim(),
+          email: emailInput.value.trim()
+        };
+
+        fetch('/api/uninstall-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function() {
+          form.style.display = 'none';
+          thanks.style.display = 'block';
+        }).catch(function() {
+          form.style.display = 'none';
+          thanks.style.display = 'block';
+        });
+
+        // PostHog tracking
+        if (typeof window !== 'undefined') {
+          var PH_KEY = '#{posthogApiKey}';
+          if (PH_KEY) {
+            var vid = localStorage.getItem('stya_visitor_id');
+            if (!vid) { vid = crypto.randomUUID(); localStorage.setItem('stya_visitor_id', vid); }
+            fetch('https://app.posthog.com/capture/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                api_key: PH_KEY,
+                event: 'extension_uninstalled',
+                distinct_id: vid,
+                properties: { reason: checked.value }
+              })
+            }).catch(function() {});
+          }
+        }
+      });
+    })();

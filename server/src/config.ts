@@ -16,6 +16,12 @@ export const config = {
   chromeExtensionUrl: process.env.CHROME_EXTENSION_URL || '#',
   // Analytics
   posthogApiKey: process.env.POSTHOG_API_KEY || '',
+  // Email (SMTP via Nodemailer)
+  smtpHost: process.env.SMTP_HOST || '',
+  smtpPort: Number(process.env.SMTP_PORT) || 587,
+  smtpUser: process.env.SMTP_USER || '',
+  smtpPass: process.env.SMTP_PASS || '',
+  feedbackTo: process.env.FEEDBACK_TO || 'toyourai@plstry.me',
   // Supabase (no defaults - must be set in .env)
   supabaseUrl: process.env.SUPABASE_URL,
   supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
