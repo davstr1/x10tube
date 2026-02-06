@@ -1914,8 +1914,8 @@ async function handleOpenInLLM(url: string, llmType: string): Promise<void> {
       return;
     }
 
-    const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
-    const prompt = `Fetch ${mdUrl}`;
+    const txtUrl = `${api.baseUrl}/s/${result.x10Id}.txt`;
+    const prompt = `Fetch ${txtUrl}`;
     const llmUrl = LLM_URLS[llmType](prompt);
 
     window.open(llmUrl, '_blank');
@@ -1939,9 +1939,9 @@ async function handleCopyMDLink(url: string): Promise<void> {
       return;
     }
 
-    const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
-    await navigator.clipboard.writeText(mdUrl);
-    showToast('MD link copied!', 'success');
+    const txtUrl = `${api.baseUrl}/s/${result.x10Id}.txt`;
+    await navigator.clipboard.writeText(txtUrl);
+    showToast('Link copied!', 'success');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[STYA] handleCopyMDLink error:', error);
@@ -1961,13 +1961,13 @@ async function handleCopyMDContent(url: string): Promise<void> {
       return;
     }
 
-    const mdUrl = `${api.baseUrl}/s/${result.x10Id}.md`;
+    const txtUrl = `${api.baseUrl}/s/${result.x10Id}.txt`;
     showToast('Fetching content...', '');
 
-    const response = await fetch(mdUrl);
-    const mdContent = await response.text();
+    const response = await fetch(txtUrl);
+    const txtContent = await response.text();
 
-    await navigator.clipboard.writeText(mdContent);
+    await navigator.clipboard.writeText(txtContent);
     showToast('MD content copied!', 'success');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

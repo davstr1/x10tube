@@ -19,9 +19,9 @@ StraightToYourAI is a Chrome extension that extracts content from YouTube videos
 
 ## API Endpoints
 
-Collections can be accessed as markdown at:
-- `https://toyourai.plstry.me/s/{id}.md` - Markdown format
-- `https://toyourai.plstry.me/s/{id}.txt` - Plain text format
+Collections can be accessed as plain text at:
+- `https://toyourai.plstry.me/s/{id}.txt` - Plain text format (recommended)
+- `https://toyourai.plstry.me/s/{id}.md` - Redirects to .txt (deprecated)
 
 These URLs are designed to be fetched by AI assistants for analysis.
 
