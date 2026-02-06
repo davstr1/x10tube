@@ -17,6 +17,7 @@ const PROD_URL = env.PROD_URL || 'https://toyourai.plstry.me';
 const CHROME_EXTENSION_URL = env.CHROME_EXTENSION_URL || '';
 const REVIEW_PROMPT_FIRST = parseInt(env.REVIEW_PROMPT_FIRST) || 20;
 const REVIEW_PROMPT_SECOND = parseInt(env.REVIEW_PROMPT_SECOND) || 50;
+const POSTHOG_API_KEY = env.POSTHOG_API_KEY || '';
 
 const entryPoints = [
   'src/background.ts',
@@ -45,6 +46,7 @@ const commonDefines = {
   '__CHROME_EXTENSION_URL__': JSON.stringify(CHROME_EXTENSION_URL),
   '__REVIEW_PROMPT_FIRST__': JSON.stringify(REVIEW_PROMPT_FIRST),
   '__REVIEW_PROMPT_SECOND__': JSON.stringify(REVIEW_PROMPT_SECOND),
+  '__POSTHOG_API_KEY__': JSON.stringify(POSTHOG_API_KEY),
 };
 
 if (isWatch) {

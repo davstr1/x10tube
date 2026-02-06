@@ -5,7 +5,7 @@ block content
 
   article.bg-surface.rounded-xl.border.border-border-default(style="padding: 2rem;")
     .prose.prose-invert.text-text-secondary(style="line-height: 1.7;")
-      p.text-text-muted.text-sm(style="margin-bottom: 2rem;") Last updated: February 2025
+      p.text-text-muted.text-sm(style="margin-bottom: 2rem;") Last updated: February 2026
 
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") What data we collect
 
@@ -27,14 +27,12 @@ block content
       ul(style="margin: 1rem 0; padding-left: 1.5rem;")
         li No personal information (name, email, etc.)
         li No browsing history (we only see pages you explicitly save)
-        li No analytics or tracking
+        li No invasive analytics (see Anonymous usage analytics below)
         li No data shared with third parties
 
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") How data is stored
 
-      p Your data is stored on servers hosted by
-        a.text-red-500(href="https://supabase.com" target="_blank") Supabase
-        |  (PostgreSQL database). Your anonymous identifier is stored in an HTTP-only cookie that cannot be accessed by JavaScript.
+      p Your data is stored on servers hosted by #[a.text-red-500(href="https://supabase.com" target="_blank") Supabase] (PostgreSQL database). Your anonymous identifier is stored in an HTTP-only cookie that cannot be accessed by JavaScript.
 
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") Third-party services
 
@@ -50,16 +48,20 @@ block content
 
       p These services receive the URL of pages you choose to save. No other data is shared.
 
+      h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") Anonymous usage analytics
+
+      p We collect anonymous usage events to understand how the extension is used (e.g. which AI provider is selected, which export method is used). This data is sent to #[a.text-red-500(href="https://posthog.com" target="_blank") PostHog].
+
+      ul(style="margin: 1rem 0; padding-left: 1.5rem;")
+        li Only action types are tracked (e.g. "opened in Claude", "copied markdown")
+        li No URLs, page titles, video titles, or content is ever sent
+        li Your anonymous identifier is used solely to count unique users
+        li No personal information is collected or shared
+
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") Data deletion
 
-      p You can delete your collections at any time from the
-        a.text-red-500(href="/collections") My Collections
-        |  page. To completely reset your account, use the
-        a.text-red-500(href="/disconnect") Disconnect
-        |  feature.
+      p You can delete your collections at any time from the #[a.text-red-500(href="/collections") My Collections] page. To completely reset your account, use the #[a.text-red-500(href="/disconnect") Disconnect] feature.
 
       h2.text-lg.font-semibold.text-text-primary(style="margin-top: 2rem; margin-bottom: 1rem;") Contact
 
-      p For any questions about this privacy policy, please open an issue on our
-        a.text-red-500(href="https://github.com/anthropics/claude-code/issues" target="_blank") GitHub repository
-        | .
+      p For any questions about this privacy policy, contact us at #[a.text-red-500(href="mailto:tomyai@plstry.me" target="_blank") tomyai@plstry.me].

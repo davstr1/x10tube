@@ -1,6 +1,8 @@
 // StraightToYourAI Background Service Worker
 // Handles: context menu, keyboard shortcut, extension icon click
 
+import { trackEvent } from './lib/analytics.js';
+
 console.log('[STYA] Background service worker loaded');
 
 // ─────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       srcUrl: info.srcUrl,
       pageUrl: info.pageUrl
     });
+    trackEvent('extension_activated', { method: 'context_menu' });
   }
 });
 
@@ -54,6 +57,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 chrome.action.onClicked.addListener(async (tab) => {
   await triggerOverlay(tab);
+  trackEvent('extension_activated', { method: 'toolbar_button' });
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -65,6 +69,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
       await triggerOverlay(tab);
+      trackEvent('extension_activated', { method: 'keyboard_shortcut' });
     }
   }
 });

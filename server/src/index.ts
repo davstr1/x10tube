@@ -26,6 +26,7 @@ const PORT = config.port;
 app.locals.baseUrl = config.baseUrl;
 app.locals.brandName = config.brandName;
 app.locals.chromeExtensionUrl = config.chromeExtensionUrl;
+app.locals.posthogApiKey = config.posthogApiKey;
 
 // Global CORS middleware (must be before body parsers for preflight requests)
 app.use((req, res, next) => {

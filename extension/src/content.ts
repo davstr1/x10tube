@@ -2,6 +2,7 @@
 // Universal overlay for YouTube and web pages
 
 import { config } from './lib/config';
+import { trackEvent } from './lib/analytics';
 
 // ============================================
 // Context Detection
@@ -1677,6 +1678,7 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
     const data = await safeStorageGet(['styaLastLLM']);
     const llm = data.styaLastLLM as string;
     if (!llm) return;
+    trackEvent('open_in_provider', { provider: llm });
 
     // Check if this LLM requires clipboard mode
     if (CLIPBOARD_ONLY_LLMS.includes(llm)) {
@@ -1708,6 +1710,7 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
       e.stopPropagation();
       const llm = (item as HTMLElement).dataset.llm;
       if (!llm) return;
+      trackEvent('open_in_provider', { provider: llm });
       await safeStorageSet({ styaLastLLM: llm });
       updateDirectButton(overlay, llm);
 
@@ -1731,16 +1734,19 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
   // Copy Link
   overlay.querySelector('#x10-copy-link')?.addEventListener('click', () => {
     handleCopyMDLink(pageInfo.url);
+    trackEvent('export_content', { method: 'copy_link' });
   });
 
   // Copy Content
   overlay.querySelector('#x10-copy-content')?.addEventListener('click', () => {
     handleCopyMDContent(pageInfo.url);
+    trackEvent('export_content', { method: 'copy_md' });
   });
 
   // Download MD
   overlay.querySelector('#x10-download-md')?.addEventListener('click', () => {
     handleDownloadMD(pageInfo.url, pageInfo.title);
+    trackEvent('export_content', { method: 'download_md' });
   });
 
   // Load LLM preference
@@ -2048,6 +2054,7 @@ async function showDropdownForVideo(videoId: string, anchorElement: HTMLElement,
     videoId,
     videoTitle
   });
+  trackEvent('extension_activated', { method: 'youtube_title_button' });
 }
 
 // ============================================

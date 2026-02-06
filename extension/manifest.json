@@ -10,7 +10,8 @@
     "*://www.youtube.com/*",
     "*://r.jina.ai/*",
     "*://www.google.com/*",
-    "*://img.youtube.com/*"
+    "*://img.youtube.com/*",
+    "*://app.posthog.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; img-src 'self' https:; object-src 'none'"

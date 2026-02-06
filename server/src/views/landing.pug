@@ -152,3 +152,36 @@ block content
       div
         p.text-text-primary Questions / Feedback?
         p.text-text-muted Drop me a line at #[a(href="mailto:toyourai@plstry.me" target="_blank") toyourai@plstry.me]
+
+  if posthogApiKey
+    script.
+      (function() {
+        var PH_KEY = '#{posthogApiKey}';
+        var PH_URL = 'https://app.posthog.com/capture/';
+        var vid = localStorage.getItem('stya_visitor_id');
+        if (!vid) { vid = crypto.randomUUID(); localStorage.setItem('stya_visitor_id', vid); }
+
+        function ph(event, props) {
+          try {
+            fetch(PH_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ api_key: PH_KEY, event: event, distinct_id: vid, properties: props || {} })
+            }).catch(function() {});
+          } catch(e) {}
+        }
+
+        // landing_page_view
+        var params = new URLSearchParams(location.search);
+        ph('landing_page_view', {
+          referrer: document.referrer || '',
+          utm_source: params.get('utm_source') || '',
+          utm_medium: params.get('utm_medium') || '',
+          utm_campaign: params.get('utm_campaign') || ''
+        });
+
+        // click_install_chrome
+        document.querySelectorAll('a[href*="chromewebstore"]').forEach(function(link) {
+          link.addEventListener('click', function() { ph('click_install_chrome', {}); });
+        });
+      })();
