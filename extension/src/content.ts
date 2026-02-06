@@ -1565,12 +1565,12 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
         <span>Open in...</span>
       </button>
       <div class="x10-submenu-inline" id="x10-llm-submenu">
-        <button class="x10-submenu-item" data-llm="claude"><span class="x10-llm-icon">${LLM_ICONS_COLOR.claude}</span><span class="x10-llm-name">Claude</span></button>
         <button class="x10-submenu-item" data-llm="chatgpt"><span class="x10-llm-icon">${LLM_ICONS_COLOR.chatgpt}</span><span class="x10-llm-name">ChatGPT</span></button>
-        <button class="x10-submenu-item" data-llm="gemini"><span class="x10-llm-icon">${LLM_ICONS_COLOR.gemini}</span><span class="x10-llm-name">Gemini<span class="x10-llm-asterisk">*</span></span></button>
-        <button class="x10-submenu-item" data-llm="perplexity"><span class="x10-llm-icon">${LLM_ICONS_COLOR.perplexity}</span><span class="x10-llm-name">Perplexity<span class="x10-llm-asterisk">*</span></span></button>
-        <button class="x10-submenu-item" data-llm="grok"><span class="x10-llm-icon">${LLM_ICONS_COLOR.grok}</span><span class="x10-llm-name">Grok</span></button>
+        <button class="x10-submenu-item" data-llm="claude"><span class="x10-llm-icon">${LLM_ICONS_COLOR.claude}</span><span class="x10-llm-name">Claude</span></button>
         <button class="x10-submenu-item" data-llm="copilot"><span class="x10-llm-icon">${LLM_ICONS_COLOR.copilot}</span><span class="x10-llm-name">Copilot</span></button>
+        <button class="x10-submenu-item" data-llm="gemini"><span class="x10-llm-icon">${LLM_ICONS_COLOR.gemini}</span><span class="x10-llm-name">Gemini<span class="x10-llm-asterisk">*</span></span></button>
+        <button class="x10-submenu-item" data-llm="grok"><span class="x10-llm-icon">${LLM_ICONS_COLOR.grok}</span><span class="x10-llm-name">Grok</span></button>
+        <button class="x10-submenu-item" data-llm="perplexity"><span class="x10-llm-icon">${LLM_ICONS_COLOR.perplexity}</span><span class="x10-llm-name">Perplexity<span class="x10-llm-asterisk">*</span></span></button>
         <div class="x10-llm-note">* Clipboard mode — paste manually</div>
       </div>
       <button class="x10-quick-item" id="x10-copy-link">

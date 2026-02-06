@@ -89,6 +89,13 @@ block content
                     .dropdown-menu-inner
                       button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
                         type="button"
+                        data-stya-open-in="chatgpt"
+                        data-stya-md-url=mdUrl
+                      )
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="#10A37F"><path d="M14.813 6.344a3.7 3.7 0 0 0-.318-3.048 3.74 3.74 0 0 0-4.036-1.778A3.7 3.7 0 0 0 7.672.25a3.74 3.74 0 0 0-3.57 2.6 3.7 3.7 0 0 0-2.477 1.792 3.74 3.74 0 0 0 .46 4.378 3.7 3.7 0 0 0 .318 3.048 3.74 3.74 0 0 0 4.036 1.779 3.7 3.7 0 0 0 2.786 1.247 3.74 3.74 0 0 0 3.571-2.6 3.7 3.7 0 0 0 2.478-1.793 3.74 3.74 0 0 0-.461-4.377M8.321 14.18a2.78 2.78 0 0 1-1.786-.65c.023-.012.062-.035.088-.05l2.966-1.713a.48.48 0 0 0 .244-.422V7.102l1.254.724a.04.04 0 0 1 .023.033v3.463a2.79 2.79 0 0 1-2.789 2.79zM2.194 11.6a2.77 2.77 0 0 1-.332-1.87l.088.053 2.966 1.713a.48.48 0 0 0 .487 0l3.623-2.092v1.448a.05.05 0 0 1-.019.04L5.98 12.627a2.79 2.79 0 0 1-3.814-1.027zm-.803-6.477a2.78 2.78 0 0 1 1.454-1.22v3.527a.48.48 0 0 0 .243.42l3.622 2.093-1.253.724a.04.04 0 0 1-.042.004L2.388 8.936a2.79 2.79 0 0 1-1.026-3.813zm10.538 2.455L8.306 5.485l1.254-.723a.04.04 0 0 1 .042-.004l3.027 1.748a2.79 2.79 0 0 1-.431 5.032V8.012a.48.48 0 0 0-.24-.421zm1.248-1.882a3 3 0 0 0-.088-.052L10.123 3.93a.48.48 0 0 0-.487 0L6.013 6.022V4.574a.05.05 0 0 1 .02-.04l3.026-1.748a2.79 2.79 0 0 1 4.146 2.882zM5.314 8.898l-1.254-.724a.04.04 0 0 1-.022-.034V4.677a2.79 2.79 0 0 1 4.574-2.14l-.088.05L5.558 4.3a.48.48 0 0 0-.244.422zm.68-1.466L8 6.326l2.006 1.158v2.316L8 10.958 5.994 9.8z"/></svg>
+                        | ChatGPT
+                      button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
+                        type="button"
                         data-stya-open-in="claude"
                         data-stya-md-url=mdUrl
                       )
@@ -96,11 +103,11 @@ block content
                         | Claude
                       button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
                         type="button"
-                        data-stya-open-in="chatgpt"
+                        data-stya-open-in="copilot"
                         data-stya-md-url=mdUrl
                       )
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="#10A37F"><path d="M14.813 6.344a3.7 3.7 0 0 0-.318-3.048 3.74 3.74 0 0 0-4.036-1.778A3.7 3.7 0 0 0 7.672.25a3.74 3.74 0 0 0-3.57 2.6 3.7 3.7 0 0 0-2.477 1.792 3.74 3.74 0 0 0 .46 4.378 3.7 3.7 0 0 0 .318 3.048 3.74 3.74 0 0 0 4.036 1.779 3.7 3.7 0 0 0 2.786 1.247 3.74 3.74 0 0 0 3.571-2.6 3.7 3.7 0 0 0 2.478-1.793 3.74 3.74 0 0 0-.461-4.377M8.321 14.18a2.78 2.78 0 0 1-1.786-.65c.023-.012.062-.035.088-.05l2.966-1.713a.48.48 0 0 0 .244-.422V7.102l1.254.724a.04.04 0 0 1 .023.033v3.463a2.79 2.79 0 0 1-2.789 2.79zM2.194 11.6a2.77 2.77 0 0 1-.332-1.87l.088.053 2.966 1.713a.48.48 0 0 0 .487 0l3.623-2.092v1.448a.05.05 0 0 1-.019.04L5.98 12.627a2.79 2.79 0 0 1-3.814-1.027zm-.803-6.477a2.78 2.78 0 0 1 1.454-1.22v3.527a.48.48 0 0 0 .243.42l3.622 2.093-1.253.724a.04.04 0 0 1-.042.004L2.388 8.936a2.79 2.79 0 0 1-1.026-3.813zm10.538 2.455L8.306 5.485l1.254-.723a.04.04 0 0 1 .042-.004l3.027 1.748a2.79 2.79 0 0 1-.431 5.032V8.012a.48.48 0 0 0-.24-.421zm1.248-1.882a3 3 0 0 0-.088-.052L10.123 3.93a.48.48 0 0 0-.487 0L6.013 6.022V4.574a.05.05 0 0 1 .02-.04l3.026-1.748a2.79 2.79 0 0 1 4.146 2.882zM5.314 8.898l-1.254-.724a.04.04 0 0 1-.022-.034V4.677a2.79 2.79 0 0 1 4.574-2.14l-.088.05L5.558 4.3a.48.48 0 0 0-.244.422zm.68-1.466L8 6.326l2.006 1.158v2.316L8 10.958 5.994 9.8z"/></svg>
-                        | ChatGPT
+                        <svg width="12" height="12" viewBox="0 0 16 16"><defs><linearGradient id="copilot-grad-s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0078D4"/><stop offset="100%" style="stop-color:#00BCF2"/></linearGradient></defs><path fill="url(#copilot-grad-s)" d="M7.462 0H0v7.19h7.462zM16 0H8.538v7.19H16zM7.462 8.211H0V16h7.462zm8.538 0H8.538V16H16z"/></svg>
+                        | Copilot
                       button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
                         type="button"
                         data-stya-open-in="gemini"
@@ -111,14 +118,6 @@ block content
                         span.text-text-muted *
                       button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
                         type="button"
-                        data-stya-open-in="perplexity"
-                        data-stya-md-url=mdUrl
-                      )
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="#1FB8CD"><path d="M5.333 1.333v4L1.667 2.5v11l3.666-2.833v4l3-2.25V16h.334v-3.583l3 2.25v-4l3.666 2.833v-11L12.667 5.333v-4l-3 2.25V0h-.334v3.583zM12 5.75v4.5l3-2.25zM5.667 5.687v4.626L3 12.375V3.625zM6.333 5.75l2.334 1.75v5l-2.334-1.75zm3 1.75l2.334-1.75v5l-2.334 1.75zM6 2v2.563L3.665 2.5 6 1.333zm0 11.5v.667l-2.335-1.75L6 10.688zM10 2v2.563l2.335-2.063L10 1.333zm0 11.5v.667l2.335-1.75L10 10.688z"/></svg>
-                        | Perplexity
-                        span.text-text-muted *
-                      button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
-                        type="button"
                         data-stya-open-in="grok"
                         data-stya-md-url=mdUrl
                       )
@@ -126,11 +125,12 @@ block content
                         | Grok
                       button.block.w-full.text-left.px-3.py-1.text-xs.text-text-primary.hover_bg-surface-hover.flex.items-center.gap-2(
                         type="button"
-                        data-stya-open-in="copilot"
+                        data-stya-open-in="perplexity"
                         data-stya-md-url=mdUrl
                       )
-                        <svg width="12" height="12" viewBox="0 0 16 16"><defs><linearGradient id="copilot-grad-s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0078D4"/><stop offset="100%" style="stop-color:#00BCF2"/></linearGradient></defs><path fill="url(#copilot-grad-s)" d="M7.462 0H0v7.19h7.462zM16 0H8.538v7.19H16zM7.462 8.211H0V16h7.462zm8.538 0H8.538V16H16z"/></svg>
-                        | Copilot
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="#1FB8CD"><path d="M5.333 1.333v4L1.667 2.5v11l3.666-2.833v4l3-2.25V16h.334v-3.583l3 2.25v-4l3.666 2.833v-11L12.667 5.333v-4l-3 2.25V0h-.334v3.583zM12 5.75v4.5l3-2.25zM5.667 5.687v4.626L3 12.375V3.625zM6.333 5.75l2.334 1.75v5l-2.334-1.75zm3 1.75l2.334-1.75v5l-2.334 1.75zM6 2v2.563L3.665 2.5 6 1.333zm0 11.5v.667l-2.335-1.75L6 10.688zM10 2v2.563l2.335-2.063L10 1.333zm0 11.5v.667l2.335-1.75L10 10.688z"/></svg>
+                        | Perplexity
+                        span.text-text-muted *
                       .px-3.py-1.text-xs.text-text-muted.border-t.border-border-default.mt-1 * Clipboard mode
 
                 //- Copy... dropdown
