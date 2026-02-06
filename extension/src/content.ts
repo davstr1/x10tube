@@ -692,9 +692,17 @@ function injectStyles(): void {
       background: #3f3f3f;
     }
     .x10-quick-icon {
-      width: 16px;
+      width: 18px;
+      height: 18px;
       text-align: center;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .x10-quick-icon svg {
+      width: 100%;
+      height: 100%;
     }
 
     /* Inline submenu (toggle via JS click) */
@@ -711,7 +719,7 @@ function injectStyles(): void {
       align-items: center;
       gap: 10px;
       width: 100%;
-      padding: 10px 16px 10px 42px;
+      padding: 10px 16px;
       background: none;
       border: none;
       text-align: left;
@@ -1106,8 +1114,10 @@ const LLM_ICONS_MONO: Record<string, string> = {
 
 function updateDirectButton(dropdown: HTMLElement, llmKey: string): void {
   const btn = dropdown.querySelector('#x10-open-direct') as HTMLElement | null;
+  const icon = dropdown.querySelector('#x10-open-direct .x10-quick-icon');
   const label = dropdown.querySelector('#x10-open-direct-label');
-  if (btn && label && llmKey && LLM_NAMES[llmKey]) {
+  if (btn && icon && label && llmKey && LLM_NAMES[llmKey]) {
+    icon.innerHTML = LLM_ICONS_COLOR[llmKey] || '';
     label.textContent = `Open in ${LLM_NAMES[llmKey]}`;
     btn.style.display = '';
   }
