@@ -16,11 +16,14 @@ import { getMarkdown, isYouTubeUrl } from './lib/jina';
 // Safe Storage Helpers (handle context invalidation gracefully)
 // ============================================
 
-function safeStorageSet(data: Record<string, unknown>): void {
+async function safeStorageSet(data: Record<string, unknown>): Promise<boolean> {
   try {
-    chrome.storage?.local?.set(data);
+    if (!chrome.storage?.local) return false;
+    await chrome.storage.local.set(data);
+    return true;
   } catch {
     // Context invalidated - not critical, just cache
+    return false;
   }
 }
 
@@ -1538,11 +1541,11 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
 
   // LLM submenu items
   overlay.querySelectorAll('.x10-submenu-item').forEach(item => {
-    item.addEventListener('click', (e) => {
+    item.addEventListener('click', async (e) => {
       e.stopPropagation();
       const llm = (item as HTMLElement).dataset.llm;
       if (!llm) return;
-      safeStorageSet({ styaLastLLM: llm });
+      await safeStorageSet({ styaLastLLM: llm });
       updateDirectButton(overlay, llm);
       handleOpenInLLM(pageInfo.url, llm);
     });
