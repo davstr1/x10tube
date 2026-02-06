@@ -1725,7 +1725,7 @@ function setupOverlayEventListeners(overlay: HTMLDivElement, pageInfo: PageInfo)
 
   // Download MD
   overlay.querySelector('#x10-download-md')?.addEventListener('click', () => {
-    handleDownloadMD(pageInfo.url);
+    handleDownloadMD(pageInfo.url, pageInfo.title);
   });
 
   // Load LLM preference
@@ -2162,8 +2162,21 @@ async function handleCopyMDContent(url: string): Promise<void> {
   }
 }
 
+// Slugify a string for use in filenames
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-z0-9]+/g, '-')     // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, '')         // Trim leading/trailing hyphens
+    .slice(0, 50);                   // Limit length
+}
+
 // Download markdown as file
-function downloadAsMarkdownFile(content: string, filename = 'straighttoyourai-collection.md'): void {
+function downloadAsMarkdownFile(content: string, title?: string): void {
+  const slug = title ? slugify(title) : 'collection';
+  const filename = `stya-${slug}.md`;
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2173,7 +2186,7 @@ function downloadAsMarkdownFile(content: string, filename = 'straighttoyourai-co
   URL.revokeObjectURL(url);
 }
 
-async function handleDownloadMD(url: string): Promise<void> {
+async function handleDownloadMD(url: string, title?: string): Promise<void> {
   showToast('Creating collection...', '');
   closeDropdown();
 
@@ -2191,7 +2204,7 @@ async function handleDownloadMD(url: string): Promise<void> {
     const response = await fetch(txtUrl);
     const txtContent = await response.text();
 
-    downloadAsMarkdownFile(txtContent);
+    downloadAsMarkdownFile(txtContent, title);
     showToast('File downloaded!', 'success');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

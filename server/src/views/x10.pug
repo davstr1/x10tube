@@ -326,13 +326,26 @@ block content
         });
       }
 
+      // Slugify for filenames
+      function slugify(text) {
+        return text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 50);
+      }
+
       // Download function
-      function downloadAsMarkdownFile(content, filename) {
+      function downloadAsMarkdownFile(content, title) {
+        const slug = title ? slugify(title) : 'collection';
+        const filename = 'stya-' + slug + '.md';
         const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename || 'straighttoyourai-collection.md';
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -362,7 +375,7 @@ block content
           try {
             const response = await fetch('/s/#{x10.id}.txt');
             const md = await response.text();
-            downloadAsMarkdownFile(md, '#{x10.title || "collection"}.md');
+            downloadAsMarkdownFile(md, '#{x10.title}');
             downloadMdBtn.innerHTML = 'Downloaded!';
             setTimeout(() => downloadMdBtn.innerHTML = originalHtml, 1500);
           } catch (e) {

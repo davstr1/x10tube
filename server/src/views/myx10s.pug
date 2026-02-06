@@ -167,13 +167,26 @@ block content
 
   script.
     (function() {
+      // Slugify for filenames
+      function slugify(text) {
+        return text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 50);
+      }
+
       // Download function
-      function downloadAsMarkdownFile(content, filename) {
+      function downloadAsMarkdownFile(content, title) {
+        var slug = title ? slugify(title) : 'collection';
+        var filename = 'stya-' + slug + '.md';
         const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename || 'straighttoyourai-collection.md';
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -204,7 +217,7 @@ block content
           try {
             const response = await fetch(mdUrl);
             const md = await response.text();
-            downloadAsMarkdownFile(md, (title || 'collection') + '.md');
+            downloadAsMarkdownFile(md, title);
             btn.innerHTML = 'Downloaded!';
             setTimeout(() => btn.innerHTML = originalHtml, 1500);
           } catch (e) {
