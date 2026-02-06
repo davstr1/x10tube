@@ -158,11 +158,12 @@ indexRouter.get('/collections', asyncHandler(async (req: Request, res: Response)
   });
 }));
 
-// API endpoint for loading more collections (infinite scroll)
+// API endpoint for loading more collections (infinite scroll + search)
 indexRouter.get('/api/collections', asyncHandler(async (req: Request, res: Response) => {
   const anonymousId = req.anonymousId;
   const page = parseInt(req.query.page as string) || 1;
-  const { collections, hasMore } = await getCollectionsForAnonymousPaginated(anonymousId, page);
+  const search = (req.query.q as string || '').trim() || undefined;
+  const { collections, hasMore } = await getCollectionsForAnonymousPaginated(anonymousId, page, search);
 
   res.json({
     collections: collections.map(x10 => ({

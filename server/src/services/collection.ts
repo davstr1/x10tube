@@ -121,14 +121,21 @@ export async function getCollectionsForAnonymous(anonymousId: string): Promise<C
 
 export async function getCollectionsForAnonymousPaginated(
   anonymousId: string,
-  page: number
+  page: number,
+  search?: string
 ): Promise<{ collections: CollectionWithItems[]; hasMore: boolean }> {
   const offset = (page - 1) * COLLECTIONS_PER_PAGE;
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('collections')
     .select('*, items(*)')
-    .eq('anonymous_id', anonymousId)
+    .eq('anonymous_id', anonymousId);
+
+  if (search) {
+    query = query.ilike('title', `%${search}%`);
+  }
+
+  const { data, error } = await query
     .order('updated_at', { ascending: false })
     .range(offset, offset + COLLECTIONS_PER_PAGE); // Fetch one extra to check hasMore
 
