@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "StraightToYourAI — Send any Page or Video to ChatGPT, Claude, Grok...",
-  "version": "3.3",
+  "version": "3.3.1",
   "description": "Discuss and summarize any web page or YouTube video with your favorite AI assistant. One click. Free. Unlimited. No account.",
   "permissions": ["activeTab", "scripting", "storage", "tabs", "contextMenus"],
   "host_permissions": [

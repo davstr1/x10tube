@@ -592,14 +592,19 @@ function injectStyles(): void {
       box-shadow: 0 4px 32px rgba(0,0,0,0.4);
       z-index: 2147483647;
       overflow: hidden;
-      overflow-y: auto;
       max-height: 90vh;
-      overscroll-behavior: contain;
       display: none;
       font-family: 'Roboto', 'Arial', sans-serif;
+      flex-direction: column;
+    }
+    #stya-dropdown .x10-dropdown-body {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      flex: 1;
+      min-height: 0;
     }
     #stya-dropdown.open {
-      display: block !important;
+      display: flex !important;
     }
 
     /* Dropdown header */
@@ -609,6 +614,7 @@ function injectStyles(): void {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
     .x10-dropdown-header .x10-logo {
       font-size: 16px;
@@ -887,6 +893,7 @@ function injectStyles(): void {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
     .x10-footer-left {
       display: flex;
@@ -1602,10 +1609,14 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
     </div>
   `;
 
-  // Collection list + footer
+  // Collection list
   const listAndFooter = `
     <div class="x10-section-label">Add to...</div>
     <div class="x10-list" id="stya-list"></div>
+  `;
+
+  // Footer is separate from body so it stays fixed
+  const footerHtml = `
     <div class="x10-footer">
       <a href="#" id="stya-dashboard" class="x10-footer-left">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1639,8 +1650,7 @@ function createOverlayElement(pageInfo: PageInfo): HTMLDivElement {
       </div>
     </div>
   `;
-
-  overlay.innerHTML = header + newsBanner + reviewBanner + infoSection + quickActions + listAndFooter;
+  overlay.innerHTML = header + '<div class="x10-dropdown-body">' + newsBanner + reviewBanner + infoSection + quickActions + listAndFooter + '</div>' + footerHtml;
 
   // Setup event listeners
   setupOverlayEventListeners(overlay, pageInfo);
