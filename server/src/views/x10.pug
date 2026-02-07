@@ -171,12 +171,12 @@ block content
         .border.border-border-strong.rounded-lg.bg-surface
           .flex.gap-4.p-4
             //- Thumbnail
-            a.flex-shrink-0.block(href=item.url target="_blank" title=isYouTube ? "Watch on YouTube" : "Open page")
+            a.flex-shrink-0.block(href=item.url target="_blank" rel="noopener noreferrer" title=isYouTube ? "Watch on YouTube" : "Open page")
               if isYouTube
-                img.w-44.h-24.object-cover.rounded-md(src=thumbnailUrl alt=item.title)
+                img.w-44.h-24.object-cover.rounded-md(src=thumbnailUrl alt=item.title loading="lazy")
               else
                 .w-44.h-24.rounded-md.bg-surface-alt.flex.items-center.justify-center
-                  img.w-12.h-12(src=thumbnailUrl alt=item.channel)
+                  img.w-12.h-12(src=thumbnailUrl alt=item.channel loading="lazy")
 
             //- Item info
             .flex-1.min-w-0

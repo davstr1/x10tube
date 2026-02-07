@@ -67,5 +67,5 @@ Allow: /
 User-agent: DuckAssistBot
 Allow: /
 
-# Sitemap (optional, uncomment if you add one)
-# Sitemap: https://toyourai.plstry.me/sitemap.xml
+# Sitemap
+Sitemap: https://toyourai.plstry.me/sitemap.xml

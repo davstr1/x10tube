@@ -67,10 +67,10 @@ block content
             //- Thumbnail (first item)
             a.flex-shrink-0.block(href=`/s/${x10.id}`)
               if thumbnailUrl
-                img.w-36.h-20.object-cover.rounded-md(src=thumbnailUrl alt=x10.title || 'Untitled')
+                img.w-36.h-20.object-cover.rounded-md(src=thumbnailUrl alt=x10.title || 'Untitled' loading="lazy")
               else if faviconUrl
                 .w-36.h-20.rounded-md.bg-surface-alt.flex.items-center.justify-center
-                  img.w-10.h-10(src=faviconUrl alt=firstItem.channel)
+                  img.w-10.h-10(src=faviconUrl alt=firstItem.channel loading="lazy")
 
             .flex-1.min-w-0
               //- Header row

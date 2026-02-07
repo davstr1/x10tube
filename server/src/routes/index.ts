@@ -42,14 +42,18 @@ export const indexRouter = Router();
 // Landing page
 indexRouter.get('/', (_req: Request, res: Response) => {
   res.render('landing', {
-    title: config.brandName
+    title: 'StraightToYourAI — Send any Page or Video to ChatGPT, Claude, Grok...',
+    description: 'Extract and send any web page or YouTube video to Claude, ChatGPT, Gemini, Grok or any AI assistant. One click. Free. Unlimited. No account needed.',
+    path: '/'
   });
 });
 
 // Welcome page (extension onboarding)
 indexRouter.get('/welcome', (_req: Request, res: Response) => {
   res.render('welcome', {
-    title: `Welcome - ${config.brandName}`
+    title: `Welcome - ${config.brandName}`,
+    description: 'Get started with StraightToYourAI: pin the extension, right-click, or use a keyboard shortcut to send any page to your AI.',
+    path: '/welcome'
   });
 });
 
@@ -58,6 +62,8 @@ indexRouter.get('/news', (_req: Request, res: Response) => {
   const newsItems = parseNewsMarkdown();
   res.render('news', {
     title: `News - ${config.brandName}`,
+    description: 'Latest updates, features and improvements for StraightToYourAI.',
+    path: '/news',
     newsItems
   });
 });
@@ -65,14 +71,18 @@ indexRouter.get('/news', (_req: Request, res: Response) => {
 // Privacy policy page
 indexRouter.get('/privacy', (_req: Request, res: Response) => {
   res.render('privacy', {
-    title: `Privacy Policy - ${config.brandName}`
+    title: `Privacy Policy - ${config.brandName}`,
+    description: 'Privacy policy for StraightToYourAI. No account, no personal data, no tracking of your content.',
+    path: '/privacy'
   });
 });
 
 // Uninstall feedback page
 indexRouter.get('/uninstall', (_req: Request, res: Response) => {
   res.render('uninstall', {
-    title: `Feedback - ${config.brandName}`
+    title: `Feedback - ${config.brandName}`,
+    description: 'Help us improve StraightToYourAI by sharing your feedback.',
+    path: '/uninstall'
   });
 });
 
@@ -96,7 +106,9 @@ indexRouter.post('/api/uninstall-feedback', asyncHandler(async (req: Request, re
 indexRouter.get('/settings', asyncHandler(async (req: Request, res: Response) => {
   const settings = await getUserSettings(req.anonymousId);
   res.render('settings', {
-    title: `Settings - ${config.brandName}`,
+    title: `Extension Settings - ${config.brandName}`,
+    description: 'Configure your StraightToYourAI extension: YouTube Power Mode, default prompt, sync settings.',
+    path: '/settings',
     userCode: req.anonymousId,
     settings,
     saved: req.query.saved === '1'
@@ -124,7 +136,9 @@ indexRouter.get('/disconnect', (req: Request, res: Response) => {
 // Sync page - paste user code from another device
 indexRouter.get('/sync', (req: Request, res: Response) => {
   res.render('sync', {
-    title: `Sync - ${config.brandName}`,
+    title: `Sync Collections - ${config.brandName}`,
+    description: 'Sync your StraightToYourAI collections across devices using your user code.',
+    path: '/sync',
     userCode: req.anonymousId
   });
 });
@@ -173,7 +187,9 @@ indexRouter.get('/collections', asyncHandler(async (req: Request, res: Response)
   const settings = await getUserSettings(anonymousId);
 
   res.render('myx10s', {
-    title: `My collections - ${config.brandName}`,
+    title: `My AI Collections - ${config.brandName}`,
+    description: 'Your saved web pages and YouTube videos, ready to send to any AI assistant.',
+    path: '/collections',
     x10s: collections,
     userCode: anonymousId,
     settings,

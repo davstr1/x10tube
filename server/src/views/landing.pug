@@ -1,5 +1,38 @@
 extends layout
 
+block structuredData
+  script(type="application/ld+json").
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is it free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. No account needed."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my data private?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Conversations happen in your own assistant. You're identified by a random code, no email, no signup. Delete your pages anytime."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I sync between devices?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "There's no sync feature, but your content is tied to a user code. Enter it on another device to access your pages."
+          }
+        }
+      ]
+    }
+
 block content
   //- Hero
   section.mb-6.text-center
@@ -12,8 +45,10 @@ block content
   //- Slideshow
   section(style="margin-top: 2rem; margin-bottom: 2rem; margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%); padding: 0 calc(50vw - 400px); max-width: 100vw;")
     .relative.overflow-hidden.rounded-xl.border.border-border-default.bg-surface(style="aspect-ratio: 16/9;")
+      -
+        var slideAlts = ['StraightToYourAI extension popup on a web page', 'Sending a YouTube video to Claude AI', 'Collection of extracted content ready to share', 'Choosing your AI assistant to send content to', 'Multiple sources combined into one markdown page']
       each i in [1, 2, 3, 4, 5]
-        img(src=`/slides/slide${i}.png` alt=`Slide ${i}` style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.5s ease;" data-slide=i)
+        img(src=`/slides/slide${i}.png` alt=slideAlts[i-1] loading=(i > 1 ? 'lazy' : undefined) style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.5s ease;" data-slide=i)
       //- Navigation dots
       .flex.justify-center.gap-2(style="position:absolute;bottom:12px;left:0;right:0;")
         each i in [1, 2, 3, 4, 5]
@@ -52,7 +87,7 @@ block content
 
   //- Chrome Extension CTA
   section.text-center(style="margin-top: 3rem; margin-bottom: 3rem;")
-    a.inline-flex.items-center.gap-3.bg-surface.hover_bg-surface-hover.border.border-border-strong.hover_border-red-600.rounded-lg.px-6.py-4.transition-colors(href=chromeExtensionUrl target="_blank")
+    a.inline-flex.items-center.gap-3.bg-surface.hover_bg-surface-hover.border.border-border-strong.hover_border-red-600.rounded-lg.px-6.py-4.transition-colors(href=chromeExtensionUrl target="_blank" rel="noopener noreferrer")
       img(src="https://www.google.com/chrome/static/images/chrome-logo-m100.svg" alt="Chrome" style="width: 32px; height: 32px;")
       .text-left
         .text-text-primary.font-medium Add to Chrome
@@ -159,7 +194,7 @@ block content
       li 12 articles and 4 videos on a topic, one page, ready to learn
 
     p.text-sm.mt-4
-      a.inline-flex.items-center.gap-1.text-text-secondary.underline(href=chromeExtensionUrl target="_blank")
+      a.inline-flex.items-center.gap-1.text-text-secondary.underline(href=chromeExtensionUrl target="_blank" rel="noopener noreferrer")
         svg(viewBox="0 0 100 100" style="width: 14px; height: 14px;")
           path(d="M35 50 L72 29 A37 37 0 1 0 72 71 Z" fill="#dc2626")
           circle(cx="65" cy="50" r="6" fill="#ffffff")
@@ -192,7 +227,7 @@ block content
 
       div
         p.text-text-primary Questions / Feedback?
-        p.text-text-muted Drop me a line at #[a(href="mailto:toyourai@plstry.me" target="_blank") toyourai@plstry.me]
+        p.text-text-muted Drop me a line at #[a(href="mailto:toyourai@plstry.me" target="_blank" rel="noopener noreferrer") toyourai@plstry.me]
 
   if posthogApiKey
     script.
