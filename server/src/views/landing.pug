@@ -64,22 +64,29 @@ block content
       img#lightbox-img(style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); max-width:90vw; max-height:90vh; object-fit:contain; cursor:default;")
       button#lightbox-prev(style="position:absolute; left:16px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); border:none; color:#fff; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;") ‹
       button#lightbox-next(style="position:absolute; right:16px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); border:none; color:#fff; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;") ›
+      .flex.justify-center.gap-2(style="position:absolute; bottom:24px; left:0; right:0;")
+        each i in [1, 2, 3, 4, 5]
+          button.rounded-full(style="width:8px; height:8px; background:rgba(255,255,255,0.3); border:none; padding:0; cursor:pointer; transition:background 0.3s;" data-lbdot=i)
     script.
       (function() {
         var current = 1, total = 5, timer = null;
         var isPaused = false;
+        var lightboxOpen = false;
         var slides = document.querySelectorAll('[data-slide]');
         var dots = document.querySelectorAll('[data-dot]');
         var container = document.querySelector('[data-slide]').parentElement;
         var lightbox = document.getElementById('slide-lightbox');
         var lightboxImg = document.getElementById('lightbox-img');
-        var lightboxOpen = false;
+        var lbDots = document.querySelectorAll('[data-lbdot]');
 
         function show(n) {
           current = n < 1 ? total : n > total ? 1 : n;
           slides.forEach(function(s) { s.style.opacity = s.dataset.slide == current ? '1' : '0'; });
           dots.forEach(function(d) { d.style.background = d.dataset.dot == current ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)'; });
-          if (lightboxOpen) lightboxImg.src = '/slides/slide' + current + '.png';
+          if (lightboxOpen) {
+            lightboxImg.src = '/slides/slide' + current + '.png';
+            lbDots.forEach(function(d) { d.style.background = d.dataset.lbdot == current ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)'; });
+          }
         }
         function start() {
           if (timer !== null) return;
@@ -92,8 +99,18 @@ block content
         }
         show(1);
         start();
-        container.addEventListener('mouseenter', function() { isPaused = true; stop(); });
-        container.addEventListener('mouseleave', function() { isPaused = false; start(); });
+
+        // Hover pause — ignored while lightbox is open
+        container.addEventListener('mouseenter', function() {
+          if (lightboxOpen) return;
+          isPaused = true; stop();
+        });
+        container.addEventListener('mouseleave', function() {
+          if (lightboxOpen) return;
+          isPaused = false; start();
+        });
+
+        // Slideshow arrows & dots
         document.querySelectorAll('.stya-slide-arrow').forEach(function(btn) {
           btn.addEventListener('click', function() { show(current + (btn.dataset.dir === 'next' ? 1 : -1)); restart(); });
         });
@@ -105,9 +122,10 @@ block content
         container.addEventListener('click', function(e) {
           if (e.target.closest('.stya-slide-arrow') || e.target.closest('[data-dot]')) return;
           lightboxOpen = true;
-          lightboxImg.src = '/slides/slide' + current + '.png';
           isPaused = true;
           stop();
+          lightboxImg.src = '/slides/slide' + current + '.png';
+          lbDots.forEach(function(d) { d.style.background = d.dataset.lbdot == current ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)'; });
           document.body.style.overflow = 'hidden';
           lightbox.style.display = '';
           requestAnimationFrame(function() {
@@ -120,28 +138,31 @@ block content
           lightbox.style.opacity = '0';
           lightboxOpen = false;
           document.body.style.overflow = '';
-          function onEnd() {
+          lightbox.addEventListener('transitionend', function onEnd() {
             lightbox.removeEventListener('transitionend', onEnd);
             lightbox.style.display = 'none';
-          }
-          lightbox.addEventListener('transitionend', onEnd);
-          if (container.matches(':hover')) {
-            isPaused = true;
-          } else {
-            isPaused = false;
-            start();
-          }
+            // Overlay gone — now check real hover state
+            if (container.matches(':hover')) {
+              isPaused = true;
+            } else {
+              isPaused = false;
+              start();
+            }
+          });
         }
         document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
         lightbox.addEventListener('click', function(e) {
           if (e.target === lightbox) closeLightbox();
         });
 
-        // Lightbox: navigation
+        // Lightbox: navigation (arrows + dots)
         document.getElementById('lightbox-prev').addEventListener('click', function() { show(current - 1); });
         document.getElementById('lightbox-next').addEventListener('click', function() { show(current + 1); });
+        lbDots.forEach(function(d) {
+          d.addEventListener('click', function() { show(parseInt(d.dataset.lbdot)); });
+        });
 
-        // Keyboard
+        // Keyboard (only when lightbox open)
         document.addEventListener('keydown', function(e) {
           if (!lightboxOpen) return;
           if (e.key === 'Escape') closeLightbox();
