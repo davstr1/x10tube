@@ -9,6 +9,47 @@ block content
     p.text-sm.text-text-secondary.mb-6
       | YouTube, articles, docs. Extract and send to Claude, ChatGPT, or any assistant you already use. One source or dozens.
 
+  //- Slideshow
+  section(style="margin-top: 2rem; margin-bottom: 2rem; margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%); padding: 0 calc(50vw - 400px); max-width: 100vw;")
+    .relative.overflow-hidden.rounded-xl.border.border-border-default.bg-surface(style="aspect-ratio: 16/9;")
+      each i in [1, 2, 3, 4, 5]
+        img(src=`/slides/slide${i}.png` alt=`Slide ${i}` style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.5s ease;" data-slide=i)
+      //- Navigation dots
+      .flex.justify-center.gap-2(style="position:absolute;bottom:12px;left:0;right:0;")
+        each i in [1, 2, 3, 4, 5]
+          button.rounded-full(style="width:8px;height:8px;background:rgba(255,255,255,0.3);border:none;padding:0;cursor:pointer;transition:background 0.3s;" data-dot=i)
+      //- Arrow buttons
+      button.stya-slide-arrow(style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.4);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" data-dir="prev")
+        | ‹
+      button.stya-slide-arrow(style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.4);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" data-dir="next")
+        | ›
+    script.
+      (function() {
+        var current = 1, total = 5, timer;
+        var slides = document.querySelectorAll('[data-slide]');
+        var dots = document.querySelectorAll('[data-dot]');
+        var container = document.querySelector('[data-slide]').parentElement;
+        function show(n) {
+          current = n < 1 ? total : n > total ? 1 : n;
+          slides.forEach(function(s) { s.style.opacity = s.dataset.slide == current ? '1' : '0'; });
+          dots.forEach(function(d) { d.style.background = d.dataset.dot == current ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)'; });
+        }
+        function start() { timer = setInterval(function() { show(current + 1); }, 7000); }
+        function stop() { clearInterval(timer); }
+        function restart() { stop(); start(); }
+        show(1);
+        start();
+        // Pause on hover, resume on leave
+        container.addEventListener('mouseenter', stop);
+        container.addEventListener('mouseleave', start);
+        document.querySelectorAll('.stya-slide-arrow').forEach(function(btn) {
+          btn.addEventListener('click', function() { show(current + (btn.dataset.dir === 'next' ? 1 : -1)); restart(); });
+        });
+        dots.forEach(function(d) {
+          d.addEventListener('click', function() { show(parseInt(d.dataset.dot)); restart(); });
+        });
+      })();
+
   //- Chrome Extension CTA
   section.text-center(style="margin-top: 3rem; margin-bottom: 3rem;")
     a.inline-flex.items-center.gap-3.bg-surface.hover_bg-surface-hover.border.border-border-strong.hover_border-red-600.rounded-lg.px-6.py-4.transition-colors(href=chromeExtensionUrl target="_blank")
