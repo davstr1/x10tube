@@ -60,7 +60,8 @@ block content
         | ›
     script.
       (function() {
-        var current = 1, total = 5, timer;
+        var current = 1, total = 5, timer = null;
+        var isPaused = false;
         var slides = document.querySelectorAll('[data-slide]');
         var dots = document.querySelectorAll('[data-dot]');
         var container = document.querySelector('[data-slide]').parentElement;
@@ -69,14 +70,19 @@ block content
           slides.forEach(function(s) { s.style.opacity = s.dataset.slide == current ? '1' : '0'; });
           dots.forEach(function(d) { d.style.background = d.dataset.dot == current ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)'; });
         }
-        function start() { timer = setInterval(function() { show(current + 1); }, 7000); }
-        function stop() { clearInterval(timer); }
-        function restart() { stop(); start(); }
+        function start() {
+          if (timer !== null) return;
+          timer = setInterval(function() { show(current + 1); }, 7000);
+        }
+        function stop() { clearInterval(timer); timer = null; }
+        function restart() {
+          stop();
+          if (!isPaused) start();
+        }
         show(1);
         start();
-        // Pause on hover, resume on leave
-        container.addEventListener('mouseenter', stop);
-        container.addEventListener('mouseleave', start);
+        container.addEventListener('mouseenter', function() { isPaused = true; stop(); });
+        container.addEventListener('mouseleave', function() { isPaused = false; start(); });
         document.querySelectorAll('.stya-slide-arrow').forEach(function(btn) {
           btn.addEventListener('click', function() { show(current + (btn.dataset.dir === 'next' ? 1 : -1)); restart(); });
         });
