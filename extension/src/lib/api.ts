@@ -56,12 +56,6 @@ export class StyaAPI {
   }
 
   async init(): Promise<boolean> {
-    // Get base URL from storage (user override)
-    const data = await chrome.storage.local.get(['styaBackendUrl']);
-    if (data.styaBackendUrl) {
-      this.baseUrl = data.styaBackendUrl;
-    }
-
     // Ask the SERVER who we are - server's cookie is the source of truth
     const connected = await this.syncFromServer();
 
@@ -103,11 +97,6 @@ export class StyaAPI {
       }
       return false;
     }
-  }
-
-  async setBaseUrl(url: string): Promise<void> {
-    this.baseUrl = url;
-    await chrome.storage.local.set({ styaBackendUrl: url });
   }
 
   // Get user's x10s list

@@ -158,8 +158,7 @@ class X10API {
     if (this.userCode) return true;
 
     // Try cache first (safeStorageGet handles errors gracefully)
-    const cached = await safeStorageGet(['styaUserCode', 'styaBackendUrl']);
-    if (cached.styaBackendUrl) this.baseUrl = cached.styaBackendUrl as string;
+    const cached = await safeStorageGet(['styaUserCode']);
     if (cached.styaUserCode) {
       this.userCode = cached.styaUserCode as string;
       console.log('[STYA] Init from cache:', this.userCode);
