@@ -33,7 +33,7 @@ block content
         label.text-xs.text-text-muted.mb-1.block Leave your email if you'd like a reply (optional)
         input#feedback-email.w-full.bg-surface-alt.border.border-border-default.rounded-lg.text-sm.text-text-primary.placeholder-text-muted(type="email" placeholder="you@example.com" style="padding: 0.75rem;")
 
-      button#send-feedback.w-full.bg-red-600.hover_bg-red-700.text-white.font-medium.rounded-lg.text-sm.transition-colors(style="padding: 0.75rem;" disabled) Send feedback
+      button#send-feedback.w-full.bg-red-600.hover_bg-red-700.text-white.font-medium.rounded-lg.text-sm.transition-colors(style="padding: 0.75rem; transition: opacity 0.2s;" disabled) Send feedback
 
   #feedback-thanks(style="display: none;")
     article.bg-surface.rounded-xl.border.border-border-default.text-center(style="padding: 3rem 2rem;")
@@ -50,9 +50,18 @@ block content
       var emailInput = document.getElementById('feedback-email');
       var radios = document.querySelectorAll('input[name="reason"]');
 
+      function setDisabled(disabled) {
+        btn.disabled = disabled;
+        btn.style.opacity = disabled ? '0.5' : '1';
+        btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+      }
+
+      // Start disabled
+      setDisabled(true);
+
       // Enable button when a reason is selected
       radios.forEach(function(r) {
-        r.addEventListener('change', function() { btn.disabled = false; });
+        r.addEventListener('change', function() { setDisabled(false); });
       });
 
       // Show email field when user types in textarea
@@ -64,44 +73,38 @@ block content
         var checked = document.querySelector('input[name="reason"]:checked');
         if (!checked) return;
 
-        btn.disabled = true;
-        btn.textContent = 'Sending...';
-
         var payload = {
           reason: checked.value,
           details: textarea.value.trim(),
-          email: emailInput.value.trim()
+          email: emailInput ? emailInput.value.trim() : ''
         };
 
-        fetch('/api/uninstall-feedback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).then(function() {
-          form.style.display = 'none';
-          thanks.style.display = 'block';
-        }).catch(function() {
-          form.style.display = 'none';
-          thanks.style.display = 'block';
-        });
+        // Show thank you immediately — no waiting for network
+        form.style.display = 'none';
+        thanks.style.display = 'block';
+
+        // Send feedback via sendBeacon (most reliable for fire & forget)
+        try {
+          navigator.sendBeacon(
+            '/api/uninstall-feedback',
+            new Blob([JSON.stringify(payload)], { type: 'application/json' })
+          );
+        } catch(e) {
+          // Fallback to fetch
+          try { fetch('/api/uninstall-feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(function() {}); } catch(e2) {}
+        }
 
         // PostHog tracking
-        if (typeof window !== 'undefined') {
+        try {
           var PH_KEY = '#{posthogApiKey}';
           if (PH_KEY) {
             var vid = localStorage.getItem('stya_visitor_id');
             if (!vid) { vid = crypto.randomUUID(); localStorage.setItem('stya_visitor_id', vid); }
-            fetch('https://app.posthog.com/capture/', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                api_key: PH_KEY,
-                event: 'extension_uninstalled',
-                distinct_id: vid,
-                properties: { reason: checked.value }
-              })
-            }).catch(function() {});
+            navigator.sendBeacon(
+              'https://app.posthog.com/capture/',
+              new Blob([JSON.stringify({ api_key: PH_KEY, event: 'extension_uninstalled', distinct_id: vid, properties: { reason: checked.value } })], { type: 'application/json' })
+            );
           }
-        }
+        } catch(e) {}
       });
     })();

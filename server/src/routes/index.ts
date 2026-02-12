@@ -93,11 +93,10 @@ indexRouter.post('/api/uninstall-feedback', asyncHandler(async (req: Request, re
     return res.status(400).json({ error: 'Reason required' });
   }
 
-  try {
-    await sendUninstallFeedback(reason, details || '', email || '');
-  } catch (err) {
+  // Fire & forget — respond immediately so the UI doesn't hang
+  sendUninstallFeedback(reason, details || '', email || '').catch(err => {
     console.error('[Uninstall feedback] Email failed:', err);
-  }
+  });
 
   res.json({ ok: true });
 }));
