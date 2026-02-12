@@ -962,6 +962,7 @@ function injectStyles(): void {
       color: white;
       padding: 12px 24px;
       border-radius: 8px;
+      border: 2px solid #dc2626;
       font-size: 14px;
       font-family: 'Roboto', 'Arial', sans-serif;
       z-index: 99999;
